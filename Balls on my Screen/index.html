@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&display=swap" rel="stylesheet">
+  <title>Balls on my Screen</title>
+  <!-- React 18 UMD + Babel standalone (compiles JSX on first load) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+/* ── Tailwind utilities (pre-compiled from source) ─────────────── */
+*,:before,:after{--tw-border-spacing-x: 0;--tw-border-spacing-y: 0;--tw-translate-x: 0;--tw-translate-y: 0;--tw-rotate: 0;--tw-skew-x: 0;--tw-skew-y: 0;--tw-scale-x: 1;--tw-scale-y: 1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness: proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width: 0px;--tw-ring-offset-color: #fff;--tw-ring-color: rgb(59 130 246 / .5);--tw-ring-offset-shadow: 0 0 #0000;--tw-ring-shadow: 0 0 #0000;--tw-shadow: 0 0 #0000;--tw-shadow-colored: 0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x: 0;--tw-border-spacing-y: 0;--tw-translate-x: 0;--tw-translate-y: 0;--tw-rotate: 0;--tw-skew-x: 0;--tw-skew-y: 0;--tw-scale-x: 1;--tw-scale-y: 1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness: proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width: 0px;--tw-ring-offset-color: #fff;--tw-ring-color: rgb(59 130 246 / .5);--tw-ring-offset-shadow: 0 0 #0000;--tw-ring-shadow: 0 0 #0000;--tw-shadow: 0 0 #0000;--tw-shadow-colored: 0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }*,:before,:after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}:before,:after{--tw-content: ""}html,:host{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji",Segoe UI Symbol,"Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dl,dd,h1,h2,h3,h4,h5,h6,hr,figure,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}ol,ul,menu{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}button,[role=button]{cursor:pointer}:disabled{cursor:default}img,svg,video,canvas,audio,iframe,embed,object{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.visible{visibility:visible}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{top:0;right:0;bottom:0;left:0}.left-0{left:0}.left-1\/2{left:50%}.left-\[28px\]{left:28px}.left-\[4px\]{left:4px}.top-0{top:0}.top-\[4px\]{top:4px}.top-full{top:100%}.z-10{z-index:10}.z-20{z-index:20}.z-40{z-index:40}.z-50{z-index:50}.z-\[150\]{z-index:150}.z-\[200\]{z-index:200}.z-\[300\]{z-index:300}.mb-0\.5{margin-bottom:.125rem}.mb-1{margin-bottom:.25rem}.mb-10{margin-bottom:2.5rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mb-6{margin-bottom:1.5rem}.mb-7{margin-bottom:1.75rem}.mb-8{margin-bottom:2rem}.ml-4{margin-left:1rem}.mt-2{margin-top:.5rem}.mt-6{margin-top:1.5rem}.box-border{box-sizing:border-box}.block{display:block}.inline{display:inline}.flex{display:flex}.grid{display:grid}.hidden{display:none}.aspect-square{aspect-ratio:1 / 1}.h-0{height:0px}.h-1\.5{height:.375rem}.h-10{height:2.5rem}.h-12{height:3rem}.h-16{height:4rem}.h-2{height:.5rem}.h-3{height:.75rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-\[16px\]{height:16px}.h-\[3px\]{height:3px}.h-full{height:100%}.h-px{height:1px}.min-h-screen{min-height:100vh}.w-0{width:0px}.w-10{width:2.5rem}.w-12{width:3rem}.w-16{width:4rem}.w-2{width:.5rem}.w-20{width:5rem}.w-3{width:.75rem}.w-5{width:1.25rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-\[16px\]{width:16px}.w-\[3px\]{width:3px}.w-\[88px\]{width:88px}.w-full{width:100%}.max-w-\[200px\]{max-width:200px}.max-w-\[240px\]{max-width:240px}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.max-w-xs{max-width:20rem}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}.cursor-default{cursor:default}.cursor-pointer{cursor:pointer}.touch-none{touch-action:none}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.flex-col{flex-direction:column}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-2\.5{gap:.625rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.space-y-2\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse: 0;margin-top:calc(.625rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.625rem * var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse: 0;margin-top:calc(.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem * var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse: 0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-6>:not([hidden])~:not([hidden]){--tw-space-y-reverse: 0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-visible{overflow:visible}.overflow-y-auto{overflow-y:auto}.whitespace-nowrap{white-space:nowrap}.rounded-2xl{border-radius:1rem}.rounded-\[32px\]{border-radius:32px}.rounded-\[3rem\]{border-radius:3rem}.rounded-full{border-radius:9999px}.border{border-width:1px}.border-t{border-top-width:1px}.border-black\/\[0\.06\]{border-color:#0000000f}.border-white\/\[0\.07\]{border-color:#ffffff12}.bg-\[\#111\]{--tw-bg-opacity: 1;background-color:rgb(17 17 17 / var(--tw-bg-opacity, 1))}.bg-\[\#121212\]{--tw-bg-opacity: 1;background-color:rgb(18 18 18 / var(--tw-bg-opacity, 1))}.bg-\[\#121212\]\/90{background-color:#121212e6}.bg-\[\#121212\]\/95{background-color:#121212f2}.bg-\[\#1E1E1E\]{--tw-bg-opacity: 1;background-color:rgb(30 30 30 / var(--tw-bg-opacity, 1))}.bg-\[\#2A2A2A\]{--tw-bg-opacity: 1;background-color:rgb(42 42 42 / var(--tw-bg-opacity, 1))}.bg-\[\#333\]{--tw-bg-opacity: 1;background-color:rgb(51 51 51 / var(--tw-bg-opacity, 1))}.bg-\[\#EAEAEA\]{--tw-bg-opacity: 1;background-color:rgb(234 234 234 / var(--tw-bg-opacity, 1))}.bg-\[\#EBEBEB\]{--tw-bg-opacity: 1;background-color:rgb(235 235 235 / var(--tw-bg-opacity, 1))}.bg-\[\#F0F0F0\]{--tw-bg-opacity: 1;background-color:rgb(240 240 240 / var(--tw-bg-opacity, 1))}.bg-\[\#F5F5F5\]{--tw-bg-opacity: 1;background-color:rgb(245 245 245 / var(--tw-bg-opacity, 1))}.bg-\[\#FFFFFF\]{--tw-bg-opacity: 1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-current{background-color:currentColor}.bg-white{--tw-bg-opacity: 1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/90{background-color:#ffffffe6}.bg-white\/95{background-color:#fffffff2}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.px-7{padding-left:1.75rem;padding-right:1.75rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-3\.5{padding-top:.875rem;padding-bottom:.875rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pb-1{padding-bottom:.25rem}.pb-10{padding-bottom:2.5rem}.pt-12{padding-top:3rem}.pt-16{padding-top:4rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-sans{font-family:ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji",Segoe UI Symbol,"Noto Color Emoji"}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-6xl{font-size:3.75rem;line-height:1}.text-7xl{font-size:4.5rem;line-height:1}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[12px\]{font-size:12px}.text-\[17px\]{font-size:17px}.text-\[9px\]{font-size:9px}.text-base{font-size:1rem;line-height:1.5rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-extralight{font-weight:200}.font-light{font-weight:300}.font-medium{font-weight:500}.font-normal{font-weight:400}.uppercase{text-transform:uppercase}.capitalize{text-transform:capitalize}.tabular-nums{--tw-numeric-spacing: tabular-nums;font-variant-numeric:var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction)}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.tracking-\[0\.1em\]{letter-spacing:.1em}.tracking-\[0\.2em\]{letter-spacing:.2em}.tracking-\[0\.65em\]{letter-spacing:.65em}.tracking-tight{letter-spacing:-.025em}.tracking-tighter{letter-spacing:-.05em}.tracking-wide{letter-spacing:.025em}.tracking-wider{letter-spacing:.05em}.tracking-widest{letter-spacing:.1em}.text-\[\#111\]{--tw-text-opacity: 1;color:rgb(17 17 17 / var(--tw-text-opacity, 1))}.text-\[\#121212\]{--tw-text-opacity: 1;color:rgb(18 18 18 / var(--tw-text-opacity, 1))}.text-\[\#222\]{--tw-text-opacity: 1;color:rgb(34 34 34 / var(--tw-text-opacity, 1))}.text-\[\#444\]{--tw-text-opacity: 1;color:rgb(68 68 68 / var(--tw-text-opacity, 1))}.text-\[\#555\]{--tw-text-opacity: 1;color:rgb(85 85 85 / var(--tw-text-opacity, 1))}.text-\[\#888888\]{--tw-text-opacity: 1;color:rgb(136 136 136 / var(--tw-text-opacity, 1))}.text-\[\#FFFFFF\]{--tw-text-opacity: 1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-black{--tw-text-opacity: 1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity: 1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.opacity-0{opacity:0}.opacity-100{opacity:1}.opacity-30{opacity:.3}.opacity-50{opacity:.5}.shadow-sm{--tw-shadow: 0 1px 2px 0 rgb(0 0 0 / .05);--tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000),var(--tw-ring-shadow, 0 0 #0000),var(--tw-shadow)}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-opacity{transition-property:opacity;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.duration-100{transition-duration:.1s}.duration-300{transition-duration:.3s}.duration-500{transition-duration:.5s}.ease-out{transition-timing-function:cubic-bezier(0,0,.2,1)}body{font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;margin:0;padding:0;overscroll-behavior:none}@keyframes hudFloat{0%{transform:translateY(0);opacity:0}20%{opacity:1}to{transform:translateY(-22px);opacity:0}}.hud-popup{animation:hudFloat 1.2s forwards cubic-bezier(.165,.84,.44,1)}@keyframes hintPulse{0%{box-shadow:0 0 #0000,0 0 0 0 var(--hint-color)}50%{box-shadow:0 0 0 2.5px #fff,0 0 0 5px var(--hint-color)}to{box-shadow:0 0 #0000,0 0 0 0 var(--hint-color)}}.ball-hint{animation:hintPulse 1.4s ease-in-out infinite}.ball-title-gradient{background:linear-gradient(135deg,#f28b82,#f5cc6a 35%,#82b4e8 65%,#b89fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:#f28b82}@keyframes floatBall{0%{transform:translateY(0)}50%{transform:translateY(-8px)}to{transform:translateY(0)}}.menu-deco-ball{animation:floatBall var(--float-dur, 3.2s) ease-in-out infinite;animation-delay:var(--float-delay, 0s);pointer-events:none;border-radius:50%;position:absolute}@keyframes levelUpRing{0%{transform:scale(0);opacity:.7}to{transform:scale(4.5);opacity:0}}.levelup-ring{width:70px;height:70px;border-radius:50%;border:1.5px solid var(--ring-color, #888);position:absolute;animation:levelUpRing .9s ease-out forwards;animation-delay:var(--ring-delay, 0s);pointer-events:none}@keyframes levelUpBurst{0%{transform:translate(-50%,-50%) translate(0) scale(1.2);opacity:1}80%{opacity:.6}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(0);opacity:0}}.levelup-burst{position:absolute;left:50%;top:50%;border-radius:50%;pointer-events:none;animation:levelUpBurst .75s cubic-bezier(.22,.61,.36,1) forwards;animation-delay:var(--b-delay, 0s)}@keyframes levelUpContent{0%{transform:scale(.55) translateY(12px);opacity:0}65%{transform:scale(1.06) translateY(-3px);opacity:1}to{transform:scale(1) translateY(0);opacity:1}}.levelup-content{animation:levelUpContent .55s cubic-bezier(.34,1.56,.64,1) .18s both}@keyframes dangerPulse{0%{opacity:var(--danger-lo)}to{opacity:var(--danger-hi)}}.danger-vignette{animation:dangerPulse var(--danger-speed, .8s) ease-in-out infinite alternate;pointer-events:none}@keyframes newBallPop{0%{transform:scale(0) rotate(-20deg);opacity:0}60%{transform:scale(1.15) rotate(4deg);opacity:1}to{transform:scale(1) rotate(0);opacity:1}}.levelup-new-ball{animation:newBallPop .45s cubic-bezier(.34,1.56,.64,1) .55s both}.hover\:bg-\[\#2A2A2A\]:hover{--tw-bg-opacity: 1;background-color:rgb(42 42 42 / var(--tw-bg-opacity, 1))}.hover\:bg-\[\#E8E8E8\]:hover{--tw-bg-opacity: 1;background-color:rgb(232 232 232 / var(--tw-bg-opacity, 1))}.hover\:opacity-100:hover{opacity:1}.hover\:opacity-60:hover{opacity:.6}.active\:scale-90:active{--tw-scale-x: .9;--tw-scale-y: .9;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:scale-95:active{--tw-scale-x: .95;--tw-scale-y: .95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:scale-\[0\.94\]:active{--tw-scale-x: .94;--tw-scale-y: .94;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:scale-\[0\.97\]:active{--tw-scale-x: .97;--tw-scale-y: .97;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:scale-\[0\.98\]:active{--tw-scale-x: .98;--tw-scale-y: .98;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:opacity-40:active{opacity:.4}.active\:opacity-50:active{opacity:.5}
+
+
+/* ── Custom animations & classes ───────────────────────────────── */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+}
+
+/* --- HUD score/time popups --- */
+@keyframes hudFloat {
+  0%   { transform: translateY(0);     opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateY(-22px); opacity: 0; }
+}
+
+.hud-popup {
+  animation: hudFloat 1.2s forwards cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* --- Hint glow pulse — subtle ring only, no spread --- */
+@keyframes hintPulse {
+  0%   { box-shadow: 0 0 0 0px rgba(0,0,0,0.0), 0 0 0 0px var(--hint-color); }
+  50%  { box-shadow: 0 0 0 2.5px white,          0 0 0 5px var(--hint-color); }
+  100% { box-shadow: 0 0 0 0px rgba(0,0,0,0.0), 0 0 0 0px var(--hint-color); }
+}
+
+.ball-hint {
+  animation: hintPulse 1.4s ease-in-out infinite;
+}
+
+/* --- Menu title multicolour gradient — palette-matched, soft --- */
+.ball-title-gradient {
+  background: linear-gradient(135deg, #F28B82 0%, #F5CC6A 35%, #82B4E8 65%, #B89FD8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #F28B82; /* solid fallback */
+}
+
+/* --- Decorative floating balls on menu --- */
+@keyframes floatBall {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.menu-deco-ball {
+  animation: floatBall var(--float-dur, 3.2s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+  pointer-events: none;
+  border-radius: 50%;
+  position: absolute;
+}
+
+/* --- Level-up celebration --- */
+
+/* Expanding ring pulse */
+@keyframes levelUpRing {
+  0%   { transform: scale(0);   opacity: 0.7; }
+  100% { transform: scale(4.5); opacity: 0;   }
+}
+.levelup-ring {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ring-color, #888);
+  position: absolute;
+  animation: levelUpRing 0.9s ease-out forwards;
+  animation-delay: var(--ring-delay, 0s);
+  pointer-events: none;
+}
+
+/* Burst balls fly outward */
+@keyframes levelUpBurst {
+  0%   { transform: translate(-50%, -50%) translate(0px, 0px) scale(1.2); opacity: 1; }
+  80%  { opacity: 0.6; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0); opacity: 0; }
+}
+.levelup-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: levelUpBurst 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation-delay: var(--b-delay, 0s);
+}
+
+/* Content scales + bounces in */
+@keyframes levelUpContent {
+  0%   { transform: scale(0.55) translateY(12px); opacity: 0; }
+  65%  { transform: scale(1.06) translateY(-3px); opacity: 1; }
+  100% { transform: scale(1)    translateY(0px);  opacity: 1; }
+}
+.levelup-content {
+  animation: levelUpContent 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.18s both;
+}
+
+/* --- Low-time danger vignette --- */
+@keyframes dangerPulse {
+  0%   { opacity: var(--danger-lo); }
+  100% { opacity: var(--danger-hi); }
+}
+.danger-vignette {
+  animation: dangerPulse var(--danger-speed, 0.8s) ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* New ball bounces in */
+@keyframes newBallPop {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+.levelup-new-ball {
+  animation: newBallPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.55s both;
+}
+  </style>
+</head>
+<body style="margin:0;padding:0">
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+/* ================================================================
+   Balls on my Screen — Standalone HTML
+   Open in any modern browser. No build tools required.
+   Music: drop bgm.mp3 next to this file and enable Music in Settings.
+   ================================================================ */
+const { useState, useEffect, useCallback, useRef } = React;
+
+/* ── Browser stubs — Capacitor / native APIs replaced for web ───── */
+const Capacitor = { isNativePlatform: () => false, getPlatform: () => 'web' };
+const CapApp = {
+  addListener: (_ev, cb) => {
+    const fn = () => cb({ isActive: !document.hidden });
+    document.addEventListener('visibilitychange', fn);
+    return Promise.resolve({ remove: () => document.removeEventListener('visibilitychange', fn) });
+  },
+};
+const Haptics     = { impact: () => { try { navigator.vibrate && navigator.vibrate(10); } catch(_) {} } };
+const ImpactStyle = { Light: 'LIGHT', Medium: 'MEDIUM', Heavy: 'HEAVY' };
+const initAds              = () => {};
+const maybeShowInterstitial = () => {};
+
+
+// Store URLs — fill in iOS ID once the app is live on the App Store
+const ANDROID_PACKAGE = 'com.mfmc.balls';
+const IOS_APP_ID      = 'YOUR_IOS_APP_ID'; // replace when live
+
+// --- Configuration & Constants ---
+const START_TIME = 60;
+
+// Soft DOTS-inspired palette — muted, clean, flat
+const COLORS = {
+  0:  '#C0C0C0', // Blocker — mid grey, no number
+  1:  '#F28B82', // Dusty Rose
+  2:  '#82B4E8', // Powder Blue
+  3:  '#F5CC6A', // Soft Honey
+  4:  '#7ECBA5', // Sage Teal
+  5:  '#B89FD8', // Soft Lavender
+  6:  '#F5AA80', // Peach
+  7:  '#D6EEFF', // Pale Ice Blue (paler than ball 2's #82B4E8)
+  8:  '#F4B8C8', // Light Pink
+  9:  '#7ABDD6', // Steel Blue  (deeper than Powder Blue)
+  10: '#C9A640', // Amber Gold  (deeper than Soft Honey)
+};
+
+// All use dark text
+const COLOR_DARK_TEXT = {
+  0: false, 1: true, 2: true, 3: true, 4: true,
+  5: true,  6: true, 7: true, 8: true, 9: true, 10: true,
+};
+
+// Level progression — indexed by (level - 1)
+const LEVEL_CONFIGS = [
+  { rows: 6,  cols: 6,  minVal: 1, maxVal: 6,  hasBlocker: false }, // L1  start
+  { rows: 7,  cols: 7,  minVal: 1, maxVal: 7,  hasBlocker: false }, // L2  500
+  { rows: 8,  cols: 8,  minVal: 1, maxVal: 8,  hasBlocker: false }, // L3  1000
+  { rows: 9,  cols: 9,  minVal: 1, maxVal: 8,  hasBlocker: true  }, // L4  1500 — obstacles
+  { rows: 9,  cols: 9,  minVal: 2, maxVal: 9,  hasBlocker: true  }, // L5  2000 — drop 1s, add 9s
+  { rows: 9,  cols: 9,  minVal: 3, maxVal: 9,  hasBlocker: true  }, // L6  2500 — drop 2s
+  { rows: 9,  cols: 9,  minVal: 4, maxVal: 10, hasBlocker: true  }, // L7  5000 — drop 3s, add 10s
+];
+const SCORE_THRESHOLDS = [0, 250, 500, 1000, 1500, 2000, 2500];
+const getLevelForScore = (s) => {
+  for (let i = SCORE_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (s >= SCORE_THRESHOLDS[i]) return i + 1;
+  }
+  return 1;
+};
+const LEVEL_UP_MESSAGES = {
+  2: { subtitle: 'Grid expands to 7×7',     newBall: 7,    newBallLabel: '7 joins the board'     },
+  3: { subtitle: 'Grid expands to 8×8',     newBall: 8,    newBallLabel: '8 joins the board'     },
+  4: { subtitle: 'Grid expands to 9×9',     newBall: null, newBallLabel: 'Obstacles appear!'     },
+  5: { subtitle: '1s removed from the pool', newBall: 9,   newBallLabel: '9 joins the board'     },
+  6: { subtitle: '2s removed from the pool',           newBall: null, newBallLabel: null         },
+  7: { subtitle: '3s removed from the pool', newBall: 10,  newBallLabel: '10 joins the board'    },
+};
+
+// Tilt mode accent — distinct green so it reads as "bonus" not "danger"
+const TILT_COLOR = '#5DC98A';
+
+// Per-mode accent colours — matched to the ball palette
+const MODE_COLORS = {
+  classic: '#82B4E8',
+  arcade:  '#F28B82',
+  zen:     '#7ECBA5'
+};
+
+const DEFAULT_GAME_STATS = {
+  gamesPlayed:  { classic: 0, arcade: 0, zen: 0 },
+  timePlayedSecs: 0,
+  ballsCleared: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0 },
+  tiltsHit:     0,
+  totalScore:   0,
+};
+
+const formatTimePlayed = (secs) => {
+  if (secs < 60)   return `${Math.floor(secs)}s`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ${Math.floor(secs % 60)}s`;
+  return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`;
+};
+
+// --- Utilities ---
+const safeStorage = {
+  get: (key, fallback) => {
+    try {
+      const val = window.localStorage.getItem(key);
+      return val !== null ? JSON.parse(val) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  },
+  set: (key, val) => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) {
+      console.warn('Storage disabled');
+    }
+  }
+};
+
+let audioCtx = null;
+const playSound = (type, enabled) => {
+  if (!enabled) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  const now = audioCtx.currentTime;
+
+  if (type === 'pop') {
+    // Soft, short tick
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(320, now + 0.08);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.start(now); osc.stop(now + 0.08);
+  } else if (type === 'match') {
+    // Gentle rising chime
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.linearRampToValueAtTime(900, now + 0.18);
+    gain.gain.setValueAtTime(0.09, now);
+    gain.gain.linearRampToValueAtTime(0.001, now + 0.28);
+    osc.start(now); osc.stop(now + 0.28);
+  } else if (type === 'levelup') {
+    // Soft three-note rise
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.linearRampToValueAtTime(550, now + 0.12);
+    osc.frequency.linearRampToValueAtTime(660, now + 0.35);
+    gain.gain.setValueAtTime(0.09, now);
+    gain.gain.linearRampToValueAtTime(0.001, now + 0.5);
+    osc.start(now); osc.stop(now + 0.5);
+  } else if (type === 'gameover') {
+    // Quiet descending sigh
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.7);
+    gain.gain.setValueAtTime(0.07, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+    osc.start(now); osc.stop(now + 0.7);
+  } else if (type === 'shuffle') {
+    // Subtle whoosh ripple
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.linearRampToValueAtTime(380, now + 0.12);
+    osc.frequency.linearRampToValueAtTime(220, now + 0.28);
+    gain.gain.setValueAtTime(0.07, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    osc.start(now); osc.stop(now + 0.28);
+  } else if (type === 'tilt') {
+    // Warm triangle sweep (replaces harsh square)
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.linearRampToValueAtTime(680, now + 0.25);
+    osc.frequency.linearRampToValueAtTime(440, now + 0.6);
+    gain.gain.setValueAtTime(0.09, now);
+    gain.gain.linearRampToValueAtTime(0.001, now + 0.65);
+    osc.start(now); osc.stop(now + 0.65);
+  } else if (type === 'hint') {
+    // Barely-there two-note ping
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.start(now); osc.stop(now + 0.22);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1320, now + 0.1);
+    gain2.gain.setValueAtTime(0.0, now);
+    gain2.gain.setValueAtTime(0.04, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc2.start(now + 0.1); osc2.stop(now + 0.35);
+  }
+};
+
+const triggerHaptic = async (enabled) => {
+  if (!enabled) return;
+  try {
+    await Haptics.impact({ style: ImpactStyle.Light });
+  } catch {
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+};
+
+const getRandomBall = (minVal, maxVal) => {
+  const pool = [];
+  const range = maxVal - minVal + 1;
+  for (let i = minVal; i <= maxVal; i++) {
+    // Lower numbers (easier to clear) get proportionally higher weight
+    const weight = Math.max(1, range + 2 - (i - minVal));
+    for (let j = 0; j < weight; j++) pool.push(i);
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+};
+
+// Pure function — finds first valid matchable cluster and returns their ball IDs
+const findHintCluster = (board, config) => {
+  if (board.length === 0) return [];
+
+  const onGrid = board.filter(b => b.r >= 0 && b.r < config.rows);
+
+  // Build grid for adjacency checks (skip blockers val=0)
+  const grid = Array.from({ length: config.rows }, () => Array(config.cols).fill(null));
+  onGrid.filter(b => b.val > 0).forEach(b => { grid[b.r][b.c] = b; });
+
+  const allClusters = []; // { ids[], clusterSize, val }
+
+  // val=1 single taps (only valid when minVal is 1)
+  if (config.minVal === 1) {
+    onGrid.filter(b => b.val === 1).forEach(b => {
+      allClusters.push({ ids: [b.id], clusterSize: 1, val: 1 });
+    });
+  }
+
+  // BFS every connected group of same-value balls; keep those large enough to clear
+  const visited = new Set();
+  for (let targetVal = Math.max(config.minVal, 2); targetVal <= config.maxVal; targetVal++) {
+    for (const startBall of onGrid.filter(b => b.val === targetVal && !visited.has(b.id))) {
+      const cluster = [];
+      const queue = [startBall];
+      const localVisited = new Set([startBall.id]);
+
+      while (queue.length > 0) {
+        const cur = queue.shift();
+        cluster.push(cur);
+        for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]]) {
+          const nr = cur.r + dr, nc = cur.c + dc;
+          if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols) {
+            const nb = grid[nr][nc];
+            if (nb && nb.val === targetVal && !localVisited.has(nb.id)) {
+              localVisited.add(nb.id);
+              queue.push(nb);
+            }
+          }
+        }
+      }
+
+      cluster.forEach(b => visited.add(b.id));
+
+      if (cluster.length >= targetVal) {
+        // clusterSize used for ranking; ids trimmed to exactly what's needed to clear
+        allClusters.push({ ids: cluster.slice(0, targetVal).map(b => b.id), clusterSize: cluster.length, val: targetVal });
+      }
+    }
+  }
+
+  if (allClusters.length === 0) return [];
+
+  // Longest connected group first; ties broken by highest val (harder ball = more useful hint)
+  allClusters.sort((a, b) => b.clusterSize - a.clusterSize || b.val - a.val);
+  return allClusters[0].ids;
+};
+
+// --- Main Component ---
+function App() {
+  const [gameState, setGameState] = useState('menu');
+  const [mode, setMode] = useState(() => safeStorage.get('lastMode', 'arcade'));
+  const [level, setLevel] = useState(1);
+  const [tutorialPhase, setTutorialPhase] = useState(0);
+
+  const [config, setConfig] = useState({ rows: 6, cols: 6, minVal: 1, maxVal: 6, hasBlocker: false });
+  const [canResume, setCanResume] = useState(false);
+  const [savedGamePrompt, setSavedGamePrompt] = useState(null); // saved game from previous session
+  const [board, setBoard] = useState([]);
+  const [selection, setSelection] = useState([]);
+  const [dragging, setDragging] = useState(false);
+  const [shuffling, setShuffling] = useState(false);
+
+  const [timePopups, setTimePopups] = useState([]);
+  const [scorePopups, setScorePopups] = useState([]);
+
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(START_TIME);
+
+  // Hint system
+  const [hintBalls, setHintBalls] = useState([]);
+  const [levelUpGridSize, setLevelUpGridSize] = useState('');
+  const [levelUpNewBall, setLevelUpNewBall] = useState(null); // val of newly unlocked ball
+  const hintTimerRef = useRef(null);
+
+  // Tilt Mode Tracking
+  const [tiltTimeLeft, setTiltTimeLeft] = useState(0);
+  const [recentScore, setRecentScore] = useState(0);
+  const scoreLogRef = useRef([]);
+
+  const nextIdRef = useRef(0);
+
+  // Persistence
+  const [soundEnabled, setSoundEnabled] = useState(() => safeStorage.get('soundEnabled', true));
+  const [hapticsEnabled, setHapticsEnabled] = useState(() => safeStorage.get('hapticsEnabled', true));
+  const [isDarkMode, setIsDarkMode] = useState(() => safeStorage.get('isDarkMode', false));
+  const [highScores, setHighScores] = useState(() => safeStorage.get('highScores', { classic: 0, arcade: 0, zen: 0 }));
+  const [gameStats, setGameStats] = useState(() => safeStorage.get('gameStats', DEFAULT_GAME_STATS));
+  const [confirmResetStats, setConfirmResetStats] = useState(false);
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+  const [musicEnabled, setMusicEnabled] = useState(() => safeStorage.get('musicEnabled', false));
+
+  // Music refs
+  const musicRef             = useRef(null);  // Audio object — created imperatively so it persists across screen changes
+  const musicReadyRef        = useRef(false); // true after first user gesture unlocks audio
+  const musicFadeRef         = useRef(null);  // requestAnimationFrame id for volume fade
+  const musicOurPauseRef     = useRef(false); // true when WE issued the pause (not the OS)
+  const musicSystemPausedRef = useRef(false); // true when OS/another app stole audio focus
+
+  // Create the Audio object once on mount — never tied to any screen's JSX so it
+  // survives navigation between menu / game / stats without ever being destroyed.
+  useEffect(() => {
+    const audio = new Audio('/music/bgm.mp3');
+    audio.loop    = true;
+    audio.preload = 'auto';
+    audio.volume  = 0;
+    musicRef.current = audio;
+
+    return () => {
+      if (musicFadeRef.current) cancelAnimationFrame(musicFadeRef.current);
+      audio.pause();
+      audio.src = '';
+      musicRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Session tracking refs
+  const sessionStartRef  = useRef(null);
+  const pendingTiltsRef  = useRef(0);
+  const flushSessionRef  = useRef(null);
+
+  // Check for a saved game from a previous session on first mount
+  useEffect(() => {
+    const saved = safeStorage.get('savedGame', null);
+    if (saved && saved.board && saved.board.length > 0) {
+      setSavedGamePrompt(saved);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { safeStorage.set('lastMode', mode); }, [mode]);
+  useEffect(() => { safeStorage.set('musicEnabled', musicEnabled); }, [musicEnabled]);
+  useEffect(() => { safeStorage.set('soundEnabled', soundEnabled); }, [soundEnabled]);
+  useEffect(() => { safeStorage.set('hapticsEnabled', hapticsEnabled); }, [hapticsEnabled]);
+  useEffect(() => { safeStorage.set('isDarkMode', isDarkMode); }, [isDarkMode]);
+
+  // --- Background music ---
+  const MUSIC_VOLUME = 0.28;
+
+  // Fade music to a target volume. Set ourPause=true so the onpause handler
+  // knows WE caused the pause rather than the OS/another app.
+  const fadeMusic = useCallback((targetVol, durationMs = 400) => {
+    const audio = musicRef.current;
+    if (!audio) return;
+    if (musicFadeRef.current) cancelAnimationFrame(musicFadeRef.current);
+
+    if (targetVol === 0) musicOurPauseRef.current = true; // we're causing this pause
+
+    const startVol  = audio.volume;
+    const startTime = performance.now();
+    const step = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+      audio.volume = startVol + (targetVol - startVol) * t;
+      if (t < 1) {
+        musicFadeRef.current = requestAnimationFrame(step);
+      } else {
+        musicFadeRef.current = null;
+        if (targetVol === 0) {
+          audio.pause();
+          musicOurPauseRef.current = false; // reset after the pause lands
+        }
+      }
+    };
+    if (targetVol > 0 && audio.paused) {
+      audio.volume = startVol;
+      audio.play().catch(() => {
+        // OS rejected the play — another app (Spotify, phone call) holds audio focus
+        musicSystemPausedRef.current = true;
+        musicOurPauseRef.current = false;
+      });
+    }
+    musicFadeRef.current = requestAnimationFrame(step);
+  }, []);
+
+  // Called after the first user gesture — attempts to start music via play() promise.
+  // If the OS blocks playback (another app has audio focus) play() rejects and we stay silent.
+  const unlockMusic = useCallback(() => {
+    if (musicReadyRef.current) return;
+    musicReadyRef.current = true;
+    initAds();
+    if (musicEnabled) fadeMusic(MUSIC_VOLUME);
+  }, [musicEnabled, fadeMusic]);
+
+  // React to musicEnabled toggle
+  useEffect(() => {
+    if (!musicReadyRef.current) return;
+    if (musicEnabled) {
+      musicSystemPausedRef.current = false; // user explicitly wants music — clear any system block
+      fadeMusic(MUSIC_VOLUME);
+    } else {
+      fadeMusic(0);
+    }
+  }, [musicEnabled, fadeMusic]);
+
+  // Pause/resume on app focus changes (native) and tab visibility (web).
+  // We ONLY resume our music if the OS didn't pause it due to another app.
+  useEffect(() => {
+    const audio = musicRef.current;
+    if (!audio) return;
+
+    // Detect externally-triggered pauses (Spotify resuming, phone call, etc.)
+    const handleExternalPause = () => {
+      if (!musicOurPauseRef.current) {
+        // We didn't cause this — the OS or another app did
+        musicSystemPausedRef.current = true;
+      }
+    };
+    const handleExternalPlay = () => {
+      // Audio resumed (maybe the user re-toggled music, or OS released focus)
+      musicSystemPausedRef.current = false;
+    };
+    audio.addEventListener('pause', handleExternalPause);
+    audio.addEventListener('play',  handleExternalPlay);
+
+    const handleVisibility = () => {
+      if (!musicReadyRef.current || !musicEnabled) return;
+      if (document.hidden) {
+        musicOurPauseRef.current = true;
+        fadeMusic(0, 200);
+      } else {
+        // Only resume if the system didn't take our audio focus
+        if (!musicSystemPausedRef.current) fadeMusic(MUSIC_VOLUME, 600);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    let nativeListener;
+    if (Capacitor.isNativePlatform()) {
+      nativeListener = CapApp.addListener('appStateChange', ({ isActive }) => {
+        if (!musicReadyRef.current || !musicEnabled) return;
+        if (isActive) {
+          if (!musicSystemPausedRef.current) fadeMusic(MUSIC_VOLUME, 600);
+        } else {
+          musicOurPauseRef.current = true;
+          fadeMusic(0, 200);
+        }
+      });
+    }
+
+    return () => {
+      audio.removeEventListener('pause', handleExternalPause);
+      audio.removeEventListener('play',  handleExternalPlay);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      nativeListener?.then(h => h.remove()).catch(() => {});
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [musicEnabled]);
+
+  // Register with OS media session so lock screen / notification shows game name
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  'Where the Garden Meets the Sky',
+      artist: 'Balls on my Screen',
+      album:  '',
+    });
+    // Handle hardware media keys / lock screen controls
+    navigator.mediaSession.setActionHandler('pause', () => {
+      musicOurPauseRef.current = true;
+      fadeMusic(0, 200);
+    });
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (musicEnabled) {
+        musicSystemPausedRef.current = false;
+        fadeMusic(MUSIC_VOLUME, 400);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- Session stats helpers ---
+  const flushSession = () => {
+    const tilts = pendingTiltsRef.current;
+    pendingTiltsRef.current = 0;
+    if (sessionStartRef.current !== null) {
+      const elapsed = Math.round((Date.now() - sessionStartRef.current) / 1000);
+      sessionStartRef.current = null;
+      setGameStats(prev => {
+        const next = { ...prev, timePlayedSecs: prev.timePlayedSecs + elapsed, tiltsHit: prev.tiltsHit + tilts };
+        safeStorage.set('gameStats', next);
+        return next;
+      });
+    }
+  };
+  // Keep a stable ref so the timer interval can call flushSession without stale closures
+  flushSessionRef.current = flushSession;
+
+  const resetStats = () => {
+    setGameStats(DEFAULT_GAME_STATS);
+    safeStorage.set('gameStats', DEFAULT_GAME_STATS);
+    setConfirmResetStats(false);
+  };
+
+  // --- In-app review nudge ---
+  useEffect(() => {
+    if (gameState !== 'gameover') return;
+    if (!Capacitor.isNativePlatform()) return;
+    if (safeStorage.get('reviewAsked', false)) return;
+
+    // Read latest persisted stats so gamesPlayed is accurate
+    const latest = safeStorage.get('gameStats', DEFAULT_GAME_STATS);
+    const totalGames = Object.values(latest.gamesPlayed).reduce((a, b) => a + b, 0);
+    if (totalGames >= 15) {
+      setTimeout(() => setShowReviewPrompt(true), 800);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState]);
+
+  const handleReviewYes = () => {
+    safeStorage.set('reviewAsked', true);
+    setShowReviewPrompt(false);
+    const platform = Capacitor.getPlatform();
+    if (platform === 'ios') {
+      window.open(`https://apps.apple.com/app/id${IOS_APP_ID}?action=write-review`, '_system');
+    } else {
+      // _system tells Capacitor to hand market:// to Android's native Intent resolver (opens Play Store app)
+      // Falls back to browser automatically if Play Store isn't installed
+      window.open(`market://details?id=${ANDROID_PACKAGE}`, '_system');
+    }
+  };
+
+  const handleReviewNo = () => {
+    safeStorage.set('reviewAsked', true);
+    setShowReviewPrompt(false);
+  };
+
+  // --- Share ---
+  const handleShare = async () => {
+    const best = highScores[mode];
+    const modeLabel = mode.charAt(0).toUpperCase() + mode.slice(1);
+    const text = best > 0
+      ? `I scored ${best} in ${modeLabel} mode on Balls on my Screen — can you beat me?`
+      : `Check out Balls on my Screen — a satisfying puzzle game!`;
+    const url = Capacitor.getPlatform() === 'ios'
+      ? `https://apps.apple.com/app/id${IOS_APP_ID}`
+      : `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Balls on my Screen', text, url });
+      } else {
+        navigator.clipboard?.writeText(`${text} ${url}`).catch(() => {});
+      }
+    } catch (e) { /* user cancelled or share unsupported */ }
+  };
+
+  // --- Restore a saved game from a previous session ---
+  const resumeSavedGame = (saved) => {
+    setMode(saved.mode);
+    setConfig(saved.config);
+    setLevel(saved.level);
+    setScore(saved.score);
+    setTimeLeft(saved.timeLeft ?? START_TIME);
+    const maxId = saved.board.reduce((m, b) => Math.max(m, b.id), 0);
+    nextIdRef.current = maxId + 1;
+    setBoard(saved.board);
+    setSelection([]);
+    setDragging(false);
+    setHintBalls([]);
+    setTimePopups([]);
+    setScorePopups([]);
+    setTiltTimeLeft(0);
+    setRecentScore(0);
+    scoreLogRef.current = [];
+    pendingTiltsRef.current = 0;
+    sessionStartRef.current = Date.now();
+    setCanResume(false);
+    setSavedGamePrompt(null);
+    safeStorage.set('savedGame', null);
+    setGameState('playing');
+  };
+
+  // --- Hint system ---
+  const showHint = useCallback(() => {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    const hint = findHintCluster(board, config);
+    if (hint.length > 0) {
+      setHintBalls(hint);
+      playSound('hint', soundEnabled);
+    }
+  }, [board, config, soundEnabled]);
+
+  useEffect(() => {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    setHintBalls([]);
+
+    if (gameState === 'playing' && !shuffling && board.length > 0 && board.every(b => b.r >= 0)) {
+      hintTimerRef.current = setTimeout(() => showHint(), 3000);
+    }
+
+    return () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, board, shuffling]);
+
+  const saveHighScore = useCallback((currentMode, currentScore) => {
+    setHighScores(prev => {
+      if (currentScore > prev[currentMode]) {
+        const newScores = { ...prev, [currentMode]: currentScore };
+        safeStorage.set('highScores', newScores);
+        return newScores;
+      }
+      return prev;
+    });
+  }, []);
+
+  // Timer Logic
+  useEffect(() => {
+    let timerId;
+    if (gameState === 'playing' && (mode === 'arcade' || mode === 'classic')) {
+      timerId = setInterval(() => {
+        setTimeLeft((prev) => {
+          const nextVal = prev - 0.1;
+          if (nextVal <= 0.05) {
+            flushSessionRef.current?.();
+            setGameState('gameover');
+            setCanResume(false);
+            safeStorage.set('savedGame', null);
+            setDragging(false);
+            playSound('gameover', soundEnabled);
+            clearInterval(timerId);
+            return 0;
+          }
+          return nextVal;
+        });
+
+        if (mode === 'arcade') {
+          setTiltTimeLeft(prevTilt => {
+            if (prevTilt > 0) return prevTilt - 0.1;
+            const now = Date.now();
+            scoreLogRef.current = scoreLogRef.current.filter(e => now - e.t < 5000);
+            const currentRecent = scoreLogRef.current.reduce((acc, e) => acc + e.p, 0);
+            setRecentScore(currentRecent);
+            if (currentRecent >= 75) {
+              scoreLogRef.current = [];
+              pendingTiltsRef.current += 1;
+              playSound('tilt', soundEnabled);
+              return 5.0;
+            }
+            return 0;
+          });
+        }
+      }, 100);
+    }
+    return () => clearInterval(timerId);
+  }, [gameState, mode, soundEnabled]);
+
+  const checkAvailableMoves = useCallback((currentBoard, currentConfig) => {
+    if (currentBoard.length === 0) return true;
+    // Blockers (val 0) are never clearable — skip them
+    const playable = currentBoard.filter(b => b.val > 0);
+    // val=1 is always clearable alone — only valid fast-path when minVal is 1
+    if (currentConfig.minVal === 1 && playable.some(b => b.val === 1)) return true;
+
+    const grid = Array.from({ length: currentConfig.rows }, () => Array(currentConfig.cols).fill(null));
+    playable.forEach(b => {
+      if (b.r >= 0 && b.r < currentConfig.rows) grid[b.r][b.c] = b;
+    });
+
+    const visited = new Set();
+    for (const startBall of playable) {
+      if (visited.has(startBall.id)) continue;
+      const cluster = [];
+      const queue = [startBall];
+      visited.add(startBall.id);
+      while (queue.length > 0) {
+        const current = queue.shift();
+        cluster.push(current);
+        const directions = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+        for (const [dr, dc] of directions) {
+          const nr = current.r + dr;
+          const nc = current.c + dc;
+          if (nr >= 0 && nr < currentConfig.rows && nc >= 0 && nc < currentConfig.cols) {
+            const neighbor = grid[nr][nc];
+            if (neighbor && neighbor.val === startBall.val && !visited.has(neighbor.id)) {
+              visited.add(neighbor.id);
+              queue.push(neighbor);
+            }
+          }
+        }
+      }
+      if (cluster.length >= startBall.val) return true;
+    }
+    return false;
+  }, []);
+
+  const shuffleBoard = useCallback(() => {
+    setShuffling(true);
+    playSound('shuffle', soundEnabled);
+
+    if (mode === 'arcade') {
+      const multiplier = tiltTimeLeft > 0 ? 2 : 1;
+      const bonus = 4.0 * multiplier;
+      setTimeLeft(t => t + bonus);
+      const popupId = Date.now() + Math.random();
+      const tiltText = tiltTimeLeft > 0 ? ' (TILT!)' : ' (Mercy)';
+      setTimePopups(prev => [...prev, { id: popupId, text: `+${bonus.toFixed(1)}s${tiltText}` }]);
+      setTimeout(() => setTimePopups(prev => prev.filter(p => p.id !== popupId)), 1500);
+    }
+
+    setTimeout(() => {
+      setBoard(prev => {
+        let attempts = 0;
+        let newBoard = [...prev];
+        do {
+          newBoard = newBoard.map(b => ({ ...b, val: b.val === 0 ? 0 : getRandomBall(config.minVal, config.maxVal) }));
+          attempts++;
+        } while (!checkAvailableMoves(newBoard, config) && attempts < 20);
+        return newBoard;
+      });
+      setShuffling(false);
+    }, 800);
+  }, [config, soundEnabled, checkAvailableMoves, mode, tiltTimeLeft]);
+
+  const initBoard = (selectedMode, currentLevel = 1, inheritScore = 0, inheritTime = START_TIME, prevBoard = null) => {
+    const currentConfig = LEVEL_CONFIGS[Math.min(currentLevel - 1, LEVEL_CONFIGS.length - 1)];
+
+    setConfig(currentConfig);
+    setLevel(currentLevel);
+    setCanResume(false);
+    setSavedGamePrompt(null);
+    safeStorage.set('savedGame', null);
+
+    let newBoard = [];
+
+    if (prevBoard && prevBoard.length > 0) {
+      // ── Level-up transition: carry over existing balls ──────────────────────
+      // 1. Remap any out-of-range values to the new pool; keep blockers & valid values
+      let carried = prevBoard.map(b => ({
+        ...b,
+        val: b.val === 0
+          ? 0
+          : (b.val >= currentConfig.minVal && b.val <= currentConfig.maxVal)
+            ? b.val
+            : getRandomBall(currentConfig.minVal, currentConfig.maxVal),
+      }));
+
+      // 2. Fill new cells when the grid has grown (e.g. 6×6 → 7×7)
+      for (let r = 0; r < currentConfig.rows; r++) {
+        for (let c = 0; c < currentConfig.cols; c++) {
+          if (!carried.some(b => b.r === r && b.c === c)) {
+            carried.push({ id: ++nextIdRef.current, r, c, val: getRandomBall(currentConfig.minVal, currentConfig.maxVal) });
+          }
+        }
+      }
+
+      // 3. Add blockers if this level introduces them
+      if (currentConfig.hasBlocker && !carried.some(b => b.val === 0)) {
+        const numBlockers = Math.max(2, Math.floor(currentConfig.rows * currentConfig.cols * 0.05));
+        const playable = carried.filter(b => b.val > 0);
+        const used = new Set();
+        while (used.size < numBlockers) used.add(Math.floor(Math.random() * playable.length));
+        used.forEach(i => { playable[i] = { ...playable[i], val: 0 }; });
+        // Merge back
+        const blockerIds = new Set(used);
+        let pi = 0;
+        carried = carried.map(b => b.val === 0 ? b : playable[pi++]);
+      }
+
+      // 4. Shuffle all values across all positions (Fisher-Yates on the value array)
+      const positions = carried.map(b => ({ id: b.id, r: b.r, c: b.c }));
+      let values     = carried.map(b => b.val);
+      const shuffle = (arr) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      };
+      let attempts = 0;
+      do {
+        shuffle(values);
+        newBoard = positions.map((pos, i) => ({ ...pos, val: values[i] }));
+        attempts++;
+      } while (!checkAvailableMoves(newBoard, currentConfig) && attempts < 20);
+
+    } else {
+      // ── Fresh game: generate a completely new board ──────────────────────────
+      let attempts = 0;
+      do {
+        newBoard = [];
+        for (let r = 0; r < currentConfig.rows; r++) {
+          for (let c = 0; c < currentConfig.cols; c++) {
+            newBoard.push({ id: ++nextIdRef.current, r, c, val: getRandomBall(currentConfig.minVal, currentConfig.maxVal) });
+          }
+        }
+        if (currentConfig.hasBlocker) {
+          const numBlockers = Math.max(2, Math.floor(currentConfig.rows * currentConfig.cols * 0.05));
+          const used = new Set();
+          while (used.size < numBlockers) used.add(Math.floor(Math.random() * newBoard.length));
+          used.forEach(idx => { newBoard[idx] = { ...newBoard[idx], val: 0 }; });
+        }
+        attempts++;
+      } while (!checkAvailableMoves(newBoard, currentConfig) && attempts < 15);
+    }
+
+    setBoard(newBoard);
+    setScore(inheritScore);
+    setTimeLeft(inheritTime);
+    setSelection([]);
+    setDragging(false);
+    setHintBalls([]);
+    setMode(selectedMode || mode);
+    setGameState('playing');
+    setTimePopups([]);
+    setScorePopups([]);
+    setTiltTimeLeft(0);
+    setRecentScore(0);
+    scoreLogRef.current = [];
+
+    // Session tracking
+    pendingTiltsRef.current = 0;
+    sessionStartRef.current = Date.now();
+    // Only count fresh games (not level-ups which pass inheritScore > 0)
+    if (inheritScore === 0) {
+      const m = selectedMode || mode;
+      setGameStats(prev => {
+        const next = { ...prev, gamesPlayed: { ...prev.gamesPlayed, [m]: prev.gamesPlayed[m] + 1 } };
+        safeStorage.set('gameStats', next);
+        return next;
+      });
+      // Show interstitial before every 4th fresh game — fires before board appears
+      maybeShowInterstitial();
+    }
+  };
+
+  const setupTutorialPhase = (phase) => {
+    setConfig({ rows: 6, cols: 6, minVal: 1, maxVal: 6, hasBlocker: false });
+    setCanResume(false);
+
+    // Phase 0 is a purely visual intro — board is covered by an overlay
+    const blankBoard = Array.from({ length: 36 }, (_, i) => ({
+      id: ++nextIdRef.current, r: Math.floor(i / 6), c: i % 6, val: 8
+    }));
+    let newBoard = blankBoard;
+
+    if (phase === 1) { newBoard = [...blankBoard]; newBoard[14] = { ...newBoard[14], val: 1 }; }
+    else if (phase === 2) {
+      newBoard = [...blankBoard];
+      newBoard[14] = { ...newBoard[14], val: 2 };
+      newBoard[15] = { ...newBoard[15], val: 2 };
+    }
+    else if (phase === 3) {
+      newBoard = [...blankBoard];
+      // diagonal chain: (2,1)→(3,2)→(4,3)
+      newBoard[13] = { ...newBoard[13], val: 3 };
+      newBoard[20] = { ...newBoard[20], val: 3 };
+      newBoard[27] = { ...newBoard[27], val: 3 };
+    }
+    else if (phase === 4) {
+      newBoard = [...blankBoard];
+      newBoard[14] = { ...newBoard[14], val: 4 };
+      newBoard[15] = { ...newBoard[15], val: 4 };
+      newBoard[20] = { ...newBoard[20], val: 4 };
+      newBoard[21] = { ...newBoard[21], val: 4 };
+    }
+
+    setBoard(newBoard);
+    setTutorialPhase(phase);
+    setGameState('tutorial');
+    setSelection([]);
+    setHintBalls([]);
+  };
+
+  const handleStart = (ball) => {
+    // Immediately dismiss any active hint
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    setHintBalls([]);
+
+    if (shuffling) return;
+    if (ball.val === 0) return; // blocker — never selectable
+    if (gameState === 'tutorial') {
+      const allowed = board.filter(b => b.val === tutorialPhase);
+      if (!allowed.find(b => b.id === ball.id)) return;
+    } else if (gameState !== 'playing') return;
+
+    setDragging(true);
+    setSelection([{ ...ball, parentId: null }]);
+    playSound('pop', soundEnabled);
+    triggerHaptic(hapticsEnabled);
+  };
+
+  const handleEnter = useCallback((ball) => {
+    if (!dragging) return;
+    if (gameState === 'tutorial' && ball.val !== tutorialPhase) return;
+    setSelection(prev => {
+      if (prev.length === 0 || ball.val !== prev[0].val) return prev;
+      if (prev.some(s => s.id === ball.id)) return prev;
+      if (prev.length >= ball.val) return prev;
+      let parent = null;
+      for (let i = prev.length - 1; i >= 0; i--) {
+        const s = prev[i];
+        if (Math.abs(s.r - ball.r) <= 1 && Math.abs(s.c - ball.c) <= 1) { parent = s; break; }
+      }
+      if (parent) {
+        playSound('pop', soundEnabled);
+        triggerHaptic(hapticsEnabled);
+        return [...prev, { ...ball, parentId: parent.id }];
+      }
+      return prev;
+    });
+  }, [dragging, gameState, tutorialPhase, soundEnabled, hapticsEnabled]);
+
+  const handleEnd = useCallback(() => {
+    if (!dragging) return;
+    setDragging(false);
+    if (selection.length === 0) return;
+
+    const targetValue = selection[0].val;
+
+    if (selection.length === targetValue) {
+      if (gameState === 'tutorial') {
+        playSound('match', soundEnabled);
+        if (tutorialPhase < 4) setTimeout(() => setupTutorialPhase(tutorialPhase + 1), 600);
+        else setTutorialPhase(5);
+      } else {
+        const pointsEarned = targetValue * targetValue;
+        const newScore = score + pointsEarned;
+
+        // Track balls cleared and cumulative score
+        setGameStats(prev => {
+          const next = {
+            ...prev,
+            ballsCleared: { ...prev.ballsCleared, [targetValue]: (prev.ballsCleared[targetValue] || 0) + targetValue },
+            totalScore: prev.totalScore + pointsEarned,
+          };
+          safeStorage.set('gameStats', next);
+          return next;
+        });
+
+        if (mode === 'arcade') {
+          scoreLogRef.current.push({ t: Date.now(), p: pointsEarned });
+        }
+
+        const newLevel = getLevelForScore(newScore);
+
+        const scorePid = Date.now() + Math.random();
+        setScorePopups(prev => [...prev, { id: scorePid, text: `+${pointsEarned}` }]);
+        setTimeout(() => setScorePopups(prev => prev.filter(p => p.id !== scorePid)), 1000);
+
+        if (newLevel > level) {
+          const msg = LEVEL_UP_MESSAGES[newLevel] || {};
+          setLevelUpGridSize(msg.subtitle || `Level ${newLevel}`);
+          setLevelUpNewBall(msg.newBall || null);
+          setGameState('levelup');
+          setScore(newScore);
+          playSound('levelup', soundEnabled);
+          saveHighScore(mode, newScore);
+          const multiplier = tiltTimeLeft > 0 ? 2 : 1;
+          const shuffleBonus = 4.0 * multiplier;
+          const levelUpBonus = 5.0; // extra seconds awarded for reaching a new level
+          const bonus = mode === 'arcade' ? (shuffleBonus + levelUpBonus) : 0;
+          if (mode === 'arcade') {
+            const popupId = Date.now() + Math.random();
+            setTimePopups(prev => [...prev, { id: popupId, text: `+${levelUpBonus.toFixed(0)}s Level Up!`, isLevelUp: true }]);
+            setTimeout(() => setTimePopups(prev => prev.filter(p => p.id !== popupId)), 2000);
+          }
+          const boardSnapshot = board; // capture before the 2s delay
+          setTimeout(() => initBoard(mode, newLevel, newScore, mode === 'classic' ? timeLeft : timeLeft + bonus, boardSnapshot), 2000);
+          return;
+        }
+
+        setScore(newScore);
+        saveHighScore(mode, newScore);
+        playSound('match', soundEnabled);
+
+        if (mode === 'arcade') {
+          const multiplier = tiltTimeLeft > 0 ? 2 : 1;
+          const addedTime = (targetValue / 5) * multiplier;
+          setTimeLeft(t => t + addedTime);
+          const popupId = Date.now() + Math.random();
+          const tiltText = tiltTimeLeft > 0 ? ' TILT!' : '';
+          setTimePopups(prev => [...prev, { id: popupId, text: `+${addedTime.toFixed(1)}s${tiltText}`, isTilt: tiltTimeLeft > 0 }]);
+          setTimeout(() => setTimePopups(prev => prev.filter(p => p.id !== popupId)), 1200);
+        }
+      }
+
+      const toRemoveIds = new Set(selection.map(s => s.id));
+      let remainingBalls = board.filter(b => !toRemoveIds.has(b.id));
+      const initialFrame = [];
+      const finalFrame = [];
+
+      for (let c = 0; c < config.cols; c++) {
+        let colBalls = remainingBalls.filter(b => b.c === c).sort((a, b) => b.r - a.r);
+        let emptyCount = config.rows - colBalls.length;
+        colBalls.forEach((b, idx) => {
+          let targetR = config.rows - 1 - idx;
+          initialFrame.push({ ...b, r: targetR });
+          finalFrame.push({ ...b, r: targetR });
+        });
+        for (let i = 0; i < emptyCount; i++) {
+          const newBall = { id: ++nextIdRef.current, val: gameState === 'tutorial' ? 8 : getRandomBall(config.minVal, config.maxVal), c };
+          initialFrame.push({ ...newBall, r: -(emptyCount - i) });
+          finalFrame.push({ ...newBall, r: i });
+        }
+      }
+      setBoard(initialFrame);
+      setTimeout(() => {
+        setBoard(finalFrame);
+        if (gameState === 'playing' && !checkAvailableMoves(finalFrame, config)) {
+          setTimeout(() => shuffleBoard(), 600);
+        }
+      }, 50);
+    }
+    setSelection([]);
+  }, [dragging, selection, board, gameState, mode, score, level, config, timeLeft, tiltTimeLeft, soundEnabled, checkAvailableMoves, shuffleBoard, saveHighScore, tutorialPhase]);
+
+  const handleTouchMove = (e) => {
+    if (!dragging) return;
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const target = el?.closest('[data-id]');
+    if (target) {
+      const ballData = {
+        id: parseInt(target.getAttribute('data-id'), 10),
+        r: parseInt(target.getAttribute('data-r'), 10),
+        c: parseInt(target.getAttribute('data-c'), 10),
+        val: parseInt(target.getAttribute('data-val'), 10)
+      };
+      handleEnter(ballData);
+    }
+  };
+
+  // --- Theme ---
+  const bgClass = isDarkMode ? 'bg-[#121212] text-[#FFFFFF]' : 'bg-[#FFFFFF] text-[#121212]';
+  const panelClass = isDarkMode ? 'bg-[#1E1E1E]' : 'bg-[#F5F5F5]';
+  const textMutedClass = isDarkMode ? 'text-[#888888]' : 'text-[#888888]';
+
+  // Toggles both music + sound SFX together in one tap.
+  // Rendered as a fixed overlay so it appears on every screen.
+  const allSoundOn = musicEnabled || soundEnabled;
+  const toggleAllSound = () => {
+    const next = !allSoundOn;
+    setMusicEnabled(next);
+    setSoundEnabled(next);
+    if (next) {
+      // If we're turning sound back on, also clear any system-pause block
+      musicSystemPausedRef.current = false;
+      if (musicReadyRef.current) fadeMusic(MUSIC_VOLUME);
+    } else {
+      if (musicReadyRef.current) fadeMusic(0);
+    }
+  };
+
+  // variant="fixed"  → fixed top-right overlay (menu / stats / settings)
+  // variant="inline" → plain button for embedding inside game-screen controls
+  const SoundToggle = ({ variant = 'fixed' }) => (
+    <button
+      onClick={toggleAllSound}
+      className={`${variant === 'fixed' ? 'fixed z-[300]' : ''} transition-opacity active:scale-90`}
+      style={{
+        ...(variant === 'fixed' ? {
+          top: 'max(env(safe-area-inset-top, 0px) + 14px, 18px)',
+          right: '18px',
+        } : {}),
+        width: '36px',
+        height: '36px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+        color: allSoundOn ? (isDarkMode ? '#ccc' : '#555') : (isDarkMode ? '#555' : '#bbb'),
+      }}
+      aria-label={allSoundOn ? 'Mute all sound' : 'Unmute all sound'}
+    >
+      {allSoundOn ? (
+        // Speaker with waves
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+        </svg>
+      ) : (
+        // Speaker with X
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <line x1="23" y1="9" x2="17" y2="15" />
+          <line x1="17" y1="9" x2="23" y2="15" />
+        </svg>
+      )}
+    </button>
+  );
+
+  // --- UI Components ---
+  const ActionBtn = ({ label, onClick, primary = false, highlightColor = MODE_COLORS[mode] }) => (
+    <button
+      className={`w-full py-3.5 px-6 rounded-full tracking-wide transition-all active:scale-[0.97] ${
+        primary ? 'font-normal text-[#444]' : `font-normal ${isDarkMode ? 'bg-[#1E1E1E] hover:bg-[#2A2A2A] text-white' : 'bg-[#F0F0F0] hover:bg-[#E8E8E8] text-[#555]'}`
+      }`}
+      style={primary ? { backgroundColor: highlightColor } : {}}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+
+  const ModeBox = ({ m, label, sub, currentMode, onSelect }) => {
+    const isActive = currentMode === m;
+    return (
+      <div
+        className="flex-1 text-center py-3 cursor-pointer transition-all rounded-full"
+        style={{
+          backgroundColor: isActive ? MODE_COLORS[m] : 'transparent',
+          color: isActive ? '#fff' : '#888',
+          fontWeight: isActive ? 500 : 400,
+          fontSize: '13px',
+        }}
+        onClick={() => onSelect(m)}
+      >
+        <div>{label}</div>
+        {sub && <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '1px' }}>{sub}</div>}
+      </div>
+    );
+  };
+
+  // Sub Screens
+  if (['stats', 'info', 'settings'].includes(gameState)) {
+    const divider = <div className={`h-px ${isDarkMode ? 'bg-[#2A2A2A]' : 'bg-[#EBEBEB]'}`} />;
+    const SectionLabel = ({ children }) => (
+      <p className={`text-[10px] uppercase tracking-widest font-normal mb-3 ${textMutedClass}`}>{children}</p>
+    );
+    const StatRow = ({ label, value }) => (
+      <div className="flex justify-between items-center">
+        <span className={`text-sm font-normal ${textMutedClass}`}>{label}</span>
+        <span className="text-base font-light tabular-nums">{value}</span>
+      </div>
+    );
+
+    return (
+      <>
+      <SoundToggle />
+      <div className={`flex flex-col items-center min-h-screen w-full px-6 pt-16 pb-10 overflow-y-auto font-sans ${bgClass}`}>
+        <h1 className="text-3xl font-light mb-8 capitalize tracking-tight">{gameState === 'stats' ? 'Stats' : gameState === 'info' ? 'How to Play' : 'Settings'}</h1>
+        <div className={`w-full max-w-sm rounded-[32px] p-8 mb-6 space-y-6 ${panelClass}`}>
+          {gameState === 'stats' && (
+            <div className="space-y-6">
+
+              {/* Best Scores */}
+              <div>
+                <SectionLabel>Best Scores</SectionLabel>
+                <div className="space-y-3">
+                  {['classic', 'arcade', 'zen'].map(m => (
+                    <div key={m} className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: MODE_COLORS[m] }} />
+                        <span className={`text-sm font-normal capitalize ${textMutedClass}`}>{m}</span>
+                      </div>
+                      <span className="text-base font-light tabular-nums">{highScores[m].toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {divider}
+
+              {/* Games Played */}
+              <div>
+                <SectionLabel>Games Played</SectionLabel>
+                <div className="space-y-3">
+                  {['classic', 'arcade', 'zen'].map(m => (
+                    <div key={m} className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: MODE_COLORS[m] }} />
+                        <span className={`text-sm font-normal capitalize ${textMutedClass}`}>{m}</span>
+                      </div>
+                      <span className="text-base font-light tabular-nums">{(gameStats.gamesPlayed[m] || 0).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {divider}
+
+              {/* General */}
+              <div className="space-y-3">
+                <StatRow label="Time Played"    value={formatTimePlayed(gameStats.timePlayedSecs || 0)} />
+                <StatRow label="Total Score"    value={(gameStats.totalScore || 0).toLocaleString()} />
+                <StatRow label="Tilts Hit"      value={(gameStats.tiltsHit || 0).toLocaleString()} />
+                <StatRow label="Balls Cleared"  value={Object.values(gameStats.ballsCleared || {}).reduce((a, b) => a + b, 0).toLocaleString()} />
+              </div>
+
+              {divider}
+
+              {/* Balls Cleared by Value */}
+              <div>
+                <SectionLabel>Cleared by Ball</SectionLabel>
+                <div className="space-y-2.5">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => {
+                    const count = gameStats.ballsCleared?.[val] || 0;
+                    const maxCount = Math.max(1, ...Object.values(gameStats.ballsCleared || { 1: 0 }));
+                    return (
+                      <div key={val} className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center font-medium text-[#444]"
+                          style={{ backgroundColor: COLORS[val], fontSize: val === 10 ? '8px' : '10px' }}>
+                          {val}
+                        </div>
+                        <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-[#2A2A2A]' : 'bg-[#EBEBEB]'}`}>
+                          <div className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${(count / maxCount) * 100}%`, backgroundColor: COLORS[val] }} />
+                        </div>
+                        <span className={`text-sm font-light w-10 text-right tabular-nums ${textMutedClass}`}>
+                          {count.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {divider}
+
+              {/* Reset */}
+              {confirmResetStats ? (
+                <div className="text-center space-y-3">
+                  <p className={`text-sm ${textMutedClass}`}>Reset all statistics?</p>
+                  <div className="flex gap-3">
+                    <button className="flex-1 py-2 rounded-full text-sm transition-all active:scale-[0.97]"
+                      style={{ color: COLORS[1], border: `1px solid ${COLORS[1]}` }}
+                      onClick={resetStats}>Yes, reset</button>
+                    <button className={`flex-1 py-2 rounded-full text-sm transition-all active:scale-[0.97] ${isDarkMode ? 'bg-[#2A2A2A] text-white' : 'bg-[#EBEBEB] text-[#555]'}`}
+                      onClick={() => setConfirmResetStats(false)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button className={`w-full text-center text-xs transition-opacity active:opacity-40 ${textMutedClass}`}
+                  onClick={() => setConfirmResetStats(true)}>
+                  Reset Statistics
+                </button>
+              )}
+
+            </div>
+          )}
+          {gameState === 'info' && (
+            <div className="space-y-6">
+              <div className={`text-left space-y-4 text-sm font-normal leading-relaxed ${textMutedClass}`}>
+                <p><strong className={`${isDarkMode ? 'text-white' : 'text-black'} font-medium`}>1</strong>: Tap to clear instantly.</p>
+                <p><strong className={`${isDarkMode ? 'text-white' : 'text-black'} font-medium`}>N</strong>: Connect N identical balls to clear.</p>
+                <p><strong className={`${isDarkMode ? 'text-white' : 'text-black'} font-medium`}>Scoring</strong>: Points = N². Higher combos score more.</p>
+                <p><strong className={`${isDarkMode ? 'text-white' : 'text-black'} font-medium`}>Hints</strong>: A move glows after 3 seconds of no activity.</p>
+                <p><strong className={`${isDarkMode ? 'text-white' : 'text-black'} font-medium`}>Tilt</strong>: In Arcade, score 75pts in 5s to double time gains!</p>
+              </div>
+              <div className={`h-px ${isDarkMode ? 'bg-[#2A2A2A]' : 'bg-[#EBEBEB]'}`} />
+              <button
+                className={`w-full py-3 rounded-full text-sm font-normal transition-all active:scale-[0.97] ${isDarkMode ? 'bg-[#2A2A2A] text-white' : 'bg-[#EBEBEB] text-[#555]'}`}
+                onClick={() => { setGameState('menu'); setTimeout(() => setupTutorialPhase(0), 50); }}
+              >
+                Interactive Tutorial
+              </button>
+            </div>
+          )}
+          {gameState === 'settings' && (
+            <div className="space-y-6">
+              {[
+                { label: 'Music', val: musicEnabled, set: setMusicEnabled },
+                { label: 'Sound FX', val: soundEnabled, set: setSoundEnabled },
+                { label: 'Vibration', val: hapticsEnabled, set: setHapticsEnabled },
+                { label: 'Dark Mode', val: isDarkMode, set: setIsDarkMode }
+              ].map(s => (
+                <div key={s.label} className="flex justify-between items-center">
+                  <span className={`font-normal uppercase text-xs tracking-wider ${textMutedClass}`}>{s.label}</span>
+                  <button
+                    className={`w-12 h-6 rounded-full relative transition-colors`}
+                    style={{ backgroundColor: s.val ? MODE_COLORS[mode] : (isDarkMode ? '#444' : '#D1D1D1') }}
+                    onClick={() => s.set(!s.val)}
+                  >
+                    <div className={`absolute top-[4px] w-[16px] h-[16px] bg-white rounded-full transition-all shadow-sm ${s.val ? 'left-[28px]' : 'left-[4px]'}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="w-full max-w-sm">
+          <ActionBtn label="Close" onClick={() => { setConfirmResetStats(false); setGameState('menu'); }} />
+        </div>
+      </div>
+      </>
+    );
+  }
+
+  // Menu Screen
+  if (gameState === 'menu') {
+    const MODES = [
+      {
+        id: 'classic', label: 'Classic', desc: '60 seconds, beat your best', color: MODE_COLORS.classic,
+        icon: (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="13" r="7" /><path d="M12 9v4l2.5 2.5" /><path d="M9.5 3.5h5" /><path d="M12 3.5v2.5" />
+          </svg>
+        ),
+      },
+      {
+        id: 'arcade', label: 'Arcade', desc: 'Longer, tilt bonus', color: MODE_COLORS.arcade,
+        icon: (
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M13 2L4.5 13.5H11L9.5 22 20 10h-6.5z" />
+          </svg>
+        ),
+      },
+      {
+        id: 'zen', label: 'Zen', desc: 'Timeless, no timer', color: MODE_COLORS.zen,
+        icon: (
+          <svg viewBox="0 0 28 16" width="26" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M14 8c-2-4-5-6-7-6a6 6 0 0 0 0 12c2 0 5-2 7-6z" />
+            <path d="M14 8c2 4 5 6 7 6a6 6 0 0 0 0-12c-2 0-5 2-7 6z" />
+          </svg>
+        ),
+      },
+    ];
+
+    const TABS = [
+      {
+        id: 'guide', label: 'Guide', state: 'info',
+        icon: (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M10 9.5a2 2 0 1 1 2.5 1.9c-.8.3-1.5 1-1.5 1.9v.7" />
+            <circle cx="11" cy="16.5" r="0.6" fill="currentColor" stroke="none" />
+          </svg>
+        ),
+      },
+      {
+        id: 'stats', label: 'Stats', state: 'stats',
+        icon: (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3"  y="12" width="4" height="9" rx="1" />
+            <rect x="10" y="7"  width="4" height="14" rx="1" />
+            <rect x="17" y="3"  width="4" height="18" rx="1" />
+          </svg>
+        ),
+      },
+      {
+        id: 'share', label: 'Share', fn: handleShare,
+        icon: (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        ),
+      },
+      {
+        id: 'config', label: 'Config', state: 'settings',
+        icon: (
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        ),
+      },
+    ];
+
+    return (
+      <>
+      <SoundToggle />
+      <div
+        className={`flex flex-col min-h-screen w-full font-sans ${bgClass}`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        onPointerDown={unlockMusic}
+      >
+        {/* Scrollable main area */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-8">
+
+          {/* Title */}
+          <div className="text-center select-none">
+            <h1 className="font-extralight leading-none" style={{ fontSize: 'clamp(4rem, 22vw, 7rem)', letterSpacing: '0.12em' }}>
+              {['B','A','L','L','S'].map((letter, i) => (
+                <span key={i} style={{ color: COLORS[i + 1] }}>{letter}</span>
+              ))}
+            </h1>
+            <p className={`text-[9px] font-normal tracking-[0.65em] uppercase mt-2 ${textMutedClass}`}>On My Screen</p>
+          </div>
+
+          {/* Mode picker — three icons side by side */}
+          <div className="flex gap-6 w-full max-w-xs justify-center">
+            {MODES.map(({ id, label, desc, color, icon }) => {
+              const isActive = mode === id;
+              return (
+                <button
+                  key={id}
+                  className="flex flex-col items-center gap-2.5 flex-1 transition-all active:scale-[0.94]"
+                  onClick={() => setMode(id)}
+                >
+                  {/* Circle */}
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center transition-all"
+                    style={{
+                      backgroundColor: isActive ? color : (isDarkMode ? '#1E1E1E' : '#F0F0F0'),
+                      color: isActive ? '#fff' : color,
+                      boxShadow: isActive ? `0 4px 16px ${color}55` : 'none',
+                    }}
+                  >
+                    {icon}
+                  </div>
+                  {/* Label */}
+                  <span
+                    className="text-[12px] font-medium tracking-wide"
+                    style={{ color: isActive ? color : (isDarkMode ? '#666' : '#aaa') }}
+                  >
+                    {label}
+                  </span>
+                  {/* Subtitle */}
+                  <span className="text-[10px] tracking-wide" style={{ color: isDarkMode ? '#444' : '#ccc' }}>
+                    {desc.split(',')[0]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Play Now */}
+          <div className="flex flex-col gap-3 w-full max-w-sm">
+            <button
+              className="w-full py-4 rounded-2xl font-medium text-white text-[17px] tracking-wide transition-all active:scale-[0.98]"
+              style={{ backgroundColor: MODE_COLORS[mode] }}
+              onClick={() => initBoard(mode)}
+            >
+              Play Now
+            </button>
+            {canResume && (
+              <button
+                className={`w-full py-3.5 rounded-2xl font-normal text-sm transition-all active:scale-[0.98] ${isDarkMode ? 'bg-[#1E1E1E] text-white' : 'bg-[#F0F0F0] text-[#555]'}`}
+                onClick={() => setGameState('playing')}
+              >
+                Resume
+              </button>
+            )}
+          </div>
+
+        </div>
+
+        {/* Bottom tab bar */}
+        <div
+          className={`w-full flex border-t ${isDarkMode ? 'border-white/[0.07] bg-[#111]' : 'border-black/[0.06] bg-white'}`}
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          {TABS.map(({ id, label, icon, state, fn }) => (
+            <button
+              key={id}
+              className={`flex-1 flex flex-col items-center gap-1 py-3 transition-opacity active:opacity-50 ${textMutedClass}`}
+              onClick={fn ?? (() => setGameState(state))}
+            >
+              {icon}
+              <span className="text-[9px] uppercase tracking-[0.1em]">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Saved-game prompt — shown once on fresh app open if a saved game exists */}
+        {savedGamePrompt && (
+          <div className="fixed inset-0 z-[200] flex items-end justify-center p-6 pb-10"
+            style={{ background: 'rgba(0,0,0,0.45)' }}>
+            <div className={`w-full max-w-sm rounded-[32px] p-8 flex flex-col items-center text-center ${panelClass}`}>
+              {/* Coloured dot for the saved mode */}
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-5"
+                style={{ backgroundColor: `${MODE_COLORS[savedGamePrompt.mode]}22`, color: MODE_COLORS[savedGamePrompt.mode] }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
+                </svg>
+              </div>
+              <h2 className={`text-2xl font-light tracking-tight mb-2 ${isDarkMode ? 'text-white' : 'text-[#111]'}`}>
+                Continue your game?
+              </h2>
+              <p className={`text-sm font-normal mb-8 leading-relaxed ${textMutedClass}`}>
+                You have a saved <span style={{ color: MODE_COLORS[savedGamePrompt.mode] }} className="capitalize">{savedGamePrompt.mode}</span> game
+                {savedGamePrompt.score > 0 ? ` — score ${savedGamePrompt.score}` : ''}.
+              </p>
+              <div className="w-full flex flex-col gap-3">
+                <ActionBtn
+                  primary
+                  label={`Continue ${savedGamePrompt.mode.charAt(0).toUpperCase() + savedGamePrompt.mode.slice(1)}`}
+                  highlightColor={MODE_COLORS[savedGamePrompt.mode]}
+                  onClick={() => resumeSavedGame(savedGamePrompt)}
+                />
+                <ActionBtn
+                  label="Start New Game"
+                  onClick={() => {
+                    safeStorage.set('savedGame', null);
+                    setSavedGamePrompt(null);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      </>
+    );
+  }
+
+  // --- Game Screen ---
+  const lineColor = selection.length > 0 ? COLORS[selection[0].val] : '#888';
+
+  return (
+    <>
+    <div
+      className={`flex flex-col items-center min-h-screen w-full p-6 pt-12 select-none touch-none font-sans ${bgClass}`}
+      onPointerDown={unlockMusic}
+    >
+      {/* HUD */}
+      <header className="flex justify-between items-center w-full max-w-md mb-8 px-2 h-10 relative">
+
+        {/* Timer (left) */}
+        <div className={`w-20 text-left font-light text-2xl tabular-nums tracking-tight relative ${textMutedClass}`}>
+          {gameState === 'tutorial' ? '' : (mode !== 'zen' ? timeLeft.toFixed(1) : '')}
+          {mode === 'arcade' && gameState !== 'tutorial' && (
+            <div className="absolute top-full left-0 w-full mt-2">
+              {tiltTimeLeft > 0 ? (
+                <div className="text-[9px] font-medium tracking-widest uppercase animate-pulse" style={{ color: TILT_COLOR }}>
+                  TILT {tiltTimeLeft.toFixed(1)}
+                </div>
+              ) : (
+                <div className={`w-10 h-[3px] rounded-full overflow-hidden ${isDarkMode ? 'bg-[#333]' : 'bg-[#EAEAEA]'}`}>
+                  <div className="h-full transition-all duration-100" style={{ width: `${Math.min(100, (recentScore / 75) * 100)}%`, backgroundColor: TILT_COLOR }} />
+                </div>
+              )}
+            </div>
+          )}
+          <div className="absolute top-0 left-0 w-full h-0">
+            {timePopups.map(popup => (
+              <div key={popup.id} className="hud-popup absolute top-full mt-2 text-sm font-normal whitespace-nowrap"
+                style={{ color: popup.isLevelUp ? COLORS[10] : popup.isTilt ? TILT_COLOR : COLORS[4] }}>
+                {popup.text}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Score (centre) */}
+        <div className="flex flex-col items-center flex-1 relative">
+          {gameState === 'tutorial' ? (
+            <span className={`text-xs uppercase tracking-widest font-normal ${textMutedClass}`}>{tutorialPhase > 0 ? `Step ${tutorialPhase} of 4` : 'Tutorial'}</span>
+          ) : (
+            <>
+              <span className="text-5xl font-light tracking-tight leading-none">{score}</span>
+              {mode !== 'zen' && <span className={`text-[10px] uppercase font-normal tracking-widest mt-2 ${textMutedClass}`}>Level {level}</span>}
+            </>
+          )}
+          <div className="absolute top-0 left-1/2 w-0 h-0">
+            {scorePopups.map(popup => (
+              <div key={popup.id} className="hud-popup absolute top-full mt-2 ml-4 text-xl font-medium whitespace-nowrap"
+                style={{ color: COLORS[4] }}>
+                {popup.text}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pause (right) */}
+        <div className={`w-20 flex justify-end cursor-pointer transition-opacity opacity-50 hover:opacity-100 ${textMutedClass}`}
+          onClick={() => {
+            if (gameState === 'playing') {
+              flushSessionRef.current?.();
+              setCanResume(true);
+              safeStorage.set('savedGame', { mode, score, level, timeLeft, board, config });
+            }
+            setGameState('menu');
+          }}>
+          {gameState === 'tutorial' ? (
+            <span className="text-2xl font-light">✕</span>
+          ) : (
+            <div className="flex gap-1.5 h-6 items-center">
+              <div className="w-[3px] h-5 rounded-full bg-current" />
+              <div className="w-[3px] h-5 rounded-full bg-current" />
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Hint nudge text */}
+      <div className={`text-center text-xs tracking-widest uppercase mb-3 transition-all duration-500 ${hintBalls.length > 0 ? 'opacity-100' : 'opacity-0'}`}
+        style={{ color: COLORS[3], height: '16px' }}>
+        {hintBalls.length > 0 ? 'Need a hand?' : ''}
+      </div>
+
+      {/* Board */}
+      <div
+        className={`relative w-full max-w-md aspect-square overflow-visible transition-all duration-300 ${tiltTimeLeft > 0 ? (isDarkMode ? 'rounded-[3rem]' : 'rounded-[3rem]') : ''}`}
+        style={tiltTimeLeft > 0 ? { backgroundColor: `${TILT_COLOR}18` } : {}}
+        onMouseUp={handleEnd} onMouseLeave={handleEnd}
+        onTouchMove={handleTouchMove} onTouchEnd={handleEnd}
+      >
+        {/* Connection lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+          {selection.map(s => {
+            if (!s.parentId) return null;
+            const parent = selection.find(p => p.id === s.parentId);
+            if (!parent) return null;
+            const x1 = `${(s.c + 0.5) * (100 / config.cols)}%`;
+            const y1 = `${(s.r + 0.5) * (100 / config.rows)}%`;
+            const x2 = `${(parent.c + 0.5) * (100 / config.cols)}%`;
+            const y2 = `${(parent.r + 0.5) * (100 / config.rows)}%`;
+            return (
+              <line key={`${s.id}-${parent.id}`}
+                x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke={lineColor} strokeWidth={3} strokeOpacity={0.7} strokeLinecap="round" />
+            );
+          })}
+        </svg>
+
+        {/* Balls */}
+        {board.map((b) => {
+          const isBlocker = b.val === 0;
+          const isDimmed = gameState === 'tutorial' && tutorialPhase > 0 && tutorialPhase < 5 && b.val !== tutorialPhase;
+          const isHiddenByOverlay = gameState === 'tutorial' && tutorialPhase === 0; // phase 0 covers entire board
+          const isSelected = selection.some(s => s.id === b.id);
+          const isHinted = hintBalls.includes(b.id) && !isSelected;
+          const dynamicPadding = 12 - (config.rows - 6) * 2;
+          const ballColor = COLORS[b.val] ?? '#C0C0C0';
+          const fontSize = b.val === 10
+            ? `${13 - (config.rows - 6) * 1.5}px`
+            : `${18 - (config.rows - 6) * 2}px`;
+
+          return (
+            <div key={b.id}
+              className={`absolute transition-all duration-300 flex items-center justify-center box-border z-20 ${isBlocker ? 'cursor-default' : 'cursor-pointer'}`}
+              style={{
+                top: `${b.r * (100 / config.rows)}%`,
+                left: `${b.c * (100 / config.cols)}%`,
+                width: `${100 / config.cols}%`,
+                height: `${100 / config.rows}%`,
+                padding: `${dynamicPadding}px`
+              }}
+              data-id={b.id} data-r={b.r} data-c={b.c} data-val={b.val}
+              onMouseDown={() => handleStart(b)}
+              onMouseEnter={() => handleEnter(b)}
+              onTouchStart={(e) => { if (e.cancelable) e.preventDefault(); handleStart(b); }}
+            >
+              <div
+                className={`w-full h-full rounded-full flex items-center justify-center pointer-events-none ${isHinted ? 'ball-hint' : ''}`}
+                style={{
+                  '--hint-color': ballColor,
+                  backgroundColor: ballColor,
+                  fontSize,
+                  fontWeight: 500,
+                  color: '#444',
+                  opacity: isBlocker ? 0.55 : (isHiddenByOverlay ? 0 : isDimmed ? 0.12 : 1),
+                  transform: isSelected ? 'scale(1.14)' : 'scale(1)',
+                  transition: 'transform 0.1s ease-out',
+                  boxShadow: isSelected ? `0 0 0 2.5px white, 0 0 0 4px ${ballColor}` : 'none',
+                }}
+              >
+                {b.val > 0 ? b.val : ''}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Overlays */}
+        {shuffling && (
+          <div className={`absolute inset-0 z-40 flex flex-col items-center justify-center text-center rounded-[3rem] ${isDarkMode ? 'bg-[#121212]/90' : 'bg-white/90'}`}>
+            <h2 className="text-3xl font-light mb-2 tracking-tight" style={{ color: COLORS[3] }}>No Moves</h2>
+            <p className={`text-xs font-normal uppercase tracking-widest ${textMutedClass}`}>Shuffling...</p>
+          </div>
+        )}
+        {gameState === 'levelup' && (() => {
+          // Pre-compute burst ball positions around a full circle
+          const burstData = [
+            { val: 1, angle: 0   }, { val: 3, angle: 30  }, { val: 2, angle: 60  },
+            { val: 4, angle: 90  }, { val: 5, angle: 120 }, { val: 1, angle: 150 },
+            { val: 6, angle: 180 }, { val: 2, angle: 210 }, { val: 3, angle: 240 },
+            { val: 4, angle: 270 }, { val: 5, angle: 300 }, { val: 6, angle: 330 },
+            { val: 1, angle: 15  }, { val: 2, angle: 75  }, { val: 3, angle: 135 },
+            { val: 4, angle: 195 }, { val: 5, angle: 255 }, { val: 6, angle: 315 },
+          ].map((b, i) => {
+            const rad = (b.angle * Math.PI) / 180;
+            const dist = 70 + (i % 3) * 28;
+            return { ...b, dx: Math.sin(rad) * dist, dy: -Math.cos(rad) * dist, size: 10 + (i % 3) * 4 };
+          });
+
+          return (
+            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center text-center rounded-[3rem] overflow-hidden"
+              style={{ background: isDarkMode ? 'rgba(18,18,18,0.97)' : 'rgba(255,255,255,0.97)' }}>
+
+              {/* Expanding rings */}
+              <div className="levelup-ring" style={{ '--ring-color': MODE_COLORS.arcade, '--ring-delay': '0s' }} />
+              <div className="levelup-ring" style={{ '--ring-color': COLORS[levelUpNewBall || 4], '--ring-delay': '0.14s' }} />
+              <div className="levelup-ring" style={{ '--ring-color': MODE_COLORS.arcade, '--ring-delay': '0.28s' }} />
+
+              {/* Burst balls */}
+              {burstData.map((b, i) => (
+                <div key={i} className="levelup-burst"
+                  style={{
+                    width: `${b.size}px`, height: `${b.size}px`,
+                    backgroundColor: COLORS[b.val],
+                    '--dx': `${b.dx}px`, '--dy': `${b.dy}px`,
+                    '--b-delay': `${i * 0.025}s`,
+                  }} />
+              ))}
+
+              {/* Central content */}
+              <div className="levelup-content flex flex-col items-center relative z-10">
+                <h2 className="text-6xl font-light tracking-tight mb-1">
+                  <span className="ball-title-gradient">Level Up!</span>
+                </h2>
+                <p className="text-sm font-light mb-5" style={{ color: isDarkMode ? '#666' : '#aaa' }}>
+                  {levelUpGridSize}
+                </p>
+                {(() => {
+                  const msg = LEVEL_UP_MESSAGES[level + 1] || {};
+                  if (!msg.newBallLabel) return null;
+                  return (
+                    <div className="levelup-new-ball flex items-center gap-3 px-5 py-3 rounded-full"
+                      style={{ backgroundColor: isDarkMode ? '#1E1E1E' : '#F5F5F5' }}>
+                      {msg.newBall && (
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center font-medium text-[#444]"
+                          style={{ backgroundColor: COLORS[msg.newBall], fontSize: msg.newBall === 10 ? '11px' : '14px' }}>
+                          {msg.newBall}
+                        </div>
+                      )}
+                      {!msg.newBall && (
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: COLORS[0], opacity: 0.6 }} />
+                      )}
+                      <span className="text-xs uppercase tracking-widest" style={{ color: isDarkMode ? '#666' : '#aaa' }}>
+                        {msg.newBallLabel}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          );
+        })()}
+        {gameState === 'gameover' && (
+          <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center text-center p-8 rounded-[3rem] ${isDarkMode ? 'bg-[#121212]/95' : 'bg-white/95'}`}>
+            <h2 className="text-4xl font-light mb-6 tracking-tight" style={{ color: COLORS[1] }}>Time's Up</h2>
+            <p className={`text-xs uppercase font-normal tracking-widest ${textMutedClass}`}>Final Score</p>
+            <p className="text-7xl font-light mb-10 tracking-tighter">{score}</p>
+            <div className="w-full max-w-[200px] flex flex-col gap-3">
+              <ActionBtn primary label="Play Again" onClick={() => initBoard(mode)} />
+              <ActionBtn label="Main Menu" onClick={() => setGameState('menu')} />
+            </div>
+          </div>
+        )}
+        {/* Tutorial phase 0 — visual rule intro */}
+        {gameState === 'tutorial' && tutorialPhase === 0 && (
+          <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center px-7 py-8 rounded-[3rem] ${isDarkMode ? 'bg-[#121212]/97' : 'bg-white/97'}`}>
+            <h2 className={`text-3xl font-light tracking-tight mb-1 ${isDarkMode ? 'text-white' : 'text-[#111]'}`}>How to play</h2>
+            <p className="text-[11px] uppercase tracking-[0.2em] mb-7" style={{ color: isDarkMode ? '#555' : '#bbb' }}>
+              Number = how many to connect
+            </p>
+            <div className="space-y-4 w-full mb-8">
+              {[
+                { val: 1, label: 'Tap alone to clear' },
+                { val: 2, label: 'Connect 2 matching neighbours' },
+                { val: 3, label: 'Connect 3 matching neighbours' },
+                { val: 4, label: 'Connect 4 matching neighbours' },
+              ].map(({ val, label }) => (
+                <div key={val} className="flex items-center gap-4">
+                  <div className="flex gap-1 flex-shrink-0 w-[88px] justify-end">
+                    {Array.from({ length: val }, (_, i) => (
+                      <div key={i}
+                        className="rounded-full flex items-center justify-center font-medium text-[#444]"
+                        style={{ width: 26, height: 26, fontSize: 12, backgroundColor: COLORS[val], flexShrink: 0 }}>
+                        {val}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-xs" style={{ color: isDarkMode ? '#777' : '#aaa' }}>{label}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              className="w-full py-3.5 rounded-full font-medium text-white text-sm tracking-wide"
+              style={{ backgroundColor: MODE_COLORS[mode] }}
+              onClick={() => setupTutorialPhase(1)}
+            >
+              Let's try it
+            </button>
+          </div>
+        )}
+
+        {/* Tutorial complete */}
+        {gameState === 'tutorial' && tutorialPhase === 5 && (
+          <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center text-center p-8 rounded-[3rem] ${isDarkMode ? 'bg-[#121212]/95' : 'bg-white/95'}`}>
+            {/* All four ball values as a celebratory row */}
+            <div className="flex gap-2 mb-6">
+              {[1, 2, 3, 4].map(v => (
+                <div key={v} className="w-9 h-9 rounded-full flex items-center justify-center font-medium text-[#444] text-sm"
+                  style={{ backgroundColor: COLORS[v] }}>{v}</div>
+              ))}
+            </div>
+            <h2 className={`text-4xl font-light tracking-tight mb-3 ${isDarkMode ? 'text-white' : 'text-black'}`}>You've got it!</h2>
+            <p className={`font-normal text-sm mb-10 leading-relaxed max-w-[240px] ${textMutedClass}`}>
+              Connect N matching neighbours to clear N balls. The higher the number, the more points!
+            </p>
+            <div className="w-full max-w-[200px]">
+              <ActionBtn primary label="Play Now" onClick={() => initBoard(mode)} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom controls: tutorial panel / hint · sound toggle pinned to bottom-right */}
+      <div className="w-full max-w-md mt-6">
+        {gameState === 'tutorial' && tutorialPhase > 0 && tutorialPhase < 5 ? (
+          /* Tutorial panel + inline sound toggle to the right */
+          <div className="flex gap-2">
+            <div className={`flex-1 px-5 py-4 rounded-2xl ${isDarkMode ? 'bg-[#1E1E1E]' : 'bg-[#F5F5F5]'}`}>
+              {/* Progress dots */}
+              <div className="flex justify-center gap-1.5 mb-4">
+                {[1, 2, 3, 4].map(p => (
+                  <div key={p} className="rounded-full transition-all duration-300"
+                    style={{
+                      width: p === tutorialPhase ? 16 : 6,
+                      height: 6,
+                      backgroundColor: p <= tutorialPhase
+                        ? MODE_COLORS[mode]
+                        : (isDarkMode ? '#333' : '#ddd'),
+                    }} />
+                ))}
+              </div>
+              {/* Ball indicators */}
+              <div className="flex justify-center gap-1.5 mb-3">
+                {Array.from({ length: tutorialPhase }, (_, i) => (
+                  <div key={i}
+                    className="rounded-full flex items-center justify-center font-medium text-[#444]"
+                    style={{ width: 30, height: 30, fontSize: 13, backgroundColor: COLORS[tutorialPhase] }}>
+                    {tutorialPhase}
+                  </div>
+                ))}
+              </div>
+              {/* Primary instruction */}
+              <p className={`text-sm font-medium text-center mb-0.5 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>
+                {tutorialPhase === 1 && 'Tap the 1 to clear it'}
+                {tutorialPhase === 2 && 'Drag to connect both 2s'}
+                {tutorialPhase === 3 && 'Connect all three 3s'}
+                {tutorialPhase === 4 && 'Connect all four 4s'}
+              </p>
+              {/* Secondary hint */}
+              <p className={`text-xs text-center ${textMutedClass}`}>
+                {tutorialPhase === 1 && '1 = tap alone · no drag needed'}
+                {tutorialPhase === 2 && '2 = connect 2 matching neighbours'}
+                {tutorialPhase === 3 && '3 = connect 3 · diagonal is fine!'}
+                {tutorialPhase === 4 && '4 = connect 4 · trace any path'}
+              </p>
+            </div>
+            {/* Sound toggle pinned to the bottom of the panel */}
+            <div className="flex flex-col justify-end flex-shrink-0 pb-1">
+              <SoundToggle variant="inline" />
+            </div>
+          </div>
+        ) : gameState === 'playing' ? (
+          /* Hint button centred, sound toggle at right edge */
+          <div className="grid items-center" style={{ gridTemplateColumns: '36px 1fr 36px' }}>
+            <div /> {/* left spacer balances the sound toggle */}
+            <div className="flex justify-center">
+              <button
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full transition-all active:scale-95 ${
+                  hintBalls.length > 0 ? 'opacity-100' : 'opacity-30 hover:opacity-60'
+                }`}
+                style={{
+                  color: isDarkMode ? '#888888' : '#888888',
+                  backgroundColor: isDarkMode ? '#1E1E1E' : '#F5F5F5',
+                }}
+                onClick={showHint}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18h6M10 22h4" />
+                  <path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6l-.7 1H9l-.7-1A7 7 0 0 1 12 2z" />
+                </svg>
+                <span className="text-[11px] font-normal tracking-widest uppercase">Hint</span>
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <SoundToggle variant="inline" />
+            </div>
+          </div>
+        ) : (
+          /* Gameover / other — just keep sound toggle visible */
+          <div className="flex justify-end h-10">
+            <SoundToggle variant="inline" />
+          </div>
+        )}
+      </div>
+
+      {/* Low-time danger vignette — red screen-edge pulse when < 5 s remain */}
+      {(mode === 'classic' || mode === 'arcade') && gameState === 'playing' && timeLeft < 5 && timeLeft > 0 && (() => {
+        const danger = Math.max(0, Math.min(1, (5 - timeLeft) / 5)); // 0 at 5s → 1 at 0s
+        const speed  = `${Math.max(0.15, 0.8 - danger * 0.65)}s`;   // 0.8s → 0.15s
+        return (
+          <div
+            className="danger-vignette fixed inset-0 z-[150]"
+            style={{
+              background: 'radial-gradient(ellipse at center, transparent 40%, rgba(200,40,40,1) 100%)',
+              '--danger-lo':    danger * 0.25,
+              '--danger-hi':    danger * 0.55,
+              '--danger-speed': speed,
+            }}
+          />
+        );
+      })()}
+
+      {/* In-app review nudge — shown once after 15+ games on native builds */}
+      {showReviewPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center p-6 pb-10"
+          style={{ background: 'rgba(0,0,0,0.45)' }}>
+          <div className={`w-full max-w-sm rounded-[32px] p-8 flex flex-col items-center text-center ${panelClass}`}>
+            {/* Five little coloured dots */}
+            <div className="flex gap-2 mb-5">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+              ))}
+            </div>
+            <h2 className={`text-2xl font-light tracking-tight mb-2 ${isDarkMode ? 'text-white' : 'text-[#111]'}`}>
+              Enjoying the game?
+            </h2>
+            <p className={`text-sm font-normal mb-8 leading-relaxed ${textMutedClass}`}>
+              A quick rating helps others find Balls on my Screen.
+            </p>
+            <div className="w-full flex flex-col gap-3">
+              <ActionBtn primary label="Leave a Review" onClick={handleReviewYes} />
+              <ActionBtn label="No Thanks" onClick={handleReviewNo} />
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+    </>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
