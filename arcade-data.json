@@ -61,6 +61,15 @@
   "description": "Learn how to work out the day of the week for any date using mental math",
   "iosLink": "https://apps.apple.com/us/app/doomsday-trainer/id6760719687",
   "androidLink": "https://play.google.com/store/apps/details?id=com.inefficientcode.doomsdaytrainer"
+ },
+{
+  "id": "soundscape",
+  "title": "Soundscape",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Soundscape/index.html",
+  "description": "compose your own soundscape",
+  "iosLink": null,
+  "androidLink": null
  }
 
 ]
