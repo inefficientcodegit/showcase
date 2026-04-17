@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polygon Pond</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel for in-browser JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useEffect, useRef, useState } = React;
+
+    // --- REACT ERROR BOUNDARY (Prevents Silent White Screens) ---
+    class ErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+      static getDerivedStateFromError(error) { return { hasError: true, error }; }
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div style={{ position: 'fixed', inset: 0, backgroundColor: '#7f1d1d', color: 'white', padding: '2rem', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace' }}>
+              <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>React Fatal Crash</h1>
+              <p style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '8px', maxWidth: '80%', wordBreak: 'break-all' }}>
+                {this.state.error?.toString()}
+              </p>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    // --- AUDIO SYSTEM (Procedural 8-bit Synthesis) ---
+    const Audio = {
+      ctx: null,
+      init() {
+        try {
+          if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) this.ctx = new AudioContext();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        } catch(e) { console.warn("Web Audio not supported."); }
+      },
+      playTone(freq, type, duration, vol=0.05, slideFreq=null) {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
+          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(); osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      },
+      playNoise(duration, vol=0.05) {
+        if (!this.ctx) return;
+        try {
+          const bufferSize = this.ctx.sampleRate * duration;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noiseSource = this.ctx.createBufferSource();
+          noiseSource.buffer = buffer;
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+          noiseSource.connect(gain); gain.connect(this.ctx.destination);
+          noiseSource.start();
+        } catch(e) {}
+      },
+      trap() { this.playTone(200, 'sawtooth', 0.2, 0.05, 50); }, 
+      pickup() { this.playTone(1200, 'sine', 0.1, 0.03, 2000); },
+      powerup() {
+        this.playTone(400, 'square', 0.1, 0.03, 600);
+        setTimeout(() => this.playTone(600, 'square', 0.1, 0.03, 800), 100);
+        setTimeout(() => this.playTone(800, 'square', 0.2, 0.03, 1200), 200);
+      },
+      hit() { this.playNoise(0.2, 0.08); },
+      damage() { this.playTone(150, 'sawtooth', 0.3, 0.08, 50); },
+      victory() {
+         [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+            setTimeout(() => this.playTone(f, 'sine', 0.2, 0.05), i * 150);
+         });
+      },
+      gameover() {
+         [300, 250, 200, 150].forEach((f, i) => {
+            setTimeout(() => this.playTone(f, 'sawtooth', 0.3, 0.05), i * 300);
+         });
+      }
+    };
+
+    const MAZE_COLS = 5;
+    const MAZE_ROWS = 5;
+    const NODE_SPACING = 24;
+
+    // --- MAIN GAME COMPONENT ---
+    function GameContent() {
+      const containerRef = useRef(null);
+      const [engineState, setEngineState] = useState({ loaded: false, error: null });
+      
+      const [uiState, setUiState] = useState('MENU'); 
+      const [score, setScore] = useState(0);
+      const [health, setHealth] = useState(3);
+      const [powerup, setPowerup] = useState(null);
+      const [shield, setShield] = useState(null);
+
+      const gameCommandRef = useRef(null);
+      const gameStateRef = useRef({ score: 0, health: 3, powerupTime: 0, shieldTime: 0 });
+
+      useEffect(() => {
+        if (window.THREE) { setEngineState({ loaded: true, error: null }); return; }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+        script.onload = () => setEngineState({ loaded: true, error: null });
+        script.onerror = () => setEngineState({ loaded: false, error: "Failed to load 3D Engine script." });
+        document.head.appendChild(script);
+      }, []);
+
+      useEffect(() => {
+        if (!engineState.loaded || !containerRef.current) return;
+
+        let isUnmounted = false; 
+        const THREE = window.THREE;
+        const container = containerRef.current;
+        let renderer, animationId, scene, camera, waterMat;
+
+        let mazeNodes = [], channels = [], ponds = [], enemies = [], nets = [];
+        let collectibles = [], waterMeshes = [], activeProps = [];
+
+        let fishGroup, fishObj, targetMesh, exitGroup, startMarker, shieldBubble;
+        let spiderSenseGroup, tingleMat, tingle1, tingle2, tingle3;
+
+        let isPlaying = false;
+        let cameraMode = 'OVERVIEW'; 
+        let transitionProgress = 0;
+        
+        const rand = (min, max) => Math.random() * (max - min) + min;
+
+        try {
+          const width = container.clientWidth || window.innerWidth || 800;
+          const height = container.clientHeight || window.innerHeight || 600;
+
+          scene = new THREE.Scene();
+          scene.background = new THREE.Color(0xa2d5f2); 
+          scene.fog = new THREE.FogExp2(0xa2d5f2, 0.012);
+
+          camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+
+          renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+          renderer.setSize(width, height);
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          renderer.shadowMap.enabled = true;
+          renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+          container.appendChild(renderer.domElement);
+
+          // --- STUDIO GHIBLI LIGHTING ---
+          const ambientLight = new THREE.AmbientLight(0x7092b0, 0.6); 
+          scene.add(ambientLight);
+
+          const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d9e71, 0.4); 
+          scene.add(hemiLight);
+
+          const sunLight = new THREE.DirectionalLight(0xfff7d6, 1.2); 
+          sunLight.position.set(30, 50, 20);
+          sunLight.castShadow = true;
+          sunLight.shadow.mapSize.width = 1024;
+          sunLight.shadow.mapSize.height = 1024;
+          sunLight.shadow.camera.left = -60;
+          sunLight.shadow.camera.right = 60;
+          sunLight.shadow.camera.top = 60;
+          sunLight.shadow.camera.bottom = -60;
+          sunLight.shadow.bias = -0.0005;
+          scene.add(sunLight);
+
+          // --- MAGICAL ATMOSPHERE (Floating Pollen) ---
+          const particleCount = 600;
+          const particleGeo = new THREE.BufferGeometry();
+          const particlePos = new Float32Array(particleCount * 3);
+          for(let i=0; i < particleCount * 3; i++) particlePos[i] = (Math.random() - 0.5) * 150;
+          particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+          const particleMat = new THREE.PointsMaterial({
+            color: 0xfffae6, size: 0.3, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false
+          });
+          const particles = new THREE.Points(particleGeo, particleMat);
+          scene.add(particles);
+
+          // --- STUDIO GHIBLI MATERIALS & GEOMETRIES ---
+          const floorMat = new THREE.MeshStandardMaterial({ color: 0xa4c27a, roughness: 1.0 }); 
+          const waterUniforms = { time: { value: 0 } };
+          waterMat = new THREE.ShaderMaterial({
+            uniforms: waterUniforms,
+            vertexShader: `
+              uniform float time; varying vec2 vUv; varying vec3 vPos;
+              void main() {
+                vUv = uv; vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                worldPos.y += sin(worldPos.x * 0.4 + time) * 0.15 + cos(worldPos.z * 0.4 + time * 1.2) * 0.15;
+                vPos = worldPos.xyz; gl_Position = projectionMatrix * viewMatrix * worldPos;
+              }
+            `,
+            fragmentShader: `
+              uniform float time; varying vec2 vUv; varying vec3 vPos;
+              void main() {
+                float shimmer = smoothstep(0.4, 0.5, sin(vPos.x * 2.5 + time * 1.5) * cos(vPos.z * 2.5 + time * 1.2));
+                vec3 shallow = vec3(0.3, 0.75, 0.9);
+                vec3 deep = vec3(0.05, 0.45, 0.7);
+                vec3 waterColor = mix(deep, shallow, (sin(vPos.x * 0.4 + time) + cos(vPos.z * 0.4 + time * 1.2)) * 0.5 + 0.5);
+                vec3 finalColor = waterColor + vec3(shimmer * 0.25); 
+                gl_FragColor = vec4(finalColor, 0.5); 
+              }
+            `,
+            transparent: true, depthWrite: false, side: THREE.DoubleSide
+          });
+
+          const rockMat = new THREE.MeshStandardMaterial({ color: 0x8a9a86, roughness: 1.0 }); 
+          const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6d4c41, roughness: 1.0 }); 
+          const leafMats = [
+            new THREE.MeshStandardMaterial({ color: 0x558b2f, roughness: 1.0 }),
+            new THREE.MeshStandardMaterial({ color: 0x689f38, roughness: 1.0 }),
+            new THREE.MeshStandardMaterial({ color: 0x7cb342, roughness: 1.0 })
+          ];
+          const flowerMats = [
+            new THREE.MeshStandardMaterial({ color: 0xfff9c4, roughness: 1.0, flatShading: true }), 
+            new THREE.MeshStandardMaterial({ color: 0xffcdd2, roughness: 1.0, flatShading: true }), 
+            new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1.0, flatShading: true })  
+          ];
+          const foodMat = new THREE.MeshStandardMaterial({ color: 0xffd54f, emissive: 0xffd54f, emissiveIntensity: 0.4 });
+          const powerupMat = new THREE.MeshStandardMaterial({ color: 0x4dd0e1, emissive: 0x4dd0e1, emissiveIntensity: 0.6 });
+          const shieldBonusMat = new THREE.MeshStandardMaterial({ color: 0xaed581, emissive: 0xaed581, emissiveIntensity: 0.6 });
+          const enemyMat = new THREE.MeshStandardMaterial({ color: 0xef5350, roughness: 0.8 }); 
+          
+          const netMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, wireframe: true });
+          const bobberMat = new THREE.MeshStandardMaterial({ color: 0xef5350, roughness: 0.5 });
+          const skinMat = new THREE.MeshStandardMaterial({ color: 0xffccb6, roughness: 1.0 });
+          const clothesMat = new THREE.MeshStandardMaterial({ color: 0x5c6bc0, roughness: 1.0 });
+          const hatMat = new THREE.MeshStandardMaterial({ color: 0xdce775, roughness: 1.0 });
+
+          const geometries = {
+            floor: new THREE.PlaneGeometry(500, 500),
+            rock: new THREE.IcosahedronGeometry(1.2, 1), 
+            trunk: new THREE.CylinderGeometry(0.25, 0.4, 2, 8),
+            leaf: new THREE.IcosahedronGeometry(1.5, 2), 
+            bush: new THREE.IcosahedronGeometry(1.0, 2),
+            flower: new THREE.BoxGeometry(0.2, 0.2, 0.2), 
+            food: new THREE.IcosahedronGeometry(0.3, 1),
+            powerup: new THREE.IcosahedronGeometry(0.4, 1),
+            shield: new THREE.IcosahedronGeometry(0.4, 1),
+            net: new THREE.CylinderGeometry(0.8, 0.2, 1.5, 16, 3, true),
+            bobber: new THREE.SphereGeometry(0.25, 12, 12),
+            raft: new THREE.BoxGeometry(1.8, 0.2, 2.4),
+            charBody: new THREE.CylinderGeometry(0.15, 0.3, 0.7, 8),
+            charHead: new THREE.SphereGeometry(0.25, 12, 12),
+            charHat: new THREE.ConeGeometry(0.6, 0.25, 12),
+            pole: new THREE.CylinderGeometry(0.03, 0.03, 3.5, 4),
+            fishBody: new THREE.SphereGeometry(1, 16, 12), 
+            fishFin: new THREE.SphereGeometry(1, 12, 8) 
+          };
+
+          const floor = new THREE.Mesh(geometries.floor, floorMat);
+          floor.rotation.x = -Math.PI / 2;
+          floor.position.y = -1.5;
+          floor.receiveShadow = true;
+          scene.add(floor);
+
+          const isPointInWater = (px, pz, margin = 0) => {
+            for (let p of ponds) if (Math.hypot(px - p.x, pz - p.z) <= (p.r * 0.92) + margin) return true;
+            for (let c of channels) {
+              const dx = px - c.midX, dz = pz - c.midZ;
+              const cos = Math.cos(c.angle), sin = Math.sin(c.angle);
+              const rx = dx * cos + dz * sin, rz = -dx * sin + dz * cos;
+              if (Math.abs(rx) <= (c.len / 2) + margin + 4.0 && Math.abs(rz) <= (c.w / 2) + margin) return true;
+            }
+            return false;
+          };
+
+          const getClosestWaterCenter = (px, pz) => {
+            let closest = null, minDist = Infinity;
+            for (let p of ponds) {
+              let d = Math.hypot(px - p.x, pz - p.z);
+              if (d < minDist) { minDist = d; closest = new THREE.Vector3(p.x, 0, p.z); }
+            }
+            for (let c of channels) {
+              const dx = px - c.midX, dz = pz - c.midZ;
+              const cos = Math.cos(c.angle), sin = Math.sin(c.angle);
+              const rx = dx * cos + dz * sin; 
+              const clampedRx = Math.max(-c.len/2, Math.min(c.len/2, rx));
+              const cx = c.midX + clampedRx * cos;
+              const cz = c.midZ + clampedRx * sin;
+              
+              let d = Math.hypot(px - cx, pz - cz);
+              if (d < minDist) { minDist = d; closest = new THREE.Vector3(cx, 0, cz); }
+            }
+            return closest || new THREE.Vector3(0, 0, 0);
+          };
+
+          const spawnProp = (x, z) => {
+            if (isPointInWater(x, z, 0.2)) return; 
+            let mesh;
+            const r = Math.random();
+            
+            if (r < 0.1) {
+                mesh = new THREE.Group();
+                const numFlowers = Math.floor(rand(3, 7));
+                for(let i=0; i<numFlowers; i++) {
+                    const mat = flowerMats[Math.floor(rand(0, flowerMats.length))];
+                    const flower = new THREE.Mesh(geometries.flower, mat);
+                    flower.position.set(rand(-0.8, 0.8), -0.4, rand(-0.8, 0.8));
+                    flower.rotation.set(rand(0, Math.PI), rand(0, Math.PI), rand(0, Math.PI));
+                    mesh.add(flower);
+                }
+                mesh.position.set(x, 0, z);
+            } else if (r < 0.35) {
+                mesh = new THREE.Mesh(geometries.rock, rockMat);
+                mesh.scale.set(rand(0.6, 1.5), rand(0.3, 0.7), rand(0.6, 1.5)); 
+                mesh.position.set(x, -0.6 + rand(0, 0.2), z);
+            } else if (r < 0.6) {
+                const leafMat = leafMats[Math.floor(rand(0, leafMats.length))];
+                mesh = new THREE.Mesh(geometries.bush, leafMat);
+                mesh.scale.setScalar(rand(0.6, 1.4));
+                mesh.position.set(x, -0.4, z);
+            } else {
+                mesh = new THREE.Group();
+                const trunk = new THREE.Mesh(geometries.trunk, trunkMat);
+                trunk.position.y = -0.2; trunk.castShadow = true;
+                mesh.add(trunk);
+                
+                const leafMat = leafMats[Math.floor(rand(0, leafMats.length))];
+                const numPuffs = Math.floor(rand(2, 4));
+                for (let i=0; i<numPuffs; i++) {
+                    const puff = new THREE.Mesh(geometries.leaf, leafMat);
+                    puff.position.set(rand(-0.5, 0.5), rand(0.8, 2.2), rand(-0.5, 0.5));
+                    puff.scale.setScalar(rand(0.8, 1.3));
+                    puff.castShadow = true; puff.receiveShadow = true;
+                    mesh.add(puff);
+                }
+                mesh.position.set(x, -0.5, z);
+                mesh.scale.setScalar(rand(0.7, 1.2));
+            }
+            
+            if (mesh.isMesh || mesh.type === 'Group') {
+                mesh.rotation.set(0, rand(0, Math.PI*2), 0);
+                if (mesh.isMesh) { mesh.castShadow = true; mesh.receiveShadow = true; }
+                scene.add(mesh);
+                activeProps.push({mesh: mesh, x, z});
+            }
+          };
+
+          const spawnCollectible = (x, z) => {
+            let type = 'food';
+            const r = Math.random();
+            if (r > 0.9) type = 'shield';
+            else if (r > 0.75) type = 'speed';
+            
+            let geo, mat;
+            if (type === 'food') { geo = geometries.food; mat = foodMat; }
+            else if (type === 'speed') { geo = geometries.powerup; mat = powerupMat; }
+            else if (type === 'shield') { geo = geometries.shield; mat = shieldBonusMat; }
+
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x + rand(-3,3), -0.2, z + rand(-3,3));
+            scene.add(mesh);
+            collectibles.push({ mesh, type, active: true });
+          };
+
+          const spawnNet = (x, z) => {
+            const trapGroup = new THREE.Group();
+            
+            const bobber = new THREE.Mesh(geometries.bobber, bobberMat);
+            bobber.position.y = 0.2;
+            
+            const netMesh = new THREE.Mesh(geometries.net, netMat);
+            netMesh.position.y = -0.5;
+            
+            trapGroup.add(bobber, netMesh);
+
+            const raftOffset = -2.2;
+            const raft = new THREE.Mesh(geometries.raft, trunkMat);
+            raft.position.set(0, -0.4, raftOffset);
+            raft.castShadow = true; 
+            raft.receiveShadow = true;
+            trapGroup.add(raft);
+
+            const charGroup = new THREE.Group();
+            charGroup.position.set(0, -0.3, raftOffset + 0.5); 
+
+            const body = new THREE.Mesh(geometries.charBody, clothesMat);
+            body.position.y = 0.35; 
+            body.castShadow = true;
+
+            const head = new THREE.Mesh(geometries.charHead, skinMat);
+            head.position.y = 0.8; 
+            head.castShadow = true;
+
+            const hat = new THREE.Mesh(geometries.charHat, hatMat);
+            hat.position.y = 1.0; 
+            hat.castShadow = true;
+
+            const pole = new THREE.Mesh(geometries.pole, trunkMat);
+            pole.position.set(0, 0.6, 1.0);
+            pole.rotation.x = -Math.PI / 2.8; 
+            pole.castShadow = true;
+
+            charGroup.add(body, head, hat, pole);
+            trapGroup.add(charGroup);
+
+            trapGroup.position.set(x + rand(-2, 2), 0, z + rand(-2, 2));
+            trapGroup.rotation.y = rand(0, Math.PI * 2); 
+            
+            scene.add(trapGroup);
+            nets.push({ mesh: trapGroup, charGroup: charGroup, active: true });
+          };
+
+          const spawnEnemy = (node) => {
+            const enemyGroup = new THREE.Group();
+            
+            const body = new THREE.Mesh(geometries.fishBody, enemyMat);
+            body.scale.set(0.25, 0.35, 0.6); 
+            enemyGroup.add(body);
+            
+            const tGroup = new THREE.Group(); tGroup.position.z = -0.55;
+            const tail = new THREE.Mesh(geometries.fishFin, enemyMat); 
+            tail.scale.set(0.04, 0.3, 0.4); tail.position.z = -0.3; tGroup.add(tail); enemyGroup.add(tGroup);
+            
+            const rFin = new THREE.Mesh(geometries.fishFin, enemyMat); 
+            rFin.scale.set(0.3, 0.03, 0.15); rFin.position.set(-0.25, -0.05, -0.1); rFin.rotation.z = -0.2; enemyGroup.add(rFin);
+            
+            const lFin = new THREE.Mesh(geometries.fishFin, enemyMat); 
+            lFin.scale.set(0.3, 0.03, 0.15); lFin.position.set(0.25, -0.05, -0.1); lFin.rotation.z = 0.2; enemyGroup.add(lFin);
+
+            enemyGroup.position.set(node.x, -0.5, node.z);
+            scene.add(enemyGroup);
+            
+            enemies.push({
+                mesh: enemyGroup, node: node, tGroup, rFin, lFin, 
+                position: new THREE.Vector3(node.x, -0.5, node.z),
+                velocity: new THREE.Vector3(0,0,0),
+                target: new THREE.Vector3(node.x, -0.5, node.z),
+                active: true, speed: 0.05 
+            });
+          };
+
+          const buildMaze = () => {
+            [...waterMeshes, ...activeProps, ...collectibles, ...enemies, ...nets].forEach(item => {
+              if (item.mesh) {
+                scene.remove(item.mesh);
+                if (item.mesh.geometry && (item.type === 'pond' || item.type === 'channel')) {
+                    item.mesh.geometry.dispose();
+                }
+              }
+            });
+            if (exitGroup) scene.remove(exitGroup);
+            if (startMarker) scene.remove(startMarker);
+            
+            mazeNodes = []; channels = []; ponds = []; enemies = []; nets = []; collectibles = []; waterMeshes = []; activeProps = [];
+
+            let grid = [];
+            for (let r = 0; r < MAZE_ROWS; r++) {
+              grid[r] = [];
+              for (let c = 0; c < MAZE_COLS; c++) {
+                grid[r][c] = { r, c, visited: false, x: c * NODE_SPACING, z: r * NODE_SPACING, edges: [] };
+              }
+            }
+
+            const stack = [];
+            let current = grid[0][0];
+            current.visited = true;
+            
+            const getUnvisitedNeighbors = (node) => {
+              const neighbors = [];
+              const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+              for (let [dr, dc] of dirs) {
+                const nr = node.r + dr, nc = node.c + dc;
+                if (nr>=0 && nr<MAZE_ROWS && nc>=0 && nc<MAZE_COLS && !grid[nr][nc].visited) {
+                  neighbors.push(grid[nr][nc]);
+                }
+              }
+              return neighbors;
+            };
+
+            let unvisitedCount = MAZE_ROWS * MAZE_COLS - 1;
+            while(unvisitedCount > 0) {
+              const neighbors = getUnvisitedNeighbors(current);
+              if (neighbors.length > 0) {
+                const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                stack.push(current);
+                current.edges.push(next);
+                next.edges.push(current);
+                next.visited = true;
+                current = next;
+                unvisitedCount--;
+              } else if (stack.length > 0) {
+                current = stack.pop();
+              } else {
+                break; 
+              }
+            }
+
+            for(let i=0; i<3; i++) {
+                const r1 = Math.floor(rand(0, MAZE_ROWS)), c1 = Math.floor(rand(0, MAZE_COLS));
+                const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                const d = dirs[Math.floor(rand(0, dirs.length))];
+                const r2 = r1 + d[0], c2 = c1 + d[1];
+                if (r2>=0 && r2<MAZE_ROWS && c2>=0 && c2<MAZE_COLS) {
+                    if(!grid[r1][c1].edges.includes(grid[r2][c2])) {
+                        grid[r1][c1].edges.push(grid[r2][c2]);
+                        grid[r2][c2].edges.push(grid[r1][c1]);
+                    }
+                }
+            }
+
+            grid.flat().forEach(node => {
+              const r = 10; 
+              mazeNodes.push({ ...node, radius: r });
+              ponds.push({ x: node.x, z: node.z, r: r });
+
+              const pondMesh = new THREE.Mesh(new THREE.CircleGeometry(r, 8), waterMat);
+              pondMesh.rotation.set(-Math.PI/2, 0, Math.PI/8); 
+              pondMesh.position.set(node.x, 0, node.z);
+              pondMesh.receiveShadow = true;
+              scene.add(pondMesh);
+              waterMeshes.push({ mesh: pondMesh, type: 'pond', ...node, r });
+
+              if (node.r !== 0 || node.c !== 0) {
+                  if (Math.random() < 0.45) spawnCollectible(node.x, node.z);
+                  if (Math.random() < 0.25) spawnEnemy(node);
+                  if (Math.random() < 0.35) spawnNet(node.x, node.z); 
+              }
+            });
+
+            const drawnEdges = new Set();
+            grid.flat().forEach(node => {
+              node.edges.forEach(neighbor => {
+                const r1 = Math.min(node.r, neighbor.r);
+                const c1 = Math.min(node.c, neighbor.c);
+                const r2 = Math.max(node.r, neighbor.r);
+                const c2 = Math.max(node.c, neighbor.c);
+                const edgeId = `${r1},${c1}-${r2},${c2}`;
+
+                if (drawnEdges.has(edgeId)) return;
+                drawnEdges.add(edgeId);
+
+                const midX = (node.x + neighbor.x) / 2;
+                const midZ = (node.z + neighbor.z) / 2;
+                const angle = Math.atan2(neighbor.z - node.z, neighbor.x - node.x);
+                
+                const apothem = 10 * Math.cos(Math.PI / 8);
+                const w = 2 * 10 * Math.sin(Math.PI / 8); 
+                const len = NODE_SPACING - 2 * apothem; 
+                
+                channels.push({ midX, midZ, w, angle, len });
+
+                const chanGeo = new THREE.PlaneGeometry(len, w, 4, 2);
+                const chanMesh = new THREE.Mesh(chanGeo, waterMat);
+                chanMesh.position.set(midX, 0, midZ);
+                chanMesh.rotation.set(-Math.PI / 2, 0, -angle);
+                chanMesh.receiveShadow = true;
+                scene.add(chanMesh);
+                waterMeshes.push({ mesh: chanMesh, type: 'channel' });
+              });
+            });
+
+            ponds.forEach(p => {
+              for(let i=0; i<35; i++) {
+                 const angle = rand(0, Math.PI*2);
+                 const dist = p.r + rand(0.5, 4.5);
+                 spawnProp(p.x + Math.cos(angle)*dist, p.z + Math.sin(angle)*dist);
+              }
+            });
+            channels.forEach(c => {
+              const cos = Math.cos(c.angle), sin = Math.sin(c.angle);
+              for(let i=0; i<8; i++) { 
+                 const lx = rand(-c.len/2, c.len/2);
+                 const side = Math.random() > 0.5 ? 1 : -1;
+                 const wOffset = side * (c.w/2 + rand(0.5, 3.5));
+                 spawnProp(c.midX + lx*cos - wOffset*sin, c.midZ + lx*sin + wOffset*cos);
+              }
+            });
+
+            const startGeo = new THREE.RingGeometry(3, 4, 32);
+            const startMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+            startMarker = new THREE.Mesh(startGeo, startMat);
+            startMarker.rotation.x = -Math.PI / 2;
+            startMarker.position.set(0, -1.4, 0); 
+            scene.add(startMarker);
+
+            const exitNode = grid[MAZE_ROWS-1][MAZE_COLS-1];
+            exitGroup = new THREE.Group();
+            exitGroup.position.set(exitNode.x, 0, exitNode.z);
+            
+            const exitGeo = new THREE.TorusGeometry(3, 0.4, 8, 24);
+            const exitMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.5 });
+            const exitTorus = new THREE.Mesh(exitGeo, exitMat);
+            exitTorus.rotation.x = Math.PI / 2;
+            exitTorus.position.y = -0.5;
+            exitGroup.add(exitTorus);
+            
+            const beamGeo = new THREE.CylinderGeometry(1.5, 1.5, 40, 16);
+            const beamMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false });
+            const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+            beamMesh.position.y = 19.5;
+            exitGroup.add(beamMesh);
+            scene.add(exitGroup);
+
+            fishObj.position.set(0, -0.5, 0);
+            fishObj.velocity.set(0, 0, 0);
+            fishObj.target.set(0, -0.5, 0);
+            fishObj.wanderTargetNode = null;
+            fishObj.lastWanderNode = null;
+            targetMesh.position.set(0, -0.1, 0);
+          };
+
+          // --- PLAYER FISH ---
+          fishGroup = new THREE.Group();
+          const fishMat = new THREE.MeshStandardMaterial({ color: 0xffa726, roughness: 0.8 }); 
+          
+          const bMesh = new THREE.Mesh(geometries.fishBody, fishMat); 
+          bMesh.scale.set(0.25, 0.35, 0.6); bMesh.castShadow=true; fishGroup.add(bMesh);
+          
+          const tGroup = new THREE.Group(); tGroup.position.z = -0.55;
+          const tMesh = new THREE.Mesh(geometries.fishFin, fishMat); 
+          tMesh.scale.set(0.04, 0.3, 0.4); tMesh.position.z = -0.3; tMesh.castShadow=true; tGroup.add(tMesh); fishGroup.add(tGroup);
+          
+          const rFin = new THREE.Mesh(geometries.fishFin, fishMat); 
+          rFin.scale.set(0.3, 0.03, 0.15); rFin.position.set(-0.25, -0.05, -0.1); rFin.rotation.z = -0.2; fishGroup.add(rFin);
+          
+          const lFin = new THREE.Mesh(geometries.fishFin, fishMat); 
+          lFin.scale.set(0.3, 0.03, 0.15); lFin.position.set(0.25, -0.05, -0.1); lFin.rotation.z = 0.2; fishGroup.add(lFin);
+          
+          scene.add(fishGroup);
+
+          // --- SPIDER SENSE SETUP ---
+          spiderSenseGroup = new THREE.Group();
+          const tingleGeo = new THREE.ConeGeometry(0.12, 0.8, 4); 
+          tingleMat = new THREE.MeshBasicMaterial({ color: 0xff5252, transparent: true, opacity: 0.9, depthWrite: false }); 
+          
+          tingle1 = new THREE.Mesh(tingleGeo, tingleMat);
+          tingle1.position.set(0, 1.8, 0);
+          tingle2 = new THREE.Mesh(tingleGeo, tingleMat);
+          tingle2.position.set(-0.7, 1.5, 0); 
+          tingle2.rotation.z = Math.PI / 6;
+          tingle3 = new THREE.Mesh(tingleGeo, tingleMat);
+          tingle3.position.set(0.7, 1.5, 0); 
+          tingle3.rotation.z = -Math.PI / 6;
+
+          spiderSenseGroup.add(tingle1, tingle2, tingle3);
+          spiderSenseGroup.visible = false;
+          fishGroup.add(spiderSenseGroup);
+
+          // --- SHIELD BUBBLE SETUP ---
+          const shieldBubbleGeo = new THREE.IcosahedronGeometry(1.0, 2); 
+          const shieldBubbleMat = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.3, wireframe: true });
+          shieldBubble = new THREE.Mesh(shieldBubbleGeo, shieldBubbleMat);
+          shieldBubble.visible = false;
+          fishGroup.add(shieldBubble);
+
+          const targetGeo = new THREE.TorusGeometry(0.5, 0.08, 4, 16);
+          const targetMat = new THREE.MeshBasicMaterial({ color: 0xfffbeb, transparent: true, opacity: 0.8 });
+          targetMesh = new THREE.Mesh(targetGeo, targetMat);
+          targetMesh.rotation.x = Math.PI / 2; targetMesh.position.set(0, -0.1, 0);
+          scene.add(targetMesh);
+
+          fishObj = {
+            position: new THREE.Vector3(0, -0.5, 0), velocity: new THREE.Vector3(0, 0, 0), acceleration: new THREE.Vector3(0, 0, 0),
+            maxSpeed: 0.10, maxForce: 0.003, target: new THREE.Vector3(0, -0.5, 0),
+            isWandering: true, wanderTargetNode: null, lastWanderNode: null
+          };
+
+          // --- SAFE EVENT BINDING ---
+          const raycaster = new THREE.Raycaster();
+          const mouse = new THREE.Vector2();
+          let isDragging = false;
+
+          const updateTargetFromPointer = (clientX, clientY) => {
+            if (!isPlaying || cameraMode !== 'FOLLOW' || !container) return;
+            const bounds = container.getBoundingClientRect();
+            if (bounds.width === 0 || bounds.height === 0) return; 
+            mouse.x = ((clientX - bounds.left) / bounds.width) * 2 - 1;
+            mouse.y = -((clientY - bounds.top) / bounds.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            
+            const meshes = waterMeshes.map(w => w.mesh);
+            const intersects = raycaster.intersectObjects(meshes);
+            if (intersects.length > 0) {
+              fishObj.target.set(intersects[0].point.x, -0.5, intersects[0].point.z);
+              targetMesh.position.copy(fishObj.target);
+              targetMesh.position.y = -0.1;
+              fishObj.isWandering = false; 
+            }
+          };
+
+          const onPtrDown = (e) => {
+            Audio.init(); 
+            isDragging = true;
+            updateTargetFromPointer(e.clientX, e.clientY);
+          };
+          const onPtrMove = (e) => { if (isDragging) updateTargetFromPointer(e.clientX, e.clientY); };
+          const onPtrUp = () => isDragging = false;
+
+          container.addEventListener('pointerdown', onPtrDown);
+          container.addEventListener('pointermove', onPtrMove);
+          container.addEventListener('pointerup', onPtrUp);
+          container.addEventListener('pointerleave', onPtrUp);
+
+          buildMaze();
+
+          // --- BULLETPROOF ANIMATION LOOP ---
+          const clock = new THREE.Clock();
+          let lastUiUpdateTime = 0;
+
+          const animate = () => {
+            if (isUnmounted) return; 
+            try {
+              const delta = Math.min(clock.getDelta(), 0.1); 
+              const time = clock.getElapsedTime();
+              waterUniforms.time.value = time;
+              
+              particles.position.y = Math.sin(time * 0.2) * 2;
+              particles.position.x = Math.cos(time * 0.1) * 2;
+              particles.rotation.y = time * 0.03;
+
+              if (gameCommandRef.current === 'START') {
+                  gameCommandRef.current = null;
+                  isPlaying = true;
+                  cameraMode = 'TRANSITION';
+                  transitionProgress = 0;
+              } else if (gameCommandRef.current === 'RESTART') {
+                  gameCommandRef.current = null;
+                  gameStateRef.current = { score: 0, health: 3, powerupTime: 0, shieldTime: 0 };
+                  buildMaze();
+                  isPlaying = true;
+                  cameraMode = 'TRANSITION';
+                  transitionProgress = 0;
+              }
+
+              const state = gameStateRef.current;
+              let currentSpeed = state.powerupTime > time ? fishObj.maxSpeed * 1.5 : fishObj.maxSpeed;
+
+              if (isPlaying && state.health > 0) {
+                  shieldBubble.visible = state.shieldTime > time;
+                  if (shieldBubble.visible) {
+                      shieldBubble.rotation.y += 0.05;
+                      shieldBubble.rotation.x += 0.02;
+                  }
+
+                  if (!fishObj.isWandering) {
+                      fishObj.wanderTargetNode = null;
+                      const desired = new THREE.Vector3().subVectors(fishObj.target, fishObj.position);
+                      desired.y = 0; 
+                      const distance = desired.length();
+
+                      if (distance > 0.5) {
+                        desired.normalize().multiplyScalar(currentSpeed);
+                        const steer = new THREE.Vector3().subVectors(desired, fishObj.velocity);
+                        steer.clampLength(0, fishObj.maxForce);
+                        fishObj.acceleration.add(steer);
+                      } else {
+                        fishObj.isWandering = true; 
+                        fishObj.velocity.multiplyScalar(0.95); 
+                      }
+                      targetMesh.visible = true;
+                  } else {
+                      if (!fishObj.wanderTargetNode) {
+                          let closestDist = Infinity;
+                          let closestNode = mazeNodes[0];
+                          for (let node of mazeNodes) {
+                              let d = Math.hypot(fishObj.position.x - node.x, fishObj.position.z - node.z);
+                              if (d < closestDist) { closestDist = d; closestNode = node; }
+                          }
+                          fishObj.wanderTargetNode = closestNode;
+                      }
+
+                      if (fishObj.wanderTargetNode) {
+                          let targetVec = new THREE.Vector3(fishObj.wanderTargetNode.x, -0.5, fishObj.wanderTargetNode.z);
+                          let distToNode = fishObj.position.distanceTo(targetVec);
+
+                          if (distToNode < 4.0 && fishObj.wanderTargetNode.edges && fishObj.wanderTargetNode.edges.length > 0) {
+                              let options = fishObj.wanderTargetNode.edges;
+                              if (options.length > 1 && fishObj.lastWanderNode) {
+                                  const filtered = options.filter(n => n !== fishObj.lastWanderNode);
+                                  if (filtered.length > 0) options = filtered;
+                              }
+                              fishObj.lastWanderNode = fishObj.wanderTargetNode;
+                              fishObj.wanderTargetNode = options[Math.floor(Math.random() * options.length)];
+                              targetVec.set(fishObj.wanderTargetNode.x, -0.5, fishObj.wanderTargetNode.z);
+                          }
+
+                          const desired = new THREE.Vector3().subVectors(targetVec, fishObj.position);
+                          desired.y = 0;
+                          desired.normalize().multiplyScalar(currentSpeed * 0.4); 
+
+                          const steer = new THREE.Vector3().subVectors(desired, fishObj.velocity);
+                          steer.clampLength(0, fishObj.maxForce * 0.5); 
+                          fishObj.acceleration.add(steer);
+                      }
+                      targetMesh.visible = false; 
+                  }
+
+                  if (!isPointInWater(fishObj.position.x, fishObj.position.z, -0.6)) {
+                      const center = getClosestWaterCenter(fishObj.position.x, fishObj.position.z);
+                      const pushIn = new THREE.Vector3().subVectors(center, fishObj.position);
+                      pushIn.y = 0;
+                      if (pushIn.lengthSq() > 0.001) {
+                          pushIn.normalize().multiplyScalar(fishObj.maxSpeed);
+                          const pushSteer = new THREE.Vector3().subVectors(pushIn, fishObj.velocity);
+                          pushSteer.clampLength(0, fishObj.maxForce * 8.0); 
+                          fishObj.acceleration.add(pushSteer);
+                      }
+                  }
+
+                  fishObj.velocity.add(fishObj.acceleration);
+                  fishObj.velocity.clampLength(0, currentSpeed);
+                  fishObj.position.add(fishObj.velocity);
+                  fishObj.acceleration.set(0, 0, 0);
+
+                  if (!Number.isFinite(fishObj.position.x) || !Number.isFinite(fishObj.velocity.x)) {
+                      fishObj.position.set(0, -0.5, 0);
+                      fishObj.velocity.set(0, 0, 0);
+                      fishObj.acceleration.set(0, 0, 0);
+                  }
+
+                  const speedMag = fishObj.velocity.length();
+                  fishGroup.position.set(fishObj.position.x, -0.5 + Math.sin(time*2.5)*0.05, fishObj.position.z);
+
+                  if (speedMag > 0.001) {
+                    const look = new THREE.Vector3().addVectors(fishObj.position, fishObj.velocity);
+                    look.y = fishGroup.position.y;
+                    fishGroup.lookAt(look);
+                  }
+
+                  const wiggle = speedMag / fishObj.maxSpeed;
+                  tGroup.rotation.y = Math.sin(time * 12) * 0.4 * wiggle;
+                  rFin.rotation.y = 0.35 + Math.sin(time * 8) * 0.15 * wiggle;
+                  lFin.rotation.y = -0.35 - Math.sin(time * 8) * 0.15 * wiggle;
+
+                  for(let i=nets.length-1; i>=0; i--) {
+                      const net = nets[i];
+                      if (!net.active) continue;
+                      
+                      net.mesh.position.y = Math.sin(time * 3 + net.mesh.position.x) * 0.1; 
+                      
+                      if (net.charGroup) {
+                          net.charGroup.rotation.x = Math.sin(time * 2 + net.mesh.position.z) * 0.05; 
+                          net.charGroup.children[0].scale.y = 1.0 + Math.sin(time * 4 + net.mesh.position.x) * 0.05; 
+                      }
+                      
+                      if (fishObj.position.distanceTo(net.mesh.position) < 1.2) {
+                          if (state.shieldTime > time) {
+                              net.active = false;
+                              scene.remove(net.mesh);
+                              state.score += 20; 
+                          } else {
+                              state.health--;
+                              net.active = false;
+                              scene.remove(net.mesh);
+                              Audio.damage();
+                              if (state.health <= 0) {
+                                  isPlaying = false;
+                                  Audio.gameover();
+                                  setUiState('GAME_OVER');
+                              } else {
+                                  fishMat.color.setHex(0xffffff);
+                                  setTimeout(() => fishMat.color.setHex(0xffa726), 200);
+                              }
+                          }
+                      }
+                      
+                      if (net.active) {
+                          for(let e of enemies) {
+                              if (e.active && e.position.distanceTo(net.mesh.position) < 1.4) {
+                                  e.active = false;
+                                  scene.remove(e.mesh);
+                                  net.active = false;
+                                  scene.remove(net.mesh);
+                                  Audio.trap();
+                                  state.score += 150; 
+                                  break;
+                              }
+                          }
+                      }
+                  }
+
+                  enemies.forEach(e => {
+                      if (!e.active) return;
+                      const distToPlayer = e.position.distanceTo(fishObj.position);
+                      
+                      if (distToPlayer < 15) {
+                          e.target.copy(fishObj.position);
+                          e.target.y = -0.5;
+                      } else if (e.position.distanceTo(e.target) < 1.0) {
+                          if (e.node.edges.length > 0) {
+                              e.node = e.node.edges[Math.floor(rand(0, e.node.edges.length))];
+                              e.target.set(e.node.x, -0.5, e.node.z);
+                          }
+                      }
+
+                      const eDir = new THREE.Vector3().subVectors(e.target, e.position);
+                      if (eDir.lengthSq() > 0.001) {
+                          eDir.normalize().multiplyScalar(e.speed);
+                          e.velocity.lerp(eDir, 0.05);
+                      } else {
+                          e.velocity.multiplyScalar(0.8);
+                      }
+
+                      e.position.add(e.velocity);
+
+                      if (!Number.isFinite(e.position.x)) {
+                          e.position.set(e.node.x, -0.5, e.node.z);
+                          e.velocity.set(0, 0, 0);
+                      }
+
+                      e.mesh.position.set(e.position.x, -0.5 + Math.sin(time*2 + e.position.x)*0.1, e.position.z);
+                      
+                      if (e.velocity.lengthSq() > 0.001) {
+                          const lookTarget = e.position.clone().add(e.velocity);
+                          lookTarget.y = e.mesh.position.y;
+                          e.mesh.lookAt(lookTarget);
+                      }
+
+                      const eSpeedMag = e.velocity.length();
+                      const eWiggle = eSpeedMag / e.speed;
+                      e.tGroup.rotation.y = Math.sin(time * 12) * 0.4 * eWiggle;
+                      e.rFin.rotation.y = 0.35 + Math.sin(time * 8) * 0.15 * eWiggle;
+                      e.lFin.rotation.y = -0.35 - Math.sin(time * 8) * 0.15 * eWiggle;
+
+                      if (distToPlayer < 1.0 && state.health > 0) {
+                          if (state.shieldTime > time) {
+                              e.active = false;
+                              scene.remove(e.mesh);
+                              Audio.hit();
+                              state.score += 50; 
+                          } else {
+                              state.health--;
+                              e.active = false;
+                              scene.remove(e.mesh);
+                              Audio.damage();
+                              if (state.health <= 0) {
+                                  isPlaying = false;
+                                  Audio.gameover();
+                                  setUiState('GAME_OVER');
+                              } else {
+                                  fishMat.color.setHex(0xffffff);
+                                  setTimeout(() => fishMat.color.setHex(0xffa726), 200);
+                              }
+                          }
+                      }
+                  });
+
+                  let closestEnemyDist = Infinity;
+                  enemies.forEach(e => {
+                      if (e.active) {
+                          const dist = e.position.distanceTo(fishObj.position);
+                          if (dist < closestEnemyDist) closestEnemyDist = dist;
+                      }
+                  });
+
+                  const SENSE_RADIUS = 30; 
+                  if (closestEnemyDist < SENSE_RADIUS) {
+                      spiderSenseGroup.visible = true;
+                      const intensity = 1.0 - (closestEnemyDist / SENSE_RADIUS);
+                      const pulseRate = 15 + (intensity * 30);
+                      const pulseScale = 1.0 + Math.sin(time * pulseRate) * 0.2;
+                      
+                      spiderSenseGroup.scale.setScalar(pulseScale);
+                      tingleMat.opacity = 0.4 + Math.sin(time * pulseRate) * 0.6;
+                      
+                      tingle1.position.y = 1.8 + Math.sin(time * pulseRate * 1.5) * 0.15;
+                      tingle2.position.x = -0.7 - Math.sin(time * pulseRate * 1.5) * 0.1;
+                      tingle3.position.x = 0.7 + Math.sin(time * pulseRate * 1.5) * 0.1;
+                  } else {
+                      spiderSenseGroup.visible = false;
+                  }
+
+                  for (let i = collectibles.length - 1; i >= 0; i--) {
+                      const c = collectibles[i];
+                      if (!c.active) continue;
+                      c.mesh.rotation.y += 0.05;
+                      c.mesh.position.y = -0.2 + Math.sin(time*4 + c.mesh.position.x)*0.1;
+                      if (fishObj.position.distanceTo(c.mesh.position) < 1.2) {
+                          c.active = false;
+                          scene.remove(c.mesh);
+                          if (c.type === 'food') {
+                              Audio.pickup();
+                              state.score += 10;
+                          } else {
+                              Audio.powerup();
+                              if (c.type === 'speed') state.powerupTime = time + 5.0; 
+                              if (c.type === 'shield') state.shieldTime = time + 8.0;
+                          }
+                      }
+                  }
+
+                  if (exitGroup && fishObj.position.distanceTo(exitGroup.position) < 3.0) {
+                      isPlaying = false;
+                      Audio.victory();
+                      setUiState('VICTORY');
+                  }
+                  
+                  targetMesh.rotation.z += 0.02;
+                  targetMesh.scale.setScalar(1.0 + Math.sin(time * 5) * 0.1);
+              }
+
+              if (exitGroup) {
+                  exitGroup.children[0].rotation.z += 0.01; 
+                  exitGroup.children[0].scale.setScalar(1.0 + Math.sin(time * 3) * 0.05);
+              }
+              if (startMarker) {
+                  startMarker.rotation.z -= 0.01;
+                  startMarker.scale.setScalar(1.0 + Math.sin(time * 2) * 0.05);
+              }
+
+              const mazeCenterX = (MAZE_COLS * NODE_SPACING) / 2;
+              const mazeCenterZ = (MAZE_ROWS * NODE_SPACING) / 2;
+
+              if (cameraMode === 'OVERVIEW') {
+                  const r = Math.max(MAZE_COLS, MAZE_ROWS) * NODE_SPACING * 0.8;
+                  camera.position.set(mazeCenterX + Math.cos(time*0.1)*r, r * 0.8, mazeCenterZ + Math.sin(time*0.1)*r);
+                  camera.lookAt(mazeCenterX, 0, mazeCenterZ);
+              } else if (cameraMode === 'TRANSITION') {
+                  transitionProgress += delta * 0.8;
+                  if (transitionProgress >= 1) {
+                      cameraMode = 'FOLLOW';
+                      transitionProgress = 1;
+                  }
+                  const startPos = camera.position.clone();
+                  const targetPos = new THREE.Vector3(fishObj.position.x + 15, 26, fishObj.position.z + 20);
+                  camera.position.lerp(targetPos, transitionProgress);
+                  
+                  const startLook = new THREE.Vector3(mazeCenterX, 0, mazeCenterZ);
+                  const targetLook = fishObj.position.clone();
+                  camera.lookAt(startLook.lerp(targetLook, transitionProgress));
+              } else if (cameraMode === 'FOLLOW') {
+                  const idealPos = new THREE.Vector3(fishObj.position.x + 15, 26, fishObj.position.z + 20);
+                  camera.position.lerp(idealPos, 0.025); 
+                  camera.lookAt(fishObj.position);
+              }
+
+              renderer.render(scene, camera);
+              
+              const nowMs = performance.now();
+              if (nowMs - lastUiUpdateTime > 200) {
+                  lastUiUpdateTime = nowMs;
+                  setScore(state.score);
+                  setHealth(state.health);
+                  setPowerup(state.powerupTime > time ? Math.ceil(state.powerupTime - time) : null);
+                  setShield(state.shieldTime > time ? Math.ceil(state.shieldTime - time) : null);
+              }
+
+              if (!isUnmounted) {
+                  animationId = requestAnimationFrame(animate);
+              }
+            } catch (err) {
+              console.error("Physics/Render crash caught, preventing fatal UI lock:", err);
+              setEngineState(prev => ({ ...prev, error: err.message || "Unknown Engine Error" }));
+              if (animationId) cancelAnimationFrame(animationId);
+            }
+          };
+
+          animate();
+
+          const handleResize = () => {
+            if (!containerRef.current || !renderer) return;
+            const w = containerRef.current.clientWidth || window.innerWidth || 800;
+            const h = containerRef.current.clientHeight || window.innerHeight || 600;
+            if (h === 0 || w === 0) return; 
+            camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h);
+          };
+          window.addEventListener('resize', handleResize);
+
+          return () => {
+            isUnmounted = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            window.removeEventListener('resize', handleResize);
+            if (container) {
+              container.removeEventListener('pointerdown', onPtrDown);
+              container.removeEventListener('pointermove', onPtrMove);
+              container.removeEventListener('pointerup', onPtrUp);
+              container.removeEventListener('pointerleave', onPtrUp);
+              if (renderer && renderer.domElement && container.contains(renderer.domElement)) {
+                container.removeChild(renderer.domElement);
+              }
+            }
+            if (renderer) renderer.dispose(); 
+          };
+          
+        } catch (error) {
+          setEngineState(prev => ({ ...prev, error: String(error) }));
+        }
+      }, [engineState.loaded]);
+
+      const startGame = () => {
+          Audio.init();
+          Audio.pickup();
+          setUiState('PLAYING');
+          gameCommandRef.current = 'START';
+      };
+
+      const restartGame = () => {
+          Audio.init();
+          Audio.pickup();
+          setUiState('PLAYING');
+          gameCommandRef.current = 'RESTART';
+      };
+
+      const fullScreenStyle = {
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          width: '100vw', height: '100vh',
+          backgroundColor: '#0f172a',
+          overflow: 'hidden', userSelect: 'none', touchAction: 'none'
+      };
+
+      return (
+        <div style={fullScreenStyle} className="font-sans text-white">
+          {!engineState.loaded && !engineState.error && (
+            <div style={{...fullScreenStyle, zIndex: 10, display:'flex', alignItems:'center', justifyContent:'center'}}>
+               <div className="text-xl animate-pulse">Loading Engine...</div>
+            </div>
+          )}
+
+          {engineState.error && (
+            <div style={{...fullScreenStyle, zIndex: 50, display:'flex', alignItems:'center', justifyContent:'center'}}>
+              <div className="bg-red-900/80 border border-red-500 rounded-lg p-8 shadow-2xl max-w-lg w-full text-center">
+                <h2 className="text-red-400 font-bold text-2xl mb-2">Engine Crash Caught</h2>
+                <p className="text-red-200/80 font-mono text-sm break-all">{engineState.error}</p>
+              </div>
+            </div>
+          )}
+          
+          <div ref={containerRef} style={{position: 'absolute', width: '100%', height: '100%'}} />
+
+          {uiState === 'MENU' && engineState.loaded && !engineState.error && (
+            <div style={{...fullScreenStyle, zIndex: 20, backgroundColor: 'rgba(15,23,42,0.4)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}} className="backdrop-blur-sm">
+                <h1 className="text-6xl font-black text-white tracking-tighter drop-shadow-lg mb-2">Polygon<span className="text-sky-400">Maze</span></h1>
+                <p className="text-sky-100/80 mb-8 font-medium">Guide the fish to the glowing green exit.</p>
+                
+                <div className="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/50 text-slate-300 max-w-sm w-full mb-8 shadow-xl">
+                    <div className="flex items-center gap-3 mb-3"><div className="w-4 h-4 rounded-full bg-yellow-400"></div> Food (+Points)</div>
+                    <div className="flex items-center gap-3 mb-3"><div className="w-4 h-4 rotate-45 bg-sky-400"></div> Speed Boost</div>
+                    <div className="flex items-center gap-3 mb-3"><div className="w-4 h-4 rotate-45 bg-emerald-400"></div> Invincibility Shield</div>
+                    <div className="flex items-center gap-3 mb-3"><div className="w-4 h-4 border-2 border-white rounded-full bg-red-500"></div> Fishing Nets (Trap)</div>
+                    <div className="flex items-center gap-3 mb-6"><div className="w-4 h-4 bg-red-500"></div> Enemies (Lure to Nets!)</div>
+                    <div className="text-sm border-t border-slate-600 pt-4 text-center">
+                        <span className="font-bold text-white">Hold/Drag</span> to swim gracefully.<br/>
+                    </div>
+                </div>
+
+                <button 
+                    onClick={startGame}
+                    className="px-10 py-4 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-full text-xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(14,165,233,0.4)]"
+                >
+                    PLAY GAME
+                </button>
+            </div>
+          )}
+
+          {uiState === 'PLAYING' && !engineState.error && (
+            <div style={{position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 10, padding: '1rem', display:'flex', justifyContent:'space-between', pointerEvents:'none'}}>
+                <div>
+                    <h2 className="text-2xl font-black text-white/90 drop-shadow-md">Score: {score}</h2>
+                    <div className="flex gap-1 mt-2">
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className={`w-5 h-5 rounded-full ${i < health ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-slate-700'}`}></div>
+                        ))}
+                    </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                    {powerup !== null && powerup > 0 && (
+                        <div className="bg-sky-500/20 text-sky-300 font-bold px-4 py-2 rounded-full border border-sky-500/50 animate-pulse">
+                            SPEED BOOST: {powerup}s
+                        </div>
+                    )}
+                    {shield !== null && shield > 0 && (
+                        <div className="bg-emerald-500/20 text-emerald-300 font-bold px-4 py-2 rounded-full border border-emerald-500/50 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                            SHIELD ACTIVE: {shield}s
+                        </div>
+                    )}
+                </div>
+            </div>
+          )}
+
+          {uiState === 'GAME_OVER' && !engineState.error && (
+            <div style={{...fullScreenStyle, zIndex: 30, backgroundColor: 'rgba(69,10,10,0.8)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}} className="backdrop-blur-md">
+                <h1 className="text-5xl font-black text-red-500 mb-2">GAME OVER</h1>
+                <p className="text-xl text-red-200 mb-8 font-medium">Final Score: {score}</p>
+                <button onClick={restartGame} className="px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-full text-lg transition-transform hover:scale-105">
+                    TRY AGAIN
+                </button>
+            </div>
+          )}
+
+          {uiState === 'VICTORY' && !engineState.error && (
+            <div style={{...fullScreenStyle, zIndex: 30, backgroundColor: 'rgba(2,44,34,0.8)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}} className="backdrop-blur-md">
+                <h1 className="text-5xl font-black text-emerald-400 mb-2 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]">LEVEL CLEARED!</h1>
+                <p className="text-xl text-emerald-100 mb-8 font-medium">Score: {score}</p>
+                <button onClick={restartGame} className="px-8 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-full text-lg transition-transform hover:scale-105 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                    NEXT MAZE
+                </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(
+      <ErrorBoundary>
+        <GameContent />
+      </ErrorBoundary>
+    );
+  </script>
+</body>
+</html>
