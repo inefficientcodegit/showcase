@@ -454,7 +454,6 @@
             sPorticoRoof.rotation.y = Math.PI;
             whiteHouseGroup.add(sPorticoRoof);
 
-            // Adding a small decorative dome on top of the South Portico roof
             const smallDome = createMesh(new window.THREE.SphereGeometry(6, 16, 16, 0, Math.PI * 2, 0, Math.PI/2), matRoof);
             smallDome.position.set(0, mainH + 1.5, -mainD / 2);
             whiteHouseGroup.add(smallDome);
@@ -778,7 +777,9 @@
 
           useEffect(() => { statsRef.current = stats; }, [stats]);
 
-          const prDrainPerSec = activePRs * (stats.clickPower * 15 + stats.passivePower * 0.5) * Math.max(1, stage);
+          // Flip logic: Net = P * (1 - 2*activePRs)
+          // If activePRs = 1, Net = -P. Drain = 2*P.
+          const prDrainPerSec = activePRs > 0 ? (activePRs * 2 * stats.passivePower) : 0;
           const netPassivePower = stats.passivePower - prDrainPerSec;
 
           const totalUpgradesCount = useMemo(() => upgrades.reduce((acc, u) => acc + u.count, 0), [upgrades]);
@@ -806,9 +807,9 @@
             const intervalTime = 100; 
             const timer = setInterval(() => {
                 setPower(p => {
-                    const powerPerTick = stats.passivePower > 0 ? (stats.passivePower / (1000 / intervalTime)) : 0;
-                    const prDrainPerTick = prDrainPerSec > 0 ? (prDrainPerSec / (1000 / intervalTime)) : 0;
-                    return p + powerPerTick - prDrainPerTick;
+                    const basePassivePerTick = stats.passivePower > 0 ? (stats.passivePower / (1000 / intervalTime)) : 0;
+                    const drainPerTick = prDrainPerSec > 0 ? (prDrainPerSec / (1000 / intervalTime)) : 0;
+                    return p + basePassivePerTick - drainPerTick;
                 });
             }, intervalTime);
             return () => clearInterval(timer);
@@ -917,7 +918,13 @@
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-white/30 text-sm font-bold tracking-widest uppercase animate-pulse">Tap, Drag & Pinch to Explore</div>
               <canvas ref={canvasRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing outline-none" />
               {floatingTexts.map(t => <div key={t.id} className="absolute text-yellow-400 font-bold text-2xl pointer-events-none drop-shadow-md z-10 animate-float-up" style={{ left: t.x, top: t.y }}>+{formatNumber(t.value)}</div>)}
-              {activePRs > 0 && <div className="absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-4 sm:px-6 py-2 rounded-full border border-red-400 shadow-[0_0_20px_rgba(220,38,38,0.8)] z-30 font-bold animate-pulse text-center whitespace-nowrap text-xs sm:text-base pointer-events-none">🚨 {activePRs} NEGATIVE PR EVENT{activePRs > 1 ? 'S' : ''}! Draining {formatNumber(prDrainPerSec)} Influence/sec! Tap spheres to destroy! 🚨</div>}
+              
+              {activePRs > 0 && (
+                <div className="absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-4 sm:px-6 py-2 rounded-full border border-red-400 shadow-[0_0_20px_rgba(220,38,38,0.8)] z-30 font-bold animate-pulse text-center whitespace-nowrap text-xs sm:text-base pointer-events-none">
+                    🚨 {activePRs} NEGATIVE PR EVENT{activePRs > 1 ? 'S' : ''}! Net Influence is now {formatNumber(netPassivePower)}/sec! Tap spheres to destroy! 🚨
+                </div>
+              )}
+
               <div className="absolute top-0 left-0 w-full p-4 pointer-events-none flex justify-center z-20">
                 <div className="bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-slate-700/50 shadow-xl pointer-events-auto flex items-center gap-4 sm:gap-8 transition-all hover:bg-slate-900/90 relative group">
                   <div className="flex flex-col items-center">
