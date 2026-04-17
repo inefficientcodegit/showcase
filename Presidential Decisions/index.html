@@ -23,8 +23,16 @@
             height: 100%;
             overflow: hidden;
             background-color: black;
-            touch-action: none; /* Prevents pull-to-refresh on mobile */
+            touch-action: none;
         }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+        .animate-float-up { animation: floatUp 1s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(71, 85, 105, 0.5); border-radius: 20px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .mask-edges { mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent); }
     </style>
 </head>
 <body>
@@ -55,58 +63,36 @@
         };
 
         const INITIAL_UPGRADES = [
-          // --- STAGE 0: THE BEGINNING ---
           { id: 'u1', name: 'Late Night Truths', baseCost: 15, multiplier: 1.15, type: UPGRADE_TYPES.CLICK, value: 1, desc: '+1 Power/Tap', count: 0 },
           { id: 'u2', name: 'Golf Course Revenue', baseCost: 50, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 1, desc: '+1 Power/Sec', count: 0 },
           { id: 'u3', name: 'MAGA Rallies', baseCost: 400, multiplier: 1.15, type: UPGRADE_TYPES.CLICK, value: 10, desc: '+10 Power/Tap', count: 0 },
           { id: 'u4', name: 'Cabinet Picks', baseCost: 600, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 15, desc: '+15 Power/Sec', count: 0 },
-
-          // --- STAGE 1: BALLROOM ---
           { id: 's1', name: 'Grand Ballroom', baseCost: 1500, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.BALLROOM, desc: 'Replace East Wing with a massive hall', count: 0, max: 1 },
           { id: 'u11', name: 'Golden Sharpies', baseCost: 2000, multiplier: 1.15, type: UPGRADE_TYPES.CLICK, value: 25, desc: '+25 Power/Tap', count: 0, reqStage: STAGES.BALLROOM },
           { id: 'u5', name: 'Tariff Threats', baseCost: 3500, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 50, desc: '+50 Power/Sec', count: 0, reqStage: STAGES.BALLROOM },
-          
-          // --- STAGE 2: ARCH ---
           { id: 's2', name: 'Trump Arch', baseCost: 7500, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.ARCH, desc: 'A triumphant gateway', count: 0, max: 1, reqStage: STAGES.BALLROOM },
           { id: 'u12', name: 'Truth Social Posts', baseCost: 10000, multiplier: 1.15, type: UPGRADE_TYPES.CLICK, value: 75, desc: '+75 Power/Tap', count: 0, reqStage: STAGES.ARCH },
           { id: 'u13', name: 'Luxury Hotels', baseCost: 15000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 150, desc: '+150 Power/Sec', count: 0, reqStage: STAGES.ARCH },
-
-          // --- STAGE 3: THE WALL ---
           { id: 's3', name: 'The Great Wall', baseCost: 25000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.WALL, desc: 'Encircle the estate', count: 0, max: 1, reqStage: STAGES.ARCH },
           { id: 'u14', name: 'Cable News Network', baseCost: 40000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 300, desc: '+300 Power/Sec', count: 0, reqStage: STAGES.WALL },
           { id: 'u6', name: 'DOGE Efficiency', baseCost: 100000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 800, desc: '+800 Power/Sec', count: 0, reqStage: STAGES.WALL },
-
-          // --- STAGE 4: GOLDEN TOWER ---
           { id: 's4', name: 'Tremendous Gold Tower', baseCost: 200000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.TOWER, desc: 'A towering sign of power', count: 0, max: 1, reqStage: STAGES.WALL },
           { id: 'u16', name: 'De-regulation', baseCost: 250000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 1500, desc: '+1.5k Power/Sec', count: 0, reqStage: STAGES.TOWER },
-
-          // --- STAGE 5: MOUNT TRUMPMORE ---
           { id: 's5', name: 'Mount Trumpmore', baseCost: 750000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.RUSHMORE, desc: 'Carve history into stone', count: 0, max: 1, reqStage: STAGES.TOWER },
           { id: 'u17', name: 'Mega Rallies', baseCost: 1000000, multiplier: 1.15, type: UPGRADE_TYPES.CLICK, value: 3500, desc: '+3.5k Power/Tap', count: 0, reqStage: STAGES.RUSHMORE },
-
-          // --- STAGE 6: SECRET BASE ---
           { id: 's6', name: 'Secret Island Base', baseCost: 2500000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.BASE, desc: 'Highly classified operations', count: 0, max: 1, reqStage: STAGES.RUSHMORE },
           { id: 'u18', name: 'Super PACs', baseCost: 3500000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 8000, desc: '+8k Power/Sec', count: 0, reqStage: STAGES.BASE },
-
-          // --- STAGE 7: SPACE PROGRAM ---
           { id: 's7', name: 'Space Program', baseCost: 8000000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.ROCKET, desc: 'Build the launchpad', count: 0, max: 1, reqStage: STAGES.BASE },
           { id: 'u19', name: 'Gold Sneakers', baseCost: 12000000, multiplier: 1.15, type: UPGRADE_TYPES.CLICK, value: 15000, desc: '+15k Power/Tap', count: 0, reqStage: STAGES.ROCKET },
-
-          // --- STAGE 8: CITY ---
           { id: 's8', name: 'Trump Metropolis', baseCost: 25000000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.CITY, desc: 'Paint the city gold', count: 0, max: 1, reqStage: STAGES.ROCKET },
           { id: 'u7', name: 'Crypto Reserve', baseCost: 35000000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 40000, desc: '+40k Power/Sec', count: 0, reqStage: STAGES.CITY },
-
-          // --- STAGE 9: PLANET ---
           { id: 's9', name: 'Tremendous Earth', baseCost: 100000000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.PLANET, desc: 'Global dominance', count: 0, max: 1, reqStage: STAGES.CITY },
           { id: 'u22', name: 'Asteroid Mining', baseCost: 250000000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 150000, desc: '+150k Power/Sec', count: 0, reqStage: STAGES.PLANET },
-
-          // --- STAGE 10: SPACE ---
           { id: 's10', name: 'Galactic Empire', baseCost: 1000000000, multiplier: 1, type: UPGRADE_TYPES.STAGE, value: STAGES.SPACE, desc: 'The ultimate frontier', count: 0, max: 1, reqStage: STAGES.PLANET },
           { id: 'u23', name: 'Galactic Megaphone', baseCost: 2500000000, multiplier: 1.15, type: UPGRADE_TYPES.CLICK, value: 1000000, desc: '+1M Power/Tap', count: 0, reqStage: STAGES.SPACE },
           { id: 'u26', name: 'Dyson Sphere Tower', baseCost: 10000000000, multiplier: 1.15, type: UPGRADE_TYPES.PASSIVE, value: 5000000, desc: '+5M Power/Sec', count: 0, reqStage: STAGES.SPACE },
         ];
 
-        // Apply Max Level 50
         const ENHANCED_UPGRADES = INITIAL_UPGRADES.map(u => ({
             ...u,
             max: u.type !== UPGRADE_TYPES.STAGE && u.max === undefined ? 50 : u.max
@@ -119,7 +105,6 @@
           stone: 0x94a3b8, darkMetal: 0x1e293b
         };
 
-        // --- UTILITIES ---
         const formatNumber = (num) => {
           if (num === 0) return "0";
           const isNegative = num < 0;
@@ -137,7 +122,6 @@
           return Math.floor(baseCost * Math.pow(multiplier, count));
         };
 
-        // --- THREE.JS ENGINE ---
         const createThreeEngine = () => {
           let scene, camera, renderer, animationId, controls;
           const getAspectMult = () => window.innerHeight > window.innerWidth ? 1.6 : 1.0;
@@ -146,9 +130,8 @@
           let baseCamLook = new window.THREE.Vector3(0, 0, 0);
           let autoCam = true; 
           
-          // Game Objects
           let whiteHouseGroup = null;
-          let eastWingRef = null; // Used to hide it later
+          let eastWingRef = null; 
           let ballroomGroup = null;
           let archGroup = null;
           let wallMesh = null;
@@ -159,26 +142,20 @@
           let cityGroup = null;
           let planetMesh = null;
           let starsGroup = null;
-          
           let dioramaBase = null;
           let dioramaTargetScale = 1.0;
           let light = null;
-          
           let prGroup = null;
           let onPRSpawnedCallback = null;
           let onPRResolvedCallback = null;
-
-          // Dynamic Objects
           let goldTowerMesh = null;
           let goldTowerCap = null;
           let buildAnims = []; 
-          
           let raycaster, mouse;
           let objectsToIntersect = [];
           let clickParticles = [];
           let buildingScaleAnim = 0;
 
-          // Materials
           let matWhite, matRoof, matGrass, matDirt, matBuilding, matPlanet, matGold, matWindow, matTree, matTrunk, matWater, matRoad, matStone, matDarkMetal;
 
           const init = (canvasRef, onCanvasTap, onPRSpawned, onPRResolved) => {
@@ -261,34 +238,25 @@
             const handlePointerUp = (event) => {
               if(event.target !== canvasRef) return;
               if (Math.abs(event.clientX - pointerDownPos.x) < 10 && Math.abs(event.clientY - pointerDownPos.y) < 10) {
-                
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
 
-                // --- PR EVENT INTERCEPTION ---
                 const prIntersects = raycaster.intersectObjects(prGroup.children, true);
                 if (prIntersects.length > 0) {
                   const hitSphere = prIntersects[0].object;
                   hitSphere.userData.health -= 1;
-                  
-                  // Visual Hit Feedback
                   hitSphere.material.emissiveIntensity = 1.0;
                   setTimeout(() => { if (hitSphere && hitSphere.material) hitSphere.material.emissiveIntensity = 0.5; }, 50);
-
                   const pGeo = new window.THREE.BoxGeometry(2,2,2);
                   const pMat = new window.THREE.MeshBasicMaterial({ color: 0xff3333 });
                   const pMesh = new window.THREE.Mesh(pGeo, pMat);
                   pMesh.position.copy(prIntersects[0].point);
                   scene.add(pMesh);
                   clickParticles.push(pMesh);
-
-                  // Destroyed
                   if (hitSphere.userData.health <= 0) {
                     prGroup.remove(hitSphere);
                     if(onPRResolvedCallback) onPRResolvedCallback();
-                    
-                    // Explosion effect
                     for(let i=0; i<10; i++) {
                       const epMesh = new window.THREE.Mesh(pGeo, pMat);
                       epMesh.position.copy(hitSphere.position);
@@ -299,12 +267,10 @@
                       clickParticles.push(epMesh);
                     }
                   }
-                  return; // Stop here, don't trigger normal tap
+                  return; 
                 }
-                // --- END PR INTERCEPTION ---
 
                 onCanvasTap(event.clientX, event.clientY);
-                
                 const intersects = raycaster.intersectObjects(objectsToIntersect, true);
                 if (intersects.length > 0) {
                   buildingScaleAnim = 1.0; 
@@ -329,19 +295,16 @@
             const animate = () => {
               animationId = requestAnimationFrame(animate);
               const delta = clock.getDelta();
-
               if (autoCam) {
                 const targetPos = baseCamPos.clone().multiplyScalar(getAspectMult());
                 camera.position.lerp(targetPos, delta * 2);
                 controls.target.lerp(baseCamLook, delta * 2);
               }
               controls.update();
-
               if (dioramaBase) {
                 dioramaBase.scale.x = window.THREE.MathUtils.lerp(dioramaBase.scale.x, dioramaTargetScale, delta * 1.5);
                 dioramaBase.scale.z = window.THREE.MathUtils.lerp(dioramaBase.scale.z, dioramaTargetScale, delta * 1.5);
               }
-
               if (whiteHouseGroup) {
                 if (buildingScaleAnim > 0) {
                   whiteHouseGroup.scale.y = 1 - Math.sin(buildingScaleAnim * Math.PI) * 0.08;
@@ -352,8 +315,6 @@
                   whiteHouseGroup.scale.set(1, 1, 1);
                 }
               }
-
-              // PR Events Animation
               const time = clock.getElapsedTime();
               if (prGroup) {
                 prGroup.children.forEach(sphere => {
@@ -364,25 +325,20 @@
                     sphere.scale.setScalar(healthScale);
                 });
               }
-              
               for (let i = buildAnims.length - 1; i >= 0; i--) {
                   const anim = buildAnims[i];
                   anim.progress += delta * 1.2; 
                   const ease = 1 - Math.pow(1 - anim.progress, 3); 
-                  
                   anim.group.position.y = window.THREE.MathUtils.lerp(anim.destY - 40, anim.destY, ease);
                   anim.group.scale.setScalar(Math.max(0.01, ease));
-                  
                   if (anim.progress >= 1) {
                       anim.group.position.y = anim.destY;
                       anim.group.scale.setScalar(1);
                       buildAnims.splice(i, 1);
                   }
               }
-
               if (planetMesh) planetMesh.rotation.y += delta * 0.02;
               if (starsGroup) starsGroup.rotation.y += delta * 0.005;
-
               for (let i = clickParticles.length - 1; i >= 0; i--) {
                 const p = clickParticles[i];
                 p.position.y += delta * 25;
@@ -397,7 +353,6 @@
               renderer.render(scene, camera);
             };
             animate();
-
             return () => {
               cancelAnimationFrame(animationId);
               window.removeEventListener('pointerdown', handlePointerDown);
@@ -420,27 +375,17 @@
 
           const spawnPREvent = () => {
               if (!scene || !prGroup) return;
-              
               const radius = (20 + Math.random() * 30) * dioramaTargetScale;
               const angle = Math.random() * Math.PI * 2;
               const x = Math.cos(angle) * radius;
               const z = Math.sin(angle) * radius;
               const y = (Math.random() * 30 + 30) * dioramaTargetScale;
-
               const geo = new window.THREE.IcosahedronGeometry(12 * dioramaTargetScale, 2);
-              const mat = new window.THREE.MeshStandardMaterial({ 
-                  color: 0xff0000, 
-                  emissive: 0xaa0000, 
-                  emissiveIntensity: 0.5,
-                  roughness: 0.2,
-                  metalness: 0.5,
-                  flatShading: true
-              });
+              const mat = new window.THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000, emissiveIntensity: 0.5, roughness: 0.2, metalness: 0.5, flatShading: true });
               const sphere = new window.THREE.Mesh(geo, mat);
               sphere.position.set(baseCamLook.x + x, baseCamLook.y + y, baseCamLook.z + z);
               sphere.userData = { health: 100, maxHealth: 100 };
               prGroup.add(sphere);
-              
               if(onPRSpawnedCallback) onPRSpawnedCallback();
           };
 
@@ -468,17 +413,81 @@
 
             whiteHouseGroup = new window.THREE.Group();
             const mainW = 28; const mainH = 16; const mainD = 18;
+            
             const center = createMesh(new window.THREE.BoxGeometry(mainW, mainH, mainD), matWhite); center.position.y = mainH / 2;
+            const midMolding = createMesh(new window.THREE.BoxGeometry(mainW + 1, 0.5, mainD + 1), matWhite); midMolding.position.y = mainH / 2;
             const parapet = createMesh(new window.THREE.BoxGeometry(mainW + 1.5, 2, mainD + 1.5), matWhite); parapet.position.y = mainH + 1;
-            whiteHouseGroup.add(center, parapet);
+            whiteHouseGroup.add(center, midMolding, parapet);
 
-            const sPortico = createMesh(new window.THREE.CylinderGeometry(7, 7, mainH, 32, 1, false, 0, Math.PI), matWhite); sPortico.position.set(0, mainH / 2, -mainD / 2);
-            const sPorticoRoof = createMesh(new window.THREE.CylinderGeometry(7.5, 7.5, 2, 32, 1, false, 0, Math.PI), matRoof); sPorticoRoof.position.set(0, mainH + 1, -mainD / 2);
-            whiteHouseGroup.add(sPortico, sPorticoRoof);
+            const winGeo = new window.THREE.BoxGeometry(1.5, 2.5, 0.5);
+            const winFrameGeo = new window.THREE.BoxGeometry(1.8, 2.8, 0.2);
+            
+            const addWindowDetailed = (x, y, z, rotY = 0) => {
+                const wGroup = new window.THREE.Group();
+                const frame = createMesh(winFrameGeo, matGold);
+                const glass = createMesh(winGeo, matWindow);
+                glass.position.z = 0.1;
+                wGroup.add(frame, glass);
+                wGroup.position.set(x, y, z);
+                wGroup.rotation.y = rotY;
+                whiteHouseGroup.add(wGroup);
+            };
 
-            const nBase = createMesh(new window.THREE.BoxGeometry(14, mainH, 8), matWhite); nBase.position.set(0, mainH / 2, mainD / 2 + 4);
-            const nPediment = createMesh(new window.THREE.ConeGeometry(10, 5, 4), matRoof); nPediment.rotation.y = Math.PI/4; nPediment.position.set(0, mainH + 3.5, mainD / 2 + 4);
+            for(let side of [-1, 1]) { 
+                const zPos = (mainD / 2 + 0.1) * side;
+                const rot = side === 1 ? 0 : Math.PI;
+                for(let floor of [4, 10]) { 
+                    for(let xOff of [-10, -6.5, 6.5, 10]) { 
+                        addWindowDetailed(xOff, floor, zPos, rot);
+                    }
+                }
+            }
+
+            // SOUTH PORTICO FIX (Aligning the dome roof and structure)
+            const sPortico = createMesh(new window.THREE.CylinderGeometry(7, 7, mainH, 32, 1, false, 0, Math.PI), matWhite); 
+            sPortico.position.set(0, mainH / 2, -mainD / 2);
+            sPortico.rotation.y = Math.PI; // Face outwards from the back
+            whiteHouseGroup.add(sPortico);
+
+            const sPorticoRoof = createMesh(new window.THREE.CylinderGeometry(7.5, 7.5, 2, 32, 1, false, 0, Math.PI), matRoof); 
+            sPorticoRoof.position.set(0, mainH + 1, -mainD / 2);
+            sPorticoRoof.rotation.y = Math.PI;
+            whiteHouseGroup.add(sPorticoRoof);
+
+            // Adding a small decorative dome on top of the South Portico roof
+            const smallDome = createMesh(new window.THREE.SphereGeometry(6, 16, 16, 0, Math.PI * 2, 0, Math.PI/2), matRoof);
+            smallDome.position.set(0, mainH + 1.5, -mainD / 2);
+            whiteHouseGroup.add(smallDome);
+
+            for(let i=0; i<6; i++) {
+                const angle = (i/5) * Math.PI;
+                const p = createMesh(new window.THREE.CylinderGeometry(0.5, 0.6, mainH, 12), matWhite);
+                p.position.set(Math.cos(angle)*8.5, mainH/2, -mainD/2 - Math.sin(angle)*8.5);
+                whiteHouseGroup.add(p);
+            }
+
+            const nBase = createMesh(new window.THREE.BoxGeometry(14, mainH, 8), matWhite); 
+            nBase.position.set(0, mainH / 2, mainD / 2 + 4);
+            const nPediment = createMesh(new window.THREE.ConeGeometry(10, 5, 4), matRoof); 
+            nPediment.rotation.y = Math.PI/4; nPediment.position.set(0, mainH + 3.5, mainD / 2 + 4);
             whiteHouseGroup.add(nBase, nPediment);
+
+            for(let i=0; i<8; i++) {
+                const x = (i - 3.5) * 1.8;
+                const p = createMesh(new window.THREE.CylinderGeometry(0.5, 0.6, mainH, 12), matWhite);
+                p.position.set(x, mainH/2, mainD/2 + 7.5);
+                whiteHouseGroup.add(p);
+            }
+            
+            const door = createMesh(new window.THREE.BoxGeometry(4, 6, 0.2), matDarkMetal);
+            door.position.set(0, 3, mainD/2 + 8.1);
+            whiteHouseGroup.add(door);
+
+            for(let i=0; i<4; i++) {
+                const sStep = createMesh(new window.THREE.BoxGeometry(16 - i*1, 0.8, 2), matRoad);
+                sStep.position.set(0, 0.4 + i*0.8, mainD/2 + 8 + i*2);
+                whiteHouseGroup.add(sStep);
+            }
 
             const colGeo = new window.THREE.BoxGeometry(16, 10, 8);
             const colE = createMesh(colGeo, matWhite); colE.position.set(22, 5, 0);
@@ -502,6 +511,12 @@
             path.position.set(0, 0.2, 85);
             whiteHouseGroup.add(path);
 
+            const pole = createMesh(new window.THREE.CylinderGeometry(0.3, 0.3, 12), matWhite);
+            pole.position.set(0, mainH + 7, 0);
+            const flag = createMesh(new window.THREE.BoxGeometry(5, 3, 0.1), matPlanet);
+            flag.position.set(2.5, mainH + 11, 0);
+            whiteHouseGroup.add(pole, flag);
+
             scene.add(whiteHouseGroup);
             objectsToIntersect.push(whiteHouseGroup); 
           };
@@ -517,12 +532,8 @@
 
           const updateStage = (stage, isLoad = false) => {
             if (!window.THREE || !scene) return;
-
             if (stage >= STAGES.BALLROOM && !ballroomGroup) {
-              if (eastWingRef) {
-                  whiteHouseGroup.remove(eastWingRef);
-                  eastWingRef = null;
-              }
+              if (eastWingRef) { whiteHouseGroup.remove(eastWingRef); eastWingRef = null; }
               ballroomGroup = new window.THREE.Group();
               const bRoom = createMesh(new window.THREE.BoxGeometry(28, 16, 18), matWhite);
               bRoom.position.set(40, 8, 0); 
@@ -531,30 +542,25 @@
               ballroomGroup.add(bRoom, bRoof);
               scene.add(ballroomGroup);
               objectsToIntersect.push(ballroomGroup);
-              
               dioramaTargetScale = 1.2;
               if (!isLoad) triggerBuildAnim(ballroomGroup, 0);
               baseCamPos.set(20, 80, 180); 
               autoCam = true;
             }
-
             if (stage >= STAGES.ARCH && !archGroup) {
               archGroup = new window.THREE.Group();
               const p1 = createMesh(new window.THREE.BoxGeometry(6, 24, 6), matWhite); p1.position.set(-10, 12, 120); 
               const p2 = createMesh(new window.THREE.BoxGeometry(6, 24, 6), matWhite); p2.position.set(10, 12, 120);
               const top = createMesh(new window.THREE.BoxGeometry(26, 8, 8), matWhite); top.position.set(0, 28, 120);
               const trim = createMesh(new window.THREE.BoxGeometry(28, 1.5, 9), matGold); trim.position.set(0, 32.5, 120);
-              
               archGroup.add(p1, p2, top, trim);
               scene.add(archGroup);
               objectsToIntersect.push(archGroup);
-              
               dioramaTargetScale = 1.5;
               if (!isLoad) triggerBuildAnim(archGroup, 0);
               baseCamPos.set(0, 110, 240); 
               autoCam = true;
             }
-
             if (stage >= STAGES.WALL && !wallMesh) {
               wallMesh = new window.THREE.Group();
               const wallGeo = new window.THREE.BoxGeometry(240, 15, 6);
@@ -563,45 +569,37 @@
               const sWallGeo = new window.THREE.BoxGeometry(6, 15, 240);
               const lWall = createMesh(sWallGeo, matBuilding); lWall.position.set(-120, 7.5, 30);
               const rWall = createMesh(sWallGeo, matBuilding); rWall.position.set(120, 7.5, 30);
-              
               wallMesh.add(fWall, bWall, lWall, rWall);
               scene.add(wallMesh);
               objectsToIntersect.push(wallMesh);
-              
               dioramaTargetScale = 1.8;
               if (!isLoad) triggerBuildAnim(wallMesh, 0);
               baseCamPos.set(0, 150, 300); 
               autoCam = true;
             }
-
             if (stage >= STAGES.TOWER && !towerGroup) {
               towerGroup = new window.THREE.Group();
               const towerGeo = new window.THREE.BoxGeometry(20, 35, 20);
               goldTowerMesh = createMesh(towerGeo, matGold);
               goldTowerMesh.position.set(-60, 17.5, 0); 
               towerGroup.add(goldTowerMesh);
-
               const capGeo = new window.THREE.ConeGeometry(14, 15, 4);
               goldTowerCap = createMesh(capGeo, matGold);
               goldTowerCap.rotation.y = Math.PI/4;
               goldTowerCap.position.set(-60, 42.5, 0);
               towerGroup.add(goldTowerCap);
-
               scene.add(towerGroup);
               objectsToIntersect.push(towerGroup);
-              
               dioramaTargetScale = 2.0;
               if (!isLoad) triggerBuildAnim(towerGroup, 0);
               baseCamPos.set(0, 180, 360); 
               autoCam = true;
             }
-
             if (stage >= STAGES.RUSHMORE && !rushmoreGroup) {
               rushmoreGroup = new window.THREE.Group();
               const mountain = createMesh(new window.THREE.BoxGeometry(140, 60, 40), matStone);
               mountain.position.set(0, 30, -160);
               rushmoreGroup.add(mountain);
-
               for(let i=0; i<4; i++) {
                  const head = createMesh(new window.THREE.BoxGeometry(20, 25, 20), matGold); 
                  head.position.set(-45 + i*30, 40, -140);
@@ -609,13 +607,11 @@
               }
               scene.add(rushmoreGroup);
               objectsToIntersect.push(rushmoreGroup);
-              
               dioramaTargetScale = 2.2;
               if (!isLoad) triggerBuildAnim(rushmoreGroup, 0);
               baseCamPos.set(0, 220, 420); 
               autoCam = true;
             }
-
             if (stage >= STAGES.BASE && !baseGroup) {
               baseGroup = new window.THREE.Group();
               const bunker = createMesh(new window.THREE.CylinderGeometry(25, 30, 10, 16), matDarkMetal);
@@ -624,16 +620,13 @@
               dish.position.set(80, 12, -80);
               dish.rotation.x = Math.PI/6;
               baseGroup.add(bunker, dish);
-              
               scene.add(baseGroup);
               objectsToIntersect.push(baseGroup);
-              
               dioramaTargetScale = 2.4;
               if (!isLoad) triggerBuildAnim(baseGroup, 0);
               baseCamPos.set(0, 250, 480); 
               autoCam = true;
             }
-
             if (stage >= STAGES.ROCKET && !rocketGroup) {
               rocketGroup = new window.THREE.Group();
               const pad = createMesh(new window.THREE.CylinderGeometry(30, 30, 4, 16), matBuilding);
@@ -643,30 +636,24 @@
               const nose = createMesh(new window.THREE.ConeGeometry(6, 15, 16), matGold);
               nose.position.set(-100, 71.5, -100);
               rocketGroup.add(pad, rocket, nose);
-              
               scene.add(rocketGroup);
               objectsToIntersect.push(rocketGroup);
-              
               dioramaTargetScale = 2.8;
               if (!isLoad) triggerBuildAnim(rocketGroup, 0);
               baseCamPos.set(0, 280, 550); 
               autoCam = true;
             }
-
             if (stage >= STAGES.CITY && !cityGroup) {
               cityGroup = new window.THREE.Group();
-              
               for(let i=0; i<200; i++) {
                 let x, z;
                 do { x = (Math.random() - 0.5) * 600; z = (Math.random() - 0.5) * 600; } while (Math.abs(x) < 180 && Math.abs(z) < 180);
                 const height = 20 + Math.random() * 80;
                 const width = 12 + Math.random() * 18;
                 const depth = 12 + Math.random() * 18;
-
                 const isFullyGold = Math.random() > 0.8; 
                 const building = createMesh(new window.THREE.BoxGeometry(width, height, depth), isFullyGold ? matGold : matBuilding);
                 building.position.set(x, height/2 - 2, z); 
-                
                 if (!isFullyGold && Math.random() > 0.4) {
                   const goldRoof = createMesh(new window.THREE.BoxGeometry(width+2, 3, depth+2), matGold);
                   goldRoof.position.set(0, height/2 + 1.5, 0);
@@ -674,34 +661,24 @@
                 }
                 cityGroup.add(building);
               }
-              
               scene.add(cityGroup);
               objectsToIntersect.push(cityGroup); 
-              
               dioramaTargetScale = 4.0;
               if (!isLoad) triggerBuildAnim(cityGroup, 0);
               baseCamPos.set(0, 350, 700); 
               scene.fog.density = 0.001; 
               autoCam = true;
             }
-
             if (stage >= STAGES.PLANET && !planetMesh) {
               const planetGeo = new window.THREE.IcosahedronGeometry(400, 5); 
               planetMesh = createMesh(planetGeo, matPlanet);
               planetMesh.position.y = -400; 
               scene.add(planetMesh);
-
               scene.remove(dioramaBase); 
-              if (cityGroup) {
-                  scene.remove(cityGroup);
-                  cityGroup = new window.THREE.Group();
-                  scene.add(cityGroup);
-              }
-              
+              if (cityGroup) { scene.remove(cityGroup); cityGroup = new window.THREE.Group(); scene.add(cityGroup); }
               const belt = createMesh(new window.THREE.TorusGeometry(420, 8, 16, 100), matGold);
               belt.rotation.x = Math.PI / 2;
               planetMesh.add(belt);
-
               for(let i=0; i<400; i++) {
                  const lat = (Math.random() - 0.5) * Math.PI * 0.85; 
                  const lon = Math.random() * Math.PI * 2;
@@ -710,19 +687,15 @@
                  const y = r * Math.sin(lat) - 400; 
                  const z = r * Math.cos(lat) * Math.sin(lon);
                  if (y > -50 && Math.abs(x) < 100 && Math.abs(z) < 100) continue;
-
                  const height = 20 + Math.random() * 90;
                  const isFullyGold = Math.random() > 0.85; 
-                 
                  const b = createMesh(new window.THREE.BoxGeometry(15, height, 15), isFullyGold ? matGold : matBuilding);
                  b.position.set(x, y + height/2, z);
                  b.lookAt(0, -400, 0); 
                  b.rotateX(Math.PI/2);
                  cityGroup.add(b);
               }
-
               if (!isLoad) triggerBuildAnim(planetMesh, -400);
-
               baseCamLook.set(0, -200, 0);
               baseCamPos.set(0, -50, 950);
               scene.fog.density = 0.0005;
@@ -732,7 +705,6 @@
               scene.fog.color.setHex(0x0f172a);
               autoCam = true;
             }
-
             if (stage >= STAGES.SPACE && !starsGroup) {
               starsGroup = new window.THREE.Group();
               const starGeo = new window.THREE.BufferGeometry();
@@ -748,15 +720,12 @@
               starGeo.setAttribute('position', new window.THREE.Float32BufferAttribute(starVerts, 3));
               const stars = new window.THREE.Points(starGeo, starMat);
               starsGroup.add(stars);
-
               const ring = createMesh(new window.THREE.TorusGeometry( 800, 20, 16, 100 ), matGold);
               ring.rotation.x = Math.PI / 2.2;
               ring.position.y = -400;
               starsGroup.add(ring);
-
               scene.add(starsGroup);
               if (!isLoad) triggerBuildAnim(starsGroup, 0);
-
               baseCamLook.set(0, -400, 0);
               baseCamPos.set(0, -100, 1800);
               scene.background = new window.THREE.Color(COLORS.space);
@@ -790,6 +759,7 @@
           const [activeTab, setActiveTab] = useState(STAGES.START);
           const [floatingTexts, setFloatingTexts] = useState([]);
           const [activePRs, setActivePRs] = useState(0);
+          const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('wt_tutorial_done'));
           
           const canvasRef = useRef(null);
           const engineRef = useRef(null);
@@ -838,7 +808,7 @@
                 setPower(p => {
                     const powerPerTick = stats.passivePower > 0 ? (stats.passivePower / (1000 / intervalTime)) : 0;
                     const prDrainPerTick = prDrainPerSec > 0 ? (prDrainPerSec / (1000 / intervalTime)) : 0;
-                    return p + powerPerTick - prDrainPerTick; // Allow going negative
+                    return p + powerPerTick - prDrainPerTick;
                 });
             }, intervalTime);
             return () => clearInterval(timer);
@@ -847,9 +817,7 @@
           useEffect(() => {
             const spawnTimer = setInterval(() => {
                 if (stage >= STAGES.BALLROOM && Math.random() < 0.3) {
-                    if (engineRef.current && engineRef.current.spawnPREvent) {
-                        engineRef.current.spawnPREvent();
-                    }
+                    if (engineRef.current && engineRef.current.spawnPREvent) engineRef.current.spawnPREvent();
                 }
             }, 30000); 
             return () => clearInterval(spawnTimer);
@@ -875,7 +843,6 @@
               engineRef.current = createThreeEngine();
               const handlePRSpawn = () => setActivePRs(p => p + 1);
               const handlePRResolve = () => setActivePRs(p => Math.max(0, p - 1));
-
               const cleanup = engineRef.current.init(canvasRef.current, handleCanvasTap, handlePRSpawn, handlePRResolve);
               for(let s = STAGES.START; s <= stage; s++) {
                  engineRef.current.updateStage(s, true); 
@@ -891,19 +858,20 @@
             setIsMenuOpen(false); 
           };
 
-          useEffect(() => {
-            if (engineRef.current) engineRef.current.updateProgress(totalUpgradesCount);
-          }, [totalUpgradesCount]);
+          const closeTutorial = () => {
+              setShowTutorial(false);
+              localStorage.setItem('wt_tutorial_done', 'true');
+          };
+
+          useEffect(() => { if (engineRef.current) engineRef.current.updateProgress(totalUpgradesCount); }, [totalUpgradesCount]);
 
           const handleCanvasTap = useCallback((clientX, clientY) => {
             const currentPower = statsRef.current.clickPower;
             setPower(p => p + currentPower);
             setTotalTaps(t => t + 1);
-
             const id = textIdCounter.current++;
             const x = clientX + (Math.random() - 0.5) * 50;
             const y = clientY - 50 + (Math.random() - 0.5) * 30;
-            
             setFloatingTexts(prev => [...prev, { id, x, y, value: currentPower }]);
             setTimeout(() => setFloatingTexts(prev => prev.filter(t => t.id !== id)), 1000);
           }, []); 
@@ -911,7 +879,6 @@
           const buyUpgrade = (upgradeId) => {
             const upgrade = upgrades.find(u => u.id === upgradeId);
             if (!upgrade) return;
-
             const cost = calculateCost(upgrade.baseCost, upgrade.multiplier, upgrade.count);
             if (power >= cost && (!upgrade.max || upgrade.count < upgrade.max)) {
               setPower(p => p - cost);
@@ -920,46 +887,42 @@
             }
           };
 
-          const activeTabUpgrades = upgrades.filter(u => 
-            (u.reqStage || 0) === activeTab && (u.reqStage === undefined || stage >= u.reqStage) 
-          );
+          const activeTabUpgrades = upgrades.filter(u => (u.reqStage || 0) === activeTab && (u.reqStage === undefined || stage >= u.reqStage));
 
-          if (!threeLoaded) {
-            return (
-              <div className="flex items-center justify-center h-screen w-screen bg-slate-900 text-white font-mono">
-                <div className="animate-pulse text-2xl">Loading Engine...</div>
-              </div>
-            );
-          }
+          if (!threeLoaded) return <div className="flex items-center justify-center h-screen w-screen bg-slate-900 text-white font-mono"><div className="animate-pulse text-2xl">Loading Engine...</div></div>;
 
           return (
             <div className="relative w-screen h-screen overflow-hidden bg-black select-none font-sans text-slate-100">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-white/30 text-sm font-bold tracking-widest uppercase animate-pulse">
-                Tap, Drag & Pinch to Explore
-              </div>
-
-              <canvas ref={canvasRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing outline-none" />
-
-              {floatingTexts.map(t => (
-                <div key={t.id} className="absolute text-yellow-400 font-bold text-2xl pointer-events-none drop-shadow-md z-10 animate-float-up" style={{ left: t.x, top: t.y }}>
-                  +{formatNumber(t.value)}
-                </div>
-              ))}
-
-              {activePRs > 0 && (
-                <div className="absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-4 sm:px-6 py-2 rounded-full border border-red-400 shadow-[0_0_20px_rgba(220,38,38,0.8)] z-30 font-bold animate-pulse text-center whitespace-nowrap text-xs sm:text-base pointer-events-none">
-                  🚨 {activePRs} NEGATIVE PR EVENT{activePRs > 1 ? 'S' : ''}! Draining {formatNumber(prDrainPerSec)} Influence/sec! Tap spheres to destroy! 🚨
+              
+              {showTutorial && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-6">
+                    <div className="bg-slate-900 border border-slate-700 p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
+                        <div className="text-4xl mb-4">🏛️</div>
+                        <h3 className="text-2xl font-black mb-4">Welcome, Leader!</h3>
+                        <div className="space-y-4 text-slate-300 text-sm leading-relaxed mb-8">
+                            <p>Tapping the world earns you <span className="text-white font-bold">Influence</span>.</p>
+                            <p>Open the <span className="text-indigo-400 font-bold">Operations Menu</span> to spend your influence on upgrades and expand your empire.</p>
+                            <p>Grow your White House across the city, the planet, and beyond!</p>
+                        </div>
+                        <button 
+                            onClick={closeTutorial}
+                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-full shadow-lg hover:scale-105 transition-transform"
+                        >
+                            Start Dominating
+                        </button>
+                    </div>
                 </div>
               )}
 
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-white/30 text-sm font-bold tracking-widest uppercase animate-pulse">Tap, Drag & Pinch to Explore</div>
+              <canvas ref={canvasRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing outline-none" />
+              {floatingTexts.map(t => <div key={t.id} className="absolute text-yellow-400 font-bold text-2xl pointer-events-none drop-shadow-md z-10 animate-float-up" style={{ left: t.x, top: t.y }}>+{formatNumber(t.value)}</div>)}
+              {activePRs > 0 && <div className="absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-4 sm:px-6 py-2 rounded-full border border-red-400 shadow-[0_0_20px_rgba(220,38,38,0.8)] z-30 font-bold animate-pulse text-center whitespace-nowrap text-xs sm:text-base pointer-events-none">🚨 {activePRs} NEGATIVE PR EVENT{activePRs > 1 ? 'S' : ''}! Draining {formatNumber(prDrainPerSec)} Influence/sec! Tap spheres to destroy! 🚨</div>}
               <div className="absolute top-0 left-0 w-full p-4 pointer-events-none flex justify-center z-20">
                 <div className="bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-slate-700/50 shadow-xl pointer-events-auto flex items-center gap-4 sm:gap-8 transition-all hover:bg-slate-900/90 relative group">
-                  
                   <div className="flex flex-col items-center">
                     <span className="text-[9px] sm:text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-0.5">Influence</span>
-                    <span className={`text-2xl sm:text-4xl font-black drop-shadow-sm tabular-nums leading-none ${power < 0 ? 'text-red-400' : 'text-white'}`}>
-                      {formatNumber(power)}
-                    </span>
+                    <span className={`text-2xl sm:text-4xl font-black drop-shadow-sm tabular-nums leading-none ${power < 0 ? 'text-red-400' : 'text-white'}`}>{formatNumber(power)}</span>
                   </div>
                   <div className="w-px h-10 bg-slate-700/50"></div>
                   <div className="flex flex-col gap-1 text-[10px] sm:text-xs font-semibold text-slate-300">
@@ -968,65 +931,35 @@
                   </div>
                 </div>
               </div>
-
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={`absolute bottom-8 left-1/2 -translate-x-1/2 z-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-bold shadow-[0_10px_30px_-5px_rgba(79,70,229,0.5)] border border-indigo-400 transition-all duration-300 pointer-events-auto flex items-center gap-2 hover:scale-105 active:scale-95 ${isMenuOpen ? 'sm:opacity-100 sm:scale-100 opacity-0 scale-0 pointer-events-none sm:pointer-events-auto' : 'opacity-100 scale-100'}`}>
-                <span>🛒</span> {isMenuOpen ? 'Close Menu' : 'Operations Menu'}
-              </button>
-
+              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={`absolute bottom-8 left-1/2 -translate-x-1/2 z-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-bold shadow-[0_10px_30px_-5px_rgba(79,70,229,0.5)] border border-indigo-400 transition-all duration-300 pointer-events-auto flex items-center gap-2 hover:scale-105 active:scale-95 ${isMenuOpen ? 'sm:opacity-100 sm:scale-100 opacity-0 scale-0 pointer-events-none sm:pointer-events-auto' : 'opacity-100 scale-100'}`}><span>🛒</span> {isMenuOpen ? 'Close Menu' : 'Operations Menu'}</button>
               <div className={`absolute bottom-0 left-0 right-0 h-[70vh] sm:top-0 sm:bottom-auto sm:left-auto sm:right-0 sm:h-full sm:w-96 bg-slate-900/95 sm:bg-slate-900/90 backdrop-blur-xl border-t sm:border-t-0 sm:border-l border-slate-700/80 sm:border-slate-800 flex flex-col z-30 shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.7)] sm:shadow-2xl rounded-t-[2.5rem] sm:rounded-none transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] pointer-events-auto ${isMenuOpen ? 'translate-y-0 sm:translate-x-0' : 'translate-y-full sm:translate-y-0 sm:translate-x-full'}`}>
                 <div className="p-5 sm:p-6 pb-2 sm:pb-4 shrink-0 flex flex-col relative">
                   <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-600 rounded-full sm:hidden"></div>
                   <div className="flex justify-between items-center mb-4 mt-2 sm:mt-0">
                     <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">Operations</h2>
-                    <button onClick={() => setIsMenuOpen(false)} className="p-2 bg-slate-800 rounded-full text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition-all">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
+                    <button onClick={() => setIsMenuOpen(false)} className="p-2 bg-slate-800 rounded-full text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                   </div>
-
                   <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 -mx-2 px-2 mask-edges">
-                    {availableTabs.map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all border ${activeTab === tab.id ? 'bg-indigo-600 text-white border-indigo-400 shadow-md' : 'bg-slate-800 text-slate-400 border-transparent hover:bg-slate-700 hover:text-slate-200'}`}>
-                            {tab.name}
-                        </button>
-                    ))}
+                    {availableTabs.map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all border ${activeTab === tab.id ? 'bg-indigo-600 text-white border-indigo-400 shadow-md' : 'bg-slate-800 text-slate-400 border-transparent hover:bg-slate-700 hover:text-slate-200'}`}>{tab.name}</button>))}
                   </div>
                 </div>
-                
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-5 sm:px-6 pb-8 sm:pb-24 flex flex-col gap-3">
                   {activeTabUpgrades.map(upgrade => {
                     const cost = calculateCost(upgrade.baseCost, upgrade.multiplier, upgrade.count);
                     const isMaxed = upgrade.max && upgrade.count >= upgrade.max;
                     const canAfford = power >= cost && !isMaxed;
                     const isStage = upgrade.type === UPGRADE_TYPES.STAGE;
-
                     return (
                       <button key={upgrade.id} onClick={() => buyUpgrade(upgrade.id)} disabled={!canAfford} className={`relative overflow-hidden p-3 sm:p-4 rounded-xl text-left transition-all duration-200 border group shrink-0 ${canAfford ? isStage ? 'bg-gradient-to-br from-indigo-600 to-purple-700 border-indigo-400 hover:scale-[1.02] hover:shadow-lg hover:shadow-indigo-500/20' : 'bg-slate-800 hover:bg-slate-700 border-slate-600 hover:border-slate-500' : isMaxed ? 'bg-green-900/30 border-green-800/50 opacity-80 cursor-default' : 'bg-slate-800/50 border-slate-800 opacity-60 cursor-not-allowed'}`}>
-                        <div className="flex justify-between items-start mb-1 relative z-10">
-                          <div className="font-bold text-white group-hover:text-white transition-colors text-sm sm:text-base">{upgrade.name}</div>
-                          {!isStage && <div className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md ${isMaxed ? 'bg-green-500/20 text-green-400' : 'bg-slate-900/50 text-slate-300'}`}>{isMaxed ? 'MAX' : `Lvl ${upgrade.count}/${upgrade.max}`}</div>}
-                        </div>
+                        <div className="flex justify-between items-start mb-1 relative z-10"><div className="font-bold text-white group-hover:text-white transition-colors text-sm sm:text-base">{upgrade.name}</div>{!isStage && <div className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md ${isMaxed ? 'bg-green-500/20 text-green-400' : 'bg-slate-900/50 text-slate-300'}`}>{isMaxed ? 'MAX' : `Lvl ${upgrade.count}/${upgrade.max}`}</div>}</div>
                         <div className={`text-[10px] sm:text-xs mb-2 sm:mb-3 font-medium ${isStage ? 'text-indigo-200' : 'text-slate-400'}`}>{upgrade.desc}</div>
-                        <div className="flex justify-between items-center relative z-10 font-bold text-sm">
-                          {isMaxed ? <span className="text-green-500 tracking-wider text-xs">COMPLETED</span> : <span className={canAfford ? (isStage ? 'text-white' : 'text-green-400') : 'text-red-400'}>Cost: {formatNumber(cost)}</span>}
-                        </div>
+                        <div className="flex justify-between items-center relative z-10 font-bold text-sm">{isMaxed ? <span className="text-green-500 tracking-wider text-xs">COMPLETED</span> : <span className={canAfford ? (isStage ? 'text-white' : 'text-green-400') : 'text-red-400'}>Cost: {formatNumber(cost)}</span>}</div>
                         {!canAfford && !isMaxed && <div className="absolute bottom-0 left-0 h-1 bg-blue-500/30 transition-all duration-300" style={{ width: `${Math.min(100, (power / cost) * 100)}%` }}/>}
                       </button>
                     );
                   })}
-                  {activeTabUpgrades.length === 0 && <div className="text-center text-slate-500 mt-6 italic text-sm">No operations available yet.</div>}
                 </div>
               </div>
-
-              <style dangerouslySetInnerHTML={{__html: `
-                @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
-                .animate-float-up { animation: floatUp 1s ease-out forwards; }
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(71, 85, 105, 0.5); border-radius: 20px; }
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                .mask-edges { mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent); }
-              `}} />
             </div>
           );
         }
