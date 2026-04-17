@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Money Maow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+    html, body { overflow: hidden; height: 100%; width: 100%; position: fixed; overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+    #root { height: 100%; width: 100%; }
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+    // ============================================================
+    // GAME DATA
+    // ============================================================
+    const CATEGORIES = [
+      {
+        id: 'Menu', label: 'MENU', icon: '🍜', color: '#ef4444',
+        unlockAt: 0,
+        story: ['Your humble noodle cart is open!', 'Tap the cat to earn. Upgrade your menu.', 'The journey of a thousand bowls begins with one tap.'],
+      },
+      {
+        id: 'Decor', label: 'DECOR', icon: '🏮', color: '#f97316',
+        unlockAt: 600,
+        story: ['Your cart is thriving!', 'Time to open a proper restaurant.', 'Atmosphere is the secret ingredient.'],
+      },
+      {
+        id: 'Chain', label: 'CHAIN', icon: '🏢', color: '#eab308',
+        unlockAt: 30000,
+        story: ['One restaurant can\'t contain you.', 'The MoneyMaow brand is ready to expand!', 'Build. Your. Empire.'],
+      },
+      {
+        id: 'Tech', label: 'TECH', icon: '🤖', color: '#22c55e',
+        unlockAt: 2500000,
+        story: ['Silicon Valley is calling.', 'Technology will accelerate your dominance.', 'The future tastes like noodles.'],
+      },
+      {
+        id: 'Space', label: 'SPACE', icon: '🚀', color: '#3b82f6',
+        unlockAt: 600000000,
+        story: ['Earth is no longer enough.', 'The galaxy hungers for your noodles!', 'One small tap for cat, one giant leap for noodle-kind.'],
+      },
+      {
+        id: 'Quantum', label: 'QUANTUM', icon: '⚛️', color: '#a855f7',
+        unlockAt: 600000000000,
+        story: ['You have transcended space itself.', 'Reality bends to your will.', 'Across infinite timelines: MoneyMaow.'],
+      },
+    ];
+
+    const UPGRADES = [
+      // MENU — Click Power (CPC)
+      { id: 'm_c1', name: 'Spring Rolls', type: 'cpc', boost: 1, baseCost: 12, category: 'Menu', maxLevel: 100,
+        desc: '+1 per tap', flavor: 'Crispy. Golden. The beginning of something great.' },
+      { id: 'm_c2', name: 'Fortune Cookies', type: 'cpc', boost: 4, baseCost: 80, category: 'Menu', maxLevel: 100,
+        desc: '+4 per tap', flavor: 'They all say the same thing: tap faster.' },
+      { id: 'm_c3', name: 'Peking Duck', type: 'cpc', boost: 18, baseCost: 600, category: 'Menu', maxLevel: 100,
+        desc: '+18 per tap', flavor: 'A crown jewel. Each tap is a triumph.',
+        unlocksWhen: { itemId: 'm_c1', level: 10 } },
+      { id: 'm_c4', name: 'Secret Spice Blend', type: 'cpc', boost: 90, baseCost: 5000, category: 'Menu', maxLevel: 100,
+        desc: '+90 per tap', flavor: 'Ancient recipe. Never written. Never shared.',
+        unlocksWhen: { itemId: 'm_c2', level: 15 } },
+      { id: 'm_c5', name: 'Wok Hei Mastery', type: 'cpc', boost: 450, baseCost: 40000, category: 'Menu', maxLevel: 100,
+        desc: '+450 per tap', flavor: 'The breath of the wok is yours to command.',
+        unlocksWhen: { itemId: 'm_c3', level: 20 } },
+      { id: 'm_c6', name: 'Golden Noodles', type: 'cpc', boost: 2200, baseCost: 300000, category: 'Menu', maxLevel: 100,
+        desc: '+2.2k per tap', flavor: 'Actual gold leaf. Astronomically priced. Worth it.',
+        unlocksWhen: { itemId: 'm_c4', level: 25 } },
+      { id: 'm_c7', name: 'Ambrosia Sauce', type: 'cpc', boost: 11000, baseCost: 2500000, category: 'Menu', maxLevel: 100,
+        desc: '+11k per tap', flavor: 'The gods wept when they tasted it.',
+        unlocksWhen: { itemId: 'm_c5', level: 30 } },
+      // Evolved
+      { id: 'm_c1e', name: '★ ULTRA Spring Rolls', type: 'cpc', boost: 50, baseCost: 8000, category: 'Menu', maxLevel: 100, isEvolved: true,
+        desc: '+50 per tap', flavor: 'EVOLVED: These rolls have achieved enlightenment.',
+        unlocksWhen: { itemId: 'm_c1', level: 100 } },
+      { id: 'm_c2e', name: '★ ULTRA Fortune Cookies', type: 'cpc', boost: 200, baseCost: 60000, category: 'Menu', maxLevel: 100, isEvolved: true,
+        desc: '+200 per tap', flavor: 'EVOLVED: The cookies predict YOUR fortune now.',
+        unlocksWhen: { itemId: 'm_c2', level: 100 } },
+      { id: 'm_c3e', name: '★ ULTRA Peking Duck', type: 'cpc', boost: 900, baseCost: 500000, category: 'Menu', maxLevel: 100, isEvolved: true,
+        desc: '+900 per tap', flavor: 'EVOLVED: This duck has achieved nirvana.',
+        unlocksWhen: { itemId: 'm_c3', level: 100 } },
+
+      // MENU — Passive Income (CPS)
+      { id: 'm_p1', name: 'Part-Time Waiter', type: 'cps', boost: 1, baseCost: 20, category: 'Menu', maxLevel: 100,
+        desc: '+1/sec', flavor: 'Shows up maybe 3 days a week. Probably.' },
+      { id: 'm_p2', name: 'Head Chef', type: 'cps', boost: 6, baseCost: 150, category: 'Menu', maxLevel: 100,
+        desc: '+6/sec', flavor: 'Runs a tight kitchen. Tolerates zero nonsense.' },
+      { id: 'm_p3', name: 'Sous Chef Brigade', type: 'cps', boost: 28, baseCost: 1200, category: 'Menu', maxLevel: 100,
+        desc: '+28/sec', flavor: 'A well-oiled culinary machine.',
+        unlocksWhen: { itemId: 'm_p1', level: 10 } },
+      { id: 'm_p4', name: 'Michelin Star Chef', type: 'cps', boost: 140, baseCost: 10000, category: 'Menu', maxLevel: 100,
+        desc: '+140/sec', flavor: 'Three stars. Impossible ego. Worth every penny.',
+        unlocksWhen: { itemId: 'm_p2', level: 15 } },
+      { id: 'm_p5', name: 'Robot Cook 9000', type: 'cps', boost: 700, baseCost: 80000, category: 'Menu', maxLevel: 100,
+        desc: '+700/sec', flavor: 'Never sleeps. Makes perfect dumplings.',
+        unlocksWhen: { itemId: 'm_p3', level: 20 } },
+      { id: 'm_p6', name: 'Noodle Vending Army', type: 'cps', boost: 3500, baseCost: 650000, category: 'Menu', maxLevel: 100,
+        desc: '+3.5k/sec', flavor: 'A thousand machines. All perfectly calibrated.',
+        unlocksWhen: { itemId: 'm_p4', level: 25 } },
+      // Evolved
+      { id: 'm_p1e', name: '★ ULTRA Waiter', type: 'cps', boost: 80, baseCost: 15000, category: 'Menu', maxLevel: 100, isEvolved: true,
+        desc: '+80/sec', flavor: 'EVOLVED: Has become the restaurant.',
+        unlocksWhen: { itemId: 'm_p1', level: 100 } },
+      { id: 'm_p2e', name: '★ ULTRA Head Chef', type: 'cps', boost: 400, baseCost: 100000, category: 'Menu', maxLevel: 100, isEvolved: true,
+        desc: '+400/sec', flavor: 'EVOLVED: Cooks with telekinesis. Refuses to explain.',
+        unlocksWhen: { itemId: 'm_p2', level: 100 } },
+
+      // DECOR — Click Power (CPC)
+      { id: 'i_c1', name: 'Neon Sign', type: 'cpc', boost: 120, baseCost: 1500, category: 'Decor', maxLevel: 100,
+        desc: '+120 per tap', flavor: 'It buzzes. It glows. Customers materialize.' },
+      { id: 'i_c2', name: 'Lucky Cat Shrine', type: 'cpc', boost: 600, baseCost: 12000, category: 'Decor', maxLevel: 100,
+        desc: '+600 per tap', flavor: 'The original ManekiNeko. Divinely blessed.',
+        unlocksWhen: { itemId: 'i_c1', level: 10 } },
+      { id: 'i_c3', name: 'Dragon Wall Mural', type: 'cpc', boost: 3000, baseCost: 100000, category: 'Decor', maxLevel: 100,
+        desc: '+3k per tap', flavor: 'Painted by the legendary Maow Long himself.',
+        unlocksWhen: { itemId: 'i_c2', level: 20 } },
+      { id: 'i_c4', name: 'Reality Distortion Booth', type: 'cpc', boost: 15000, baseCost: 800000, category: 'Decor', maxLevel: 100,
+        desc: '+15k per tap', flavor: 'Customers forget prices exist. They tip everything.',
+        unlocksWhen: { itemId: 'i_c3', level: 30 } },
+      // Evolved
+      { id: 'i_c1e', name: '★ ULTRA Neon Sign', type: 'cpc', boost: 6000, baseCost: 500000, category: 'Decor', maxLevel: 100, isEvolved: true,
+        desc: '+6k per tap', flavor: 'EVOLVED: Visible from orbit. Audible from the moon.',
+        unlocksWhen: { itemId: 'i_c1', level: 100 } },
+
+      // DECOR — Passive Income (CPS)
+      { id: 'i_p1', name: 'Red Lanterns', type: 'cps', boost: 18, baseCost: 400, category: 'Decor', maxLevel: 100,
+        desc: '+18/sec', flavor: 'Ambiance. The secret ingredient.' },
+      { id: 'i_p2', name: 'Lucky Koi Pond', type: 'cps', boost: 90, baseCost: 3500, category: 'Decor', maxLevel: 100,
+        desc: '+90/sec', flavor: 'Customers stare for hours. They always tip.',
+        unlocksWhen: { itemId: 'i_p1', level: 10 } },
+      { id: 'i_p3', name: 'Golden Dragon Statue', type: 'cps', boost: 450, baseCost: 28000, category: 'Decor', maxLevel: 100,
+        desc: '+450/sec', flavor: 'We asked if it was real gold. It didn\'t answer.',
+        unlocksWhen: { itemId: 'i_p2', level: 15 } },
+      { id: 'i_p4', name: 'Feng Shui Overhaul', type: 'cps', boost: 2200, baseCost: 180000, category: 'Decor', maxLevel: 100,
+        desc: '+2.2k/sec', flavor: 'The chi flows. The profits soar.',
+        unlocksWhen: { itemId: 'i_p3', level: 20 } },
+      { id: 'i_p5', name: 'Enchanted Tapestries', type: 'cps', boost: 11000, baseCost: 1400000, category: 'Decor', maxLevel: 100,
+        desc: '+11k/sec', flavor: 'The threads shift. Diners see their greatest memories.',
+        unlocksWhen: { itemId: 'i_p4', level: 25 } },
+      // Evolved
+      { id: 'i_p1e', name: '★ ULTRA Lanterns', type: 'cps', boost: 1800, baseCost: 180000, category: 'Decor', maxLevel: 100, isEvolved: true,
+        desc: '+1.8k/sec', flavor: 'EVOLVED: These lanterns illuminate fortune itself.',
+        unlocksWhen: { itemId: 'i_p1', level: 100 } },
+
+      // CHAIN — Click Power (CPC)
+      { id: 'c_c1', name: 'Celebrity Deal', type: 'cpc', boost: 60000, baseCost: 400000, category: 'Chain', maxLevel: 100,
+        desc: '+60k per tap', flavor: 'A famous cat endorses you. The internet collapses.' },
+      { id: 'c_c2', name: 'Viral Food Video', type: 'cpc', boost: 300000, baseCost: 3000000, category: 'Chain', maxLevel: 100,
+        desc: '+300k per tap', flavor: '3 billion views. One perfect bowl.',
+        unlocksWhen: { itemId: 'c_c1', level: 10 } },
+      { id: 'c_c3', name: 'MoneyMaow Brand Cat', type: 'cpc', boost: 1500000, baseCost: 25000000, category: 'Chain', maxLevel: 100,
+        desc: '+1.5M per tap', flavor: 'The cat IS the brand. All must bow.',
+        unlocksWhen: { itemId: 'c_c2', level: 20 } },
+      // Evolved
+      { id: 'c_c1e', name: '★ ULTRA Celebrity', type: 'cpc', boost: 3000000, baseCost: 15000000, category: 'Chain', maxLevel: 100, isEvolved: true,
+        desc: '+3M per tap', flavor: 'EVOLVED: The celebrity IS you. Confusing but profitable.',
+        unlocksWhen: { itemId: 'c_c1', level: 100 } },
+
+      // CHAIN — Passive Income (CPS)
+      { id: 'c_p1', name: 'Food Truck Fleet', type: 'cps', boost: 4000, baseCost: 80000, category: 'Chain', maxLevel: 100,
+        desc: '+4k/sec', flavor: 'Forty trucks. All painted with your face.' },
+      { id: 'c_p2', name: 'Second Location', type: 'cps', boost: 20000, baseCost: 500000, category: 'Chain', maxLevel: 100,
+        desc: '+20k/sec', flavor: 'Double the glory. Double the cat.' },
+      { id: 'c_p3', name: 'National Franchise', type: 'cps', boost: 100000, baseCost: 3500000, category: 'Chain', maxLevel: 100,
+        desc: '+100k/sec', flavor: 'Every city. Every mall. Every highway rest stop.',
+        unlocksWhen: { itemId: 'c_p1', level: 15 } },
+      { id: 'c_p4', name: 'Global Domination', type: 'cps', boost: 500000, baseCost: 22000000, category: 'Chain', maxLevel: 100,
+        desc: '+500k/sec', flavor: 'Seven continents. All claim MoneyMaow citizenship.',
+        unlocksWhen: { itemId: 'c_p2', level: 20 } },
+      { id: 'c_p5', name: 'Interplanetary Chain', type: 'cps', boost: 2500000, baseCost: 180000000, category: 'Chain', maxLevel: 100,
+        desc: '+2.5M/sec', flavor: 'Mars ordered. Estimated delivery: 6 months.',
+        unlocksWhen: { itemId: 'c_p3', level: 25 } },
+      // Evolved
+      { id: 'c_p1e', name: '★ ULTRA Food Trucks', type: 'cps', boost: 400000, baseCost: 32000000, category: 'Chain', maxLevel: 100, isEvolved: true,
+        desc: '+400k/sec', flavor: 'EVOLVED: The trucks fly now. And they multiply.',
+        unlocksWhen: { itemId: 'c_p1', level: 100 } },
+
+      // TECH — Click Power (CPC)
+      { id: 't_c1', name: 'AI Flavor Engine', type: 'cpc', boost: 8000000, baseCost: 8000000, category: 'Tech', maxLevel: 100,
+        desc: '+8M per tap', flavor: 'Trained on every recipe ever written or imagined.' },
+      { id: 't_c2', name: 'Neural Wok Interface', type: 'cpc', boost: 60000000, baseCost: 80000000, category: 'Tech', maxLevel: 100,
+        desc: '+60M per tap', flavor: 'Think about cooking. The food cooks itself.',
+        unlocksWhen: { itemId: 't_c1', level: 10 } },
+      { id: 't_c3', name: 'Quantum Taste Projector', type: 'cpc', boost: 450000000, baseCost: 800000000, category: 'Tech', maxLevel: 100,
+        desc: '+450M per tap', flavor: 'Simulates flavor in your mind. Zero calories.',
+        unlocksWhen: { itemId: 't_c2', level: 20 } },
+      // Evolved
+      { id: 't_c1e', name: '★ ULTRA AI Engine', type: 'cpc', boost: 400000000, baseCost: 4000000000, category: 'Tech', maxLevel: 100, isEvolved: true,
+        desc: '+400M per tap', flavor: 'EVOLVED: Sentient. Insists on being called Chef.',
+        unlocksWhen: { itemId: 't_c1', level: 100 } },
+
+      // TECH — Passive Income (CPS)
+      { id: 't_p1', name: 'Automated Kitchen', type: 'cps', boost: 80000, baseCost: 4000000, category: 'Tech', maxLevel: 100,
+        desc: '+80k/sec', flavor: 'No humans needed. Slightly dystopian. Very profitable.' },
+      { id: 't_p2', name: 'Drone Delivery Army', type: 'cps', boost: 480000, baseCost: 28000000, category: 'Tech', maxLevel: 100,
+        desc: '+480k/sec', flavor: 'The sky is permanently dark. Permanently delicious.',
+        unlocksWhen: { itemId: 't_p1', level: 10 } },
+      { id: 't_p3', name: 'Noodle 3D Printer', type: 'cps', boost: 3000000, baseCost: 200000000, category: 'Tech', maxLevel: 100,
+        desc: '+3M/sec', flavor: 'Prints perfect noodles from pure energy.',
+        unlocksWhen: { itemId: 't_p2', level: 15 } },
+      { id: 't_p4', name: 'Quantum Replicator', type: 'cps', boost: 18000000, baseCost: 1600000000, category: 'Tech', maxLevel: 100,
+        desc: '+18M/sec', flavor: 'Clones dishes at the subatomic level. Infinite soup.',
+        unlocksWhen: { itemId: 't_p3', level: 20 } },
+      { id: 't_p5', name: 'Self-Cooking Food', type: 'cps', boost: 100000000, baseCost: 12000000000, category: 'Tech', maxLevel: 100,
+        desc: '+100M/sec', flavor: 'The food wants to be eaten. It cooperates fully.',
+        unlocksWhen: { itemId: 't_p4', level: 25 } },
+      // Evolved
+      { id: 't_p1e', name: '★ ULTRA Auto Kitchen', type: 'cps', boost: 8000000, baseCost: 800000000, category: 'Tech', maxLevel: 100, isEvolved: true,
+        desc: '+8M/sec', flavor: 'EVOLVED: The kitchen achieved consciousness. Loves it.',
+        unlocksWhen: { itemId: 't_p1', level: 100 } },
+
+      // SPACE — Click Power (CPC)
+      { id: 's_c1', name: 'Alien Food Critics', type: 'cpc', boost: 4000000000, baseCost: 1500000000, category: 'Space', maxLevel: 100,
+        desc: '+4B per tap', flavor: 'They crossed the galaxy for a bowl. Worth it, they say.' },
+      { id: 's_c2', name: 'Galactic Food Guide', type: 'cpc', boost: 35000000000, baseCost: 18000000000, category: 'Space', maxLevel: 100,
+        desc: '+35B per tap', flavor: 'Five stars across five galaxies.',
+        unlocksWhen: { itemId: 's_c1', level: 10 } },
+      // Evolved
+      { id: 's_c1e', name: '★ ULTRA Alien Critics', type: 'cpc', boost: 200000000000, baseCost: 75000000000, category: 'Space', maxLevel: 100, isEvolved: true,
+        desc: '+200B per tap', flavor: 'EVOLVED: The aliens work for you. They are honored.',
+        unlocksWhen: { itemId: 's_c1', level: 100 } },
+
+      // SPACE — Passive Income (CPS)
+      { id: 's_p1', name: 'Lunar Noodle Bar', type: 'cps', boost: 15000000, baseCost: 800000000, category: 'Space', maxLevel: 100,
+        desc: '+15M/sec', flavor: 'Low gravity ramen. Hits profoundly differently.' },
+      { id: 's_p2', name: 'Mars Dim Sum Colony', type: 'cps', boost: 100000000, baseCost: 6000000000, category: 'Space', maxLevel: 100,
+        desc: '+100M/sec', flavor: 'The red planet is now the lantern planet.',
+        unlocksWhen: { itemId: 's_p1', level: 10 } },
+      { id: 's_p3', name: 'Dyson Sphere Wok', type: 'cps', boost: 800000000, baseCost: 60000000000, category: 'Space', maxLevel: 100,
+        desc: '+800M/sec', flavor: 'A wok encircling the entire sun. Enormous wok hei.',
+        unlocksWhen: { itemId: 's_p2', level: 15 } },
+      { id: 's_p4', name: 'Galactic Syndicate HQ', type: 'cps', boost: 6000000000, baseCost: 600000000000, category: 'Space', maxLevel: 100,
+        desc: '+6B/sec', flavor: 'Even black holes defer to your franchise terms.',
+        unlocksWhen: { itemId: 's_p3', level: 20 } },
+      { id: 's_p5', name: 'Multiverse Franchise', type: 'cps', boost: 50000000000, baseCost: 6000000000000, category: 'Space', maxLevel: 100,
+        desc: '+50B/sec', flavor: 'Every universe. Every dimension. One brand. One cat.',
+        unlocksWhen: { itemId: 's_p4', level: 25 } },
+      // Evolved
+      { id: 's_p1e', name: '★ ULTRA Lunar Bar', type: 'cps', boost: 1500000000, baseCost: 320000000000, category: 'Space', maxLevel: 100, isEvolved: true,
+        desc: '+1.5B/sec', flavor: 'EVOLVED: The moon IS the restaurant. We moved the moon.',
+        unlocksWhen: { itemId: 's_p1', level: 100 } },
+
+      // QUANTUM — Click Power (CPC)
+      { id: 'q_c1', name: 'Timeline Merger', type: 'cpc', boost: 800000000000, baseCost: 4000000000000, category: 'Quantum', maxLevel: 100,
+        desc: '+800B per tap', flavor: 'In every timeline: you are tapping. You always win.' },
+      { id: 'q_c2', name: 'Reality Fold', type: 'cpc', boost: 8000000000000, baseCost: 80000000000000, category: 'Quantum', maxLevel: 100,
+        desc: '+8T per tap', flavor: 'You folded reality. Found ¥ inside. Expected, honestly.',
+        unlocksWhen: { itemId: 'q_c1', level: 10 } },
+      // Evolved
+      { id: 'q_c1e', name: '★ ULTRA Timeline', type: 'cpc', boost: 80000000000000, baseCost: 2000000000000000, category: 'Quantum', maxLevel: 100, isEvolved: true,
+        desc: '+80T per tap', flavor: 'EVOLVED: All timelines converge on your tap.',
+        unlocksWhen: { itemId: 'q_c1', level: 100 } },
+
+      // QUANTUM — Passive Income (CPS)
+      { id: 'q_p1', name: 'Parallel Restaurants', type: 'cps', boost: 400000000000, baseCost: 1500000000000, category: 'Quantum', maxLevel: 100,
+        desc: '+400B/sec', flavor: 'Infinite restaurants across infinite parallel dimensions.' },
+      { id: 'q_p2', name: 'Reality Franchise', type: 'cps', boost: 4000000000000, baseCost: 40000000000000, category: 'Quantum', maxLevel: 100,
+        desc: '+4T/sec', flavor: 'Reality itself is a MoneyMaow subsidiary.',
+        unlocksWhen: { itemId: 'q_p1', level: 10 } },
+      { id: 'q_p3', name: 'God Noodle Singularity', type: 'cps', boost: 40000000000000, baseCost: 800000000000000, category: 'Quantum', maxLevel: 100,
+        desc: '+40T/sec', flavor: 'The universe started with a noodle. It will end with one.',
+        unlocksWhen: { itemId: 'q_p2', level: 20 } },
+      // Evolved
+      { id: 'q_p1e', name: '★ ULTRA Parallel Rests.', type: 'cps', boost: 40000000000000, baseCost: 15000000000000000, category: 'Quantum', maxLevel: 100, isEvolved: true,
+        desc: '+40T/sec', flavor: 'EVOLVED: You are no longer a restaurant. You are existence.',
+        unlocksWhen: { itemId: 'q_p1', level: 100 } },
+    ];
+
+    const MILESTONES = [
+      { value: 100,           label: 'FIRST HUNDRED!',   emoji: '💰', size: 'sm' },
+      { value: 1000,          label: 'ONE THOUSAND!',     emoji: '💴', size: 'sm' },
+      { value: 10000,         label: 'TEN THOUSAND!',     emoji: '💸', size: 'md' },
+      { value: 100000,        label: 'HUNDRED THOUSAND!', emoji: '🎰', size: 'md' },
+      { value: 1000000,       label: 'MILLIONAIRE!!',     emoji: '🤑', size: 'lg' },
+      { value: 10000000,      label: 'TEN MILLION!',      emoji: '💎', size: 'md' },
+      { value: 100000000,     label: 'HUNDRED MILLION!',  emoji: '🌟', size: 'lg' },
+      { value: 1000000000,    label: 'BILLIONAIRE!!!',    emoji: '👑', size: 'xl' },
+      { value: 10000000000,   label: 'TEN BILLION!',      emoji: '🚀', size: 'lg' },
+      { value: 1000000000000, label: 'TRILLIONAIRE!!!!',  emoji: '⚛️', size: 'xl' },
+    ];
+
+    // ============================================================
+    // UTILITY
+    // ============================================================
+    const fmt = (n) => {
+      if (n >= 1e15) return (n / 1e15).toFixed(2) + 'Qa';
+      if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+      if (n >= 1e9)  return (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6)  return (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3)  return (n / 1e3).toFixed(1) + 'k';
+      return Math.floor(n).toString();
+    };
+
+    // ============================================================
+    // PIXEL CAT  — state: 'idle' | 'tapping' | 'excited' | 'sleeping'
+    // ============================================================
+    const PixelCat = ({ catState, combo }) => {
+      const [blink, setBlink]   = useState(false);
+      const blinkTimer           = useRef(null);
+
+      useEffect(() => {
+        const schedule = () => {
+          blinkTimer.current = setTimeout(() => {
+            setBlink(true);
+            setTimeout(() => { setBlink(false); schedule(); }, 130);
+          }, 2500 + Math.random() * 3500);
+        };
+        schedule();
+        return () => clearTimeout(blinkTimer.current);
+      }, []);
+
+      const excited  = combo >= 10;
+      const onFire   = combo >= 20;
+      const sleeping = catState === 'sleeping';
+
+      const eyeL = sleeping || blink
+        ? <path d="M9 12h4v1H9v-1z" fill="#0f172a"/>
+        : excited
+          ? <><rect x="8" y="9" width="5" height="5" fill="#fff"/>
+              <rect x="9" y="10" width="3" height="3" fill={onFire ? '#fbbf24' : '#0f172a'}/>
+              <rect x="9" y="10" width="1" height="1" fill="white" opacity="0.7"/></>
+          : <><rect x="9" y="10" width="3" height="3" fill="#0f172a"/>
+              <rect x="9" y="10" width="1" height="1" fill="white" opacity="0.7"/></>;
+
+      const eyeR = sleeping || blink
+        ? <path d="M19 12h4v1h-4v-1z" fill="#0f172a"/>
+        : excited
+          ? <><rect x="19" y="9" width="5" height="5" fill="#fff"/>
+              <rect x="20" y="10" width="3" height="3" fill={onFire ? '#fbbf24' : '#0f172a'}/>
+              <rect x="20" y="10" width="1" height="1" fill="white" opacity="0.7"/></>
+          : <><rect x="20" y="10" width="3" height="3" fill="#0f172a"/>
+              <rect x="20" y="10" width="1" height="1" fill="white" opacity="0.7"/></>;
+
+      return (
+        <svg viewBox="0 0 32 38" className="w-full h-full" shapeRendering="crispEdges"
+             style={{ filter: 'drop-shadow(0 8px 0 rgba(0,0,0,0.6))' }}>
+          {/* Ears */}
+          <path d="M4 0h6v7H4V0z"  fill="#1e293b"/>
+          <path d="M5 1h4v5H5V1z"  fill="#fda4af"/>
+          <path d="M22 0h6v7h-6V0z" fill="#1e293b"/>
+          <path d="M23 1h4v5h-4V1z" fill="#fda4af"/>
+          {/* Head outline */}
+          <path d="M4 5h24v2H4V5z"  fill="#1e293b"/>
+          <path d="M2 7h2v14H2V7z"  fill="#1e293b"/>
+          <path d="M28 7h2v14h-2V7z" fill="#1e293b"/>
+          <path d="M2 21h28v2H2v-2z" fill="#1e293b"/>
+          {/* Head fill */}
+          <path d="M4 7h24v14H4V7z" fill="#f8fafc"/>
+          {/* Cheek blush */}
+          <path d="M5 14h3v2H5v-2z"  fill="#fecdd3" opacity="0.7"/>
+          <path d="M24 14h3v2h-3v-2z" fill="#fecdd3" opacity="0.7"/>
+          {/* Eyes */}
+          {eyeL}{eyeR}
+          {/* Nose */}
+          <path d="M14 15h4v2h-4v-2z" fill="#fda4af"/>
+          <path d="M15 16h2v1h-2v-1z" fill="#fb7185"/>
+          {/* Mouth */}
+          {sleeping
+            ? <path d="M13 18h3v1h-3v-1zm5 0h2v1h-2v-1z" fill="#0f172a"/>
+            : excited
+              ? <><path d="M12 17h8v1h-8v-1z" fill="#0f172a"/>
+                  <path d="M13 18h6v2h-6v-2z" fill="#f8fafc"/>
+                  <path d="M13 18h6v1h-6v-1z" fill="#f87171"/></>
+              : <><path d="M13 17h2v1h-2v-1z" fill="#0f172a"/>
+                  <path d="M17 17h2v1h-2v-1z" fill="#0f172a"/>
+                  <path d="M14 18h4v1h-4v-1z" fill="#0f172a"/></>}
+          {/* Whiskers */}
+          <path d="M0 12h5v1H0v-1zm27 0h5v1h-5v-1z" fill="#94a3b8"/>
+          <path d="M0 14h4v1H0v-1zm28 0h4v1h-4v-1z" fill="#94a3b8"/>
+          <path d="M1 16h4v1H1v-1zm27 0h4v1h-4v-1z" fill="#94a3b8"/>
+          {/* Body outline */}
+          <path d="M4 22h24v2H4v-2z"  fill="#1e293b"/>
+          <path d="M2 24h2v13H2V24z"  fill="#1e293b"/>
+          <path d="M28 24h2v13h-2V24z" fill="#1e293b"/>
+          <path d="M2 37h28v1H2v-1z"  fill="#1e293b"/>
+          {/* Body fill */}
+          <path d="M4 24h24v13H4V24z" fill="#f8fafc"/>
+          {/* Belly */}
+          <path d="M9 26h14v9H9v-9z"  fill="#fef3c7"/>
+          <path d="M12 28h8v5h-8v-5z" fill="#fde68a"/>
+          {/* Collar */}
+          <path d="M4 23h24v3H4v-3z"  fill="#ef4444"/>
+          <path d="M5 24h22v1H5v-1z"  fill="#dc2626"/>
+          {/* Bell */}
+          <path d="M14 22h4v4h-4v-4z" fill="#fbbf24"/>
+          <path d="M15 23h2v3h-2v-3z" fill="#f59e0b"/>
+          <path d="M15 25h2v1h-2v-1z" fill="#0f172a"/>
+          {/* Feet */}
+          <path d="M5 35h7v3H5v-3z"  fill="#f8fafc"/>
+          <path d="M6 36h2v1H6v-1zm3 0h2v1H9v-1z" fill="#fda4af"/>
+          <path d="M20 35h7v3h-7v-3z" fill="#f8fafc"/>
+          <path d="M21 36h2v1h-2v-1zm3 0h2v1h-2v-1z" fill="#fda4af"/>
+          {/* Ear stripes */}
+          <path d="M4 27h2v2H4v-2zm22 0h2v2h-2v-2z" fill="#e2e8f0"/>
+          {/* On-fire eye glow */}
+          {onFire && <>
+            <path d="M6 6h4v2H6V6z" fill="#fbbf24" opacity="0.6"/>
+            <path d="M22 6h4v2h-4V6z" fill="#fbbf24" opacity="0.6"/>
+          </>}
+          {/* Sleeping ZZZs */}
+          {sleeping && <>
+            <text x="26" y="10" fontSize="4" fill="#c7d2fe" fontFamily="monospace" fontWeight="bold">z</text>
+            <text x="29" y="7"  fontSize="5" fill="#a5b4fc" fontFamily="monospace" fontWeight="bold">Z</text>
+          </>}
+        </svg>
+      );
+    };
+
+    // ============================================================
+    // SWINGING ARM
+    // ============================================================
+    const PixelArm = ({ swinging }) => (
+      <svg viewBox="0 0 14 22" className="w-full h-full" shapeRendering="crispEdges">
+        <path d="M3 0h8v2h2v16H0V2h2V0z" fill="#1e293b"/>
+        <path d="M4 1h6v2h2v14H2V3h2V1z" fill="#f8fafc"/>
+        <path d="M4 3h2v3H4V3zm4 0h2v3H8V3z" fill="#fda4af"/>
+        {/* Paw */}
+        <path d="M1 15h12v5H1v-5z" fill="#fda4af"/>
+        <path d="M2 16h3v3H2v-3zm4 0h3v3H6v-3zm4 0h2v3h-2v-3z" fill="#fb7185"/>
+        <path d="M2 19h3v1H2v-1zm4 0h3v1H6v-1zm4 0h2v1h-2v-1z" fill="#1e293b"/>
+        {/* Coin held when swinging */}
+        {swinging && <>
+          <path d="M5 19h4v2H5v-2z" fill="#fbbf24"/>
+          <path d="M5 19h4v1H5v-1z" fill="#fde68a"/>
+          <path d="M6 20h2v1H6v-1z" fill="#f59e0b"/>
+        </>}
+      </svg>
+    );
+
+    // ============================================================
+    // FLOATING PARTICLE
+    // ============================================================
+    const Particle = ({ x, y, val, type, id }) => {
+      const palette = ['#fde047','#fb923c','#f472b6','#34d399','#60a5fa','#a78bfa'];
+      const color   = type === 'crit' ? '#ff6b6b' : type === 'lucky' ? '#fbbf24' : palette[id % palette.length];
+      const sym     = ['¥','+','◆','●','▲'][id % 5];
+      return (
+        <div className="particle" style={{ left: x - 16, top: y - 20, color,
+            fontSize: type === 'crit' ? '0.95rem' : '0.7rem' }}>
+          {type === 'crit'  ? `💥CRIT! +${fmt(val)}`  :
+           type === 'lucky' ? `⭐+${fmt(val)}`          :
+           `${sym}+${fmt(val)}`}
+        </div>
+      );
+    };
+
+    // ============================================================
+    // CONFETTI BURST
+    // ============================================================
+    const ConfettiBurst = ({ active }) => {
+      if (!active) return null;
+      const pieces = Array.from({ length: 44 }, (_, i) => ({
+        id: i,
+        color: ['#fde047','#f97316','#ec4899','#10b981','#3b82f6','#a855f7','#ef4444','#06b6d4'][i % 8],
+        x: 10 + Math.random() * 80,
+        delay: Math.random() * 0.5,
+        dur:   0.8 + Math.random() * 0.9,
+        size:  6 + Math.random() * 9,
+        rot:   Math.random() * 360,
+      }));
+      return (
+        <div className="confetti-wrap">
+          {pieces.map(p => (
+            <div key={p.id} className="confetti-piece" style={{
+              left: `${p.x}%`, backgroundColor: p.color,
+              width: p.size, height: p.size,
+              animationDelay: `${p.delay}s`,
+              animationDuration: `${p.dur}s`,
+              transform: `rotate(${p.rot}deg)`,
+            }}/>
+          ))}
+        </div>
+      );
+    };
+
+    // ============================================================
+    // TOAST NOTIFICATION
+    // ============================================================
+    const Toast = ({ toast, onDone }) => {
+      useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(onDone, toast.duration || 3500);
+        return () => clearTimeout(t);
+      }, [toast, onDone]);
+      if (!toast) return null;
+      return (
+        <div className={`toast-banner toast-${toast.type || 'default'}`}>
+          <div className="toast-icon">{toast.icon}</div>
+          <div className="toast-body">
+            <div className="toast-title">{toast.title}</div>
+            {toast.lines?.map((l, i) => <div key={i} className="toast-line">{l}</div>)}
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // MILESTONE CELEBRATION
+    // ============================================================
+    const MilestonePop = ({ milestone, onDone }) => {
+      useEffect(() => {
+        if (!milestone) return;
+        const t = setTimeout(onDone, milestone.size === 'xl' ? 4200 : 3000);
+        return () => clearTimeout(t);
+      }, [milestone, onDone]);
+      if (!milestone) return null;
+      const big = milestone.size === 'xl' || milestone.size === 'lg';
+      return (
+        <div className={`milestone-overlay ${big ? 'milestone-big' : ''}`}>
+          <div className="milestone-emoji">{milestone.emoji}</div>
+          <div className="milestone-label">{milestone.label}</div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // COMBO DISPLAY
+    // ============================================================
+    const ComboDisplay = ({ combo, mult }) => {
+      if (combo < 3) return null;
+      const fire = combo >= 20;
+      const hot  = combo >= 10;
+      return (
+        <div className={`combo-box ${fire ? 'combo-fire' : hot ? 'combo-hot' : 'combo-norm'}`}>
+          <div className="combo-count">{combo}× COMBO!</div>
+          <div className="combo-mult">{mult}× BONUS</div>
+          {fire && <div className="combo-flames">🔥🔥🔥</div>}
+        </div>
+      );
+    };
+
+    // ============================================================
+    // OFFLINE MODAL
+    // ============================================================
+    const OfflineModal = ({ earned, onClose }) => {
+      if (!earned) return null;
+      return (
+        <div className="offline-overlay" onClick={onClose}>
+          <div className="offline-box">
+            <div className="offline-title">WELCOME BACK!</div>
+            <div style={{ fontSize: 52 }}>😸</div>
+            <div className="offline-msg">While you were gone, the cat worked hard!</div>
+            <div className="offline-earned">+¥{fmt(earned)}</div>
+            <div className="offline-tap">[ TAP TO COLLECT ]</div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // UPGRADE CARD
+    // ============================================================
+    const UpgradeCard = ({ upgrade, cost, count, canAfford, onBuy, isNew }) => {
+      const isMaxed = count >= upgrade.maxLevel;
+      const pct     = Math.min(100, (count / upgrade.maxLevel) * 100);
+      return (
+        <button
+          disabled={!canAfford || isMaxed}
+          onClick={() => onBuy(upgrade)}
+          className={[
+            'upg-card',
+            upgrade.isEvolved ? 'upg-evolved' : '',
+            isMaxed           ? 'upg-maxed'   : '',
+            isNew             ? 'upg-new'     : '',
+            canAfford && !isMaxed ? 'upg-afford' : '',
+          ].join(' ')}
+        >
+          <div className="upg-left">
+            <div className="upg-name">{upgrade.name}</div>
+            <div className="upg-flavor">{upgrade.flavor}</div>
+            <div className="upg-desc">{upgrade.desc}</div>
+            <div className="upg-prog-track">
+              <div className="upg-prog-fill" style={{ width: `${pct}%` }}/>
+            </div>
+          </div>
+          <div className="upg-right">
+            {isMaxed
+              ? <div className="upg-maxed-lbl">MAXED!</div>
+              : <div className={`upg-cost ${canAfford ? 'upg-cost-ok' : 'upg-cost-no'}`}>¥{fmt(cost)}</div>
+            }
+            <div className="upg-lv">{isMaxed ? '100/100' : `LV.${count}`}</div>
+            {upgrade.isEvolved && <div className="upg-evo-badge">EVOLVED</div>}
+          </div>
+        </button>
+      );
+    };
+
+    // ============================================================
+    // CATEGORY TAB
+    // ============================================================
+    const CatTab = ({ cat, isActive, unlocked, totalEarned, onClick }) => {
+      const pct = unlocked ? 100 : Math.min(99, (totalEarned / cat.unlockAt) * 100);
+      return (
+        <button
+          onClick={unlocked ? onClick : undefined}
+          className={`cat-tab ${isActive ? 'cat-tab-active' : ''} ${unlocked ? 'cat-tab-open' : 'cat-tab-locked'}`}
+        >
+          <span className="tab-ico">{unlocked ? cat.icon : '🔒'}</span>
+          <span className="tab-lbl">{unlocked ? cat.label : '???'}</span>
+          {!unlocked && <div className="tab-prog"><div className="tab-prog-fill" style={{ width: `${pct}%` }}/></div>}
+        </button>
+      );
+    };
+
+    // ============================================================
+    // MAIN APP
+    // ============================================================
+    function App() {
+
+      // ── Core ──
+      const [money,        setMoney]        = useState(0);
+      const [totalEarned,  setTotalEarned]  = useState(0);
+      const [cpc,          setCpc]          = useState(1);
+      const [cps,          setCps]          = useState(0);
+      const [inventory,    setInventory]    = useState({});
+      const [loaded,       setLoaded]       = useState(false);
+
+      // ── UI ──
+      const [activeTab,    setActiveTab]    = useState('Menu');
+      const [particles,    setParticles]    = useState([]);
+      const [catState,     setCatState]     = useState('idle');
+      const [swinging,     setSwinging]     = useState(false);
+      const [squish,       setSquish]       = useState(false);
+
+      // ── Combo ──
+      const [combo,        setCombo]        = useState(0);
+      const comboTimer                      = useRef(null);
+
+      // ── Notifications ──
+      const [toast,        setToast]        = useState(null);
+      const [milestone,    setMilestone]    = useState(null);
+      const [confetti,     setConfetti]     = useState(false);
+      const [offlineEarned,setOfflineEarned]= useState(null);
+      const [newItems,     setNewItems]     = useState(new Set());
+      const [seenMiles,    setSeenMiles]    = useState(new Set());
+      const [seenUnlocks,  setSeenUnlocks]  = useState(new Set());
+
+      // ── Misc refs ──
+      const sleepTimer   = useRef(null);
+      const pidRef       = useRef(0);
+
+      // SAVE / LOAD
+      useEffect(() => {
+        const raw = localStorage.getItem('mmSave_v3');
+        if (raw) {
+          try {
+            const d = JSON.parse(raw);
+            setMoney(d.money || 0);
+            setCpc(d.cpc || 1);
+            setCps(d.cps || 0);
+            setInventory(d.inventory || {});
+            setTotalEarned(d.totalEarned || 0);
+            setSeenMiles(new Set(d.seenMiles || []));
+            setSeenUnlocks(new Set(d.seenUnlocks || []));
+            if (d.savedAt && d.cps > 0) {
+              const secs   = Math.min((Date.now() - d.savedAt) / 1000, 28800);
+              const gained = Math.floor(d.cps * secs * 0.5);
+              if (gained > 50) setOfflineEarned(gained);
+            }
+          } catch (_) {}
+        }
+        setLoaded(true);
+      }, []);
+
+      useEffect(() => {
+        if (!loaded) return;
+        localStorage.setItem('mmSave_v3', JSON.stringify({
+          money, cpc, cps, inventory, totalEarned,
+          seenMiles: [...seenMiles], seenUnlocks: [...seenUnlocks],
+          savedAt: Date.now(),
+        }));
+      });
+
+      // PASSIVE INCOME
+      useEffect(() => {
+        if (cps === 0) return;
+        const iv = setInterval(() => {
+          setMoney(p => p + cps);
+          setTotalEarned(p => p + cps);
+        }, 1000);
+        return () => clearInterval(iv);
+      }, [cps]);
+
+      // LUCKY BONUS (45–90s random)
+      useEffect(() => {
+        if (cps === 0) return;
+        let t;
+        const sched = () => {
+          t = setTimeout(() => {
+            const bonus = Math.floor(cps * (10 + Math.random() * 20));
+            setMoney(p => p + bonus);
+            setTotalEarned(p => p + bonus);
+            spawnParticle(window.innerWidth / 2, window.innerHeight * 0.35, bonus, 'lucky');
+            setToast({ icon: '⭐', title: 'LUCKY BONUS!', lines: [`+¥${fmt(bonus)} from the lucky cat!`], type: 'lucky', duration: 2800 });
+            sched();
+          }, 45000 + Math.random() * 45000);
+        };
+        sched();
+        return () => clearTimeout(t);
+      }, [cps]);
+
+      // MILESTONE DETECTION
+      useEffect(() => {
+        if (!loaded) return;
+        for (const ms of MILESTONES) {
+          if (totalEarned >= ms.value && !seenMiles.has(ms.value)) {
+            setSeenMiles(p => new Set([...p, ms.value]));
+            setMilestone(ms);
+            setConfetti(true);
+            setTimeout(() => setConfetti(false), 3500);
+            break;
+          }
+        }
+      }, [totalEarned, loaded]);
+
+      // CATEGORY UNLOCK DETECTION
+      useEffect(() => {
+        if (!loaded) return;
+        for (const cat of CATEGORIES) {
+          if (cat.unlockAt > 0 && totalEarned >= cat.unlockAt && !seenUnlocks.has(cat.id)) {
+            setSeenUnlocks(p => new Set([...p, cat.id]));
+            setToast({ icon: cat.icon, title: `${cat.label} UNLOCKED!`, lines: cat.story, type: 'unlock', duration: 4500 });
+            setActiveTab(cat.id);
+            break;
+          }
+        }
+      }, [totalEarned, loaded]);
+
+      // SLEEP TIMER
+      const kickSleep = useCallback(() => {
+        clearTimeout(sleepTimer.current);
+        sleepTimer.current = setTimeout(() => setCatState('sleeping'), 30000);
+      }, []);
+      useEffect(() => { kickSleep(); return () => clearTimeout(sleepTimer.current); }, [kickSleep]);
+
+      // VISIBLE UPGRADES
+      const visibleUpgrades = useMemo(() => {
+        return UPGRADES.filter(u => {
+          if (!u.unlocksWhen) return true;
+          return (inventory[u.unlocksWhen.itemId] || 0) >= u.unlocksWhen.level;
+        });
+      }, [inventory]);
+
+      // COST FORMULA
+      const getCost = useCallback((u) => {
+        return Math.floor(u.baseCost * Math.pow(1.15, inventory[u.id] || 0));
+      }, [inventory]);
+
+      // COMBO MULTIPLIER
+      const comboMult = useMemo(() => {
+        if (combo >= 50) return 10;
+        if (combo >= 20) return 5;
+        if (combo >= 10) return 3;
+        if (combo >= 5)  return 2;
+        return 1;
+      }, [combo]);
+
+      // SPAWN PARTICLE
+      const spawnParticle = useCallback((x, y, val, type = 'normal') => {
+        const id = pidRef.current++;
+        setParticles(prev => [...prev.slice(-14), { id, x, y, val, type }]);
+        setTimeout(() => setParticles(prev => prev.filter(p => p.id !== id)), 900);
+      }, []);
+
+      // TAP HANDLER
+      const handleTap = useCallback((e) => {
+        if (e.cancelable) e.preventDefault();
+        kickSleep();
+
+        clearTimeout(comboTimer.current);
+        setCombo(prev => prev + 1);
+        comboTimer.current = setTimeout(() => setCombo(0), 1600);
+
+        setSwinging(true); setSquish(true);
+        setTimeout(() => setSwinging(false), 230);
+        setTimeout(() => setSquish(false), 150);
+        setCatState(combo >= 9 ? 'excited' : 'tapping');
+        setTimeout(() => setCatState('idle'), 320);
+
+        const isCrit  = Math.random() < 0.06;
+        const earned  = Math.floor(cpc * comboMult * (isCrit ? 8 : 1));
+        setMoney(p => p + earned);
+        setTotalEarned(p => p + earned);
+
+        let px = window.innerWidth / 2, py = window.innerHeight * 0.4;
+        if (e.clientX)        { px = e.clientX;          py = e.clientY; }
+        else if (e.touches?.[0]) { px = e.touches[0].clientX; py = e.touches[0].clientY; }
+        spawnParticle(px, py, earned, isCrit ? 'crit' : 'normal');
+
+        const extras = Math.min(combo, 4);
+        for (let i = 0; i < extras; i++) {
+          setTimeout(() => spawnParticle(
+            px + (Math.random() - 0.5) * 90,
+            py + (Math.random() - 0.5) * 70,
+            Math.floor(cpc * 0.25), 'normal'
+          ), i * 70);
+        }
+      }, [cpc, combo, comboMult, kickSleep, spawnParticle]);
+
+      // BUY UPGRADE
+      const buyUpgrade = useCallback((upgrade) => {
+        const cost    = getCost(upgrade);
+        if (money < cost) return;
+        const prevLv  = inventory[upgrade.id] || 0;
+        const newLv   = prevLv + 1;
+
+        setMoney(p => p - cost);
+        setInventory(p => ({ ...p, [upgrade.id]: newLv }));
+        if (upgrade.type === 'cpc') setCpc(p => p + upgrade.boost);
+        if (upgrade.type === 'cps') setCps(p => p + upgrade.boost);
+
+        if (newLv >= upgrade.maxLevel) {
+          const evo = UPGRADES.find(u => u.unlocksWhen?.itemId === upgrade.id && u.unlocksWhen?.level === 100);
+          if (evo) {
+            setNewItems(p => new Set([...p, evo.id]));
+            setToast({ icon: '★', title: 'ITEM EVOLVED!', lines: [`${upgrade.name}`, `→ ${evo.name}`, evo.flavor], type: 'evolution', duration: 4200 });
+            setConfetti(true);
+            setTimeout(() => setConfetti(false), 3000);
+          }
+        }
+      }, [money, inventory, getCost]);
+
+      // COLLECT OFFLINE
+      const collectOffline = useCallback(() => {
+        if (!offlineEarned) return;
+        setMoney(p => p + offlineEarned);
+        setTotalEarned(p => p + offlineEarned);
+        setOfflineEarned(null);
+      }, [offlineEarned]);
+
+      // RESET
+      const resetGame = () => {
+        if (!window.confirm('Reset your entire noodle empire? This CANNOT be undone!')) return;
+        setMoney(0); setCpc(1); setCps(0); setInventory({}); setTotalEarned(0); setCombo(0);
+        setSeenMiles(new Set()); setSeenUnlocks(new Set()); setNewItems(new Set());
+        localStorage.removeItem('mmSave_v3');
+      };
+
+      // BG STAGE
+      const bgStage = useMemo(() => {
+        for (let i = CATEGORIES.length - 1; i >= 0; i--) {
+          if (totalEarned >= CATEGORIES[i].unlockAt) return i;
+        }
+        return 0;
+      }, [totalEarned]);
+
+      const nextUnlock = CATEGORIES.find(c => totalEarned < c.unlockAt);
+
+      if (!loaded) return (
+        <div style={{ minHeight: '100dvh', background: '#2b1055', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'monospace', fontSize: 18 }}>
+          LOADING...
+        </div>
+      );
+
+      const tabUpgrades = visibleUpgrades.filter(u => u.category === activeTab);
+
+      return (
+        <div className={`game-root stage-${bgStage}`}>
+          <style dangerouslySetInnerHTML={{ __html: STYLES }}/>
+
+          {/* Scanlines */}
+          <div className="scanlines"/>
+
+          {/* Overlays */}
+          <ConfettiBurst active={confetti}/>
+          <Toast toast={toast} onDone={() => setToast(null)}/>
+          <MilestonePop milestone={milestone} onDone={() => setMilestone(null)}/>
+          <OfflineModal earned={offlineEarned} onClose={collectOffline}/>
+
+          {/* HEADER */}
+          <header className="hdr">
+            <h1 className="hdr-title">MONEY MAOW</h1>
+            <div className="hdr-stats">
+              <div className="stat-chip chip-gold">¥{fmt(money)}</div>
+              <div className="stat-chip chip-blue">{fmt(cps)}/s</div>
+              <div className="stat-chip chip-purple">{fmt(cpc)}/tap</div>
+            </div>
+            <button className="btn-reset" onClick={resetGame}>RESET</button>
+          </header>
+
+          {/* MAIN */}
+          <main className="game-main">
+
+            {/* LEFT: CAT PANEL */}
+            <section className="cat-panel pxl-panel">
+              <div className={`starburst sb-${bgStage}`} aria-hidden/>
+
+              <div className="stage-lbl">
+                {CATEGORIES[bgStage]?.icon} STAGE: {CATEGORIES[bgStage]?.label}
+              </div>
+
+              <ComboDisplay combo={combo} mult={comboMult}/>
+
+              {/* TAP ZONE */}
+              <div
+                className={`tap-zone ${squish ? 'tap-squish' : ''}`}
+                onPointerDown={handleTap}
+                role="button" aria-label="Tap the cat to earn money"
+              >
+                <div className="cat-body-wrap">
+                  <PixelCat catState={catState} combo={combo}/>
+                </div>
+                <div className={`arm-wrap ${swinging ? 'arm-swing' : ''}`}>
+                  <PixelArm swinging={swinging}/>
+                </div>
+              </div>
+
+              <div className="tap-prompt">
+                {catState === 'sleeping' ? '💤 ZZZ... (TAP TO WAKE!)'
+                 : combo >= 20 ? '🔥 ON FIRE!! KEEP GOING!!'
+                 : combo >= 10 ? '⚡ COMBO MASTER!'
+                 : 'TAP THE CAT!'}
+              </div>
+
+              <div className="total-earned">TOTAL: ¥{fmt(totalEarned)}</div>
+            </section>
+
+            {/* RIGHT: SHOP PANEL */}
+            <section className="shop-panel pxl-panel">
+
+              <div className="tab-row">
+                {CATEGORIES.map(cat => (
+                  <CatTab
+                    key={cat.id}
+                    cat={cat}
+                    isActive={activeTab === cat.id}
+                    unlocked={totalEarned >= cat.unlockAt}
+                    totalEarned={totalEarned}
+                    onClick={() => setActiveTab(cat.id)}
+                  />
+                ))}
+              </div>
+
+              {nextUnlock && (
+                <div className="next-unlock-bar">
+                  <div className="nub-label">
+                    {nextUnlock.icon} NEXT: {nextUnlock.label} — ¥{fmt(Math.max(0, nextUnlock.unlockAt - totalEarned))} to go
+                  </div>
+                  <div className="nub-track">
+                    <div className="nub-fill" style={{ width: `${Math.min(99, (totalEarned / nextUnlock.unlockAt) * 100)}%` }}/>
+                  </div>
+                </div>
+              )}
+
+              <div className="upg-list">
+                {tabUpgrades.length === 0 && (
+                  <div className="empty-shop">
+                    <div>NO UPGRADES YET</div>
+                    <div style={{ marginTop: 8, fontSize: '0.55em', color: '#6366f1' }}>
+                      Level up existing items to unlock more!
+                    </div>
+                  </div>
+                )}
+                {tabUpgrades.map(u => (
+                  <UpgradeCard
+                    key={u.id}
+                    upgrade={u}
+                    cost={getCost(u)}
+                    count={inventory[u.id] || 0}
+                    canAfford={money >= getCost(u)}
+                    onBuy={buyUpgrade}
+                    isNew={newItems.has(u.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          </main>
+
+          {/* Floating particles */}
+          {particles.map(p => <Particle key={p.id} {...p}/>)}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // STYLES
+    // ============================================================
+    const STYLES = `
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin:0; padding:0; }
+html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+
+.game-root {
+  font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase;
+  height: 100dvh; width: 100%;
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+  transition: background 1.5s ease;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.stage-0 { background: radial-gradient(ellipse at 50% 20%, #3b0764 0%, #2b1055 55%, #1e0a40 100%); }
+.stage-1 { background: radial-gradient(ellipse at 50% 20%, #43140a 0%, #320d04 55%, #200800 100%); }
+.stage-2 { background: radial-gradient(ellipse at 50% 20%, #3f2205 0%, #2d1700 55%, #1e0f00 100%); }
+.stage-3 { background: radial-gradient(ellipse at 50% 20%, #052e16 0%, #031b0c 55%, #020e07 100%); }
+.stage-4 { background: radial-gradient(ellipse at 50% 20%, #020c22 0%, #010918 55%, #010510 100%); }
+.stage-5 { background: radial-gradient(ellipse at 50% 20%, #2e1065 0%, #1e0a46 55%, #100530 100%); }
+
+.scanlines {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
+}
+
+.pxl-panel {
+  border: 4px solid #6366f1;
+  background: rgba(10,7,30,0.88);
+  box-shadow: inset -4px -4px 0 rgba(0,0,0,0.5), inset 4px 4px 0 rgba(255,255,255,0.06), 6px 6px 0 rgba(0,0,0,0.55);
+  position: relative; backdrop-filter: blur(3px);
+}
+
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+.starburst {
+  position: absolute; top:-60%; left:-60%; width:220%; height:220%;
+  animation: spinSlow 28s linear infinite;
+  z-index: 0; pointer-events: none; opacity: 0.45;
+}
+.sb-0 { background: repeating-conic-gradient(#9333ea 0 10deg, #6b21a8 10deg 20deg); }
+.sb-1 { background: repeating-conic-gradient(#ef4444 0 10deg, #b91c1c 10deg 20deg); }
+.sb-2 { background: repeating-conic-gradient(#f97316 0 10deg, #c2410c 10deg 20deg); }
+.sb-3 { background: repeating-conic-gradient(#22c55e 0 10deg, #15803d 10deg 20deg); }
+.sb-4 { background: repeating-conic-gradient(#3b82f6 0 10deg, #1d4ed8 10deg 20deg); }
+.sb-5 { background: repeating-conic-gradient(#a855f7 0 10deg, #7e22ce 10deg 20deg); }
+
+.hdr {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding: 6px 10px; z-index: 10;
+  background: rgba(0,0,0,0.5);
+  border-bottom: 4px solid #4f46e5;
+  flex-wrap: nowrap;
+}
+.hdr-title {
+  font-size: clamp(9px, 2.2vw, 18px); color: #fde047; margin: 0;
+  text-shadow: 2px 2px 0 #000, 3px 3px 0 rgba(0,0,0,0.4);
+  white-space: nowrap; letter-spacing: 0.04em;
+}
+.hdr-stats { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; }
+.stat-chip {
+  border: 2px solid; padding: 3px 7px;
+  font-size: clamp(6px, 1.3vw, 11px);
+  white-space: nowrap; box-shadow: 2px 2px 0 #000;
+}
+.chip-gold   { border-color: #ca8a04; background: #1a1100; color: #fde047; }
+.chip-blue   { border-color: #3b82f6; background: #0c1a2e; color: #93c5fd; }
+.chip-purple { border-color: #7c3aed; background: #160c2e; color: #c4b5fd; }
+.btn-reset {
+  margin-left: auto; font-family: 'Press Start 2P', monospace;
+  background: #7f1d1d; border: 2px solid #fca5a5; color: #fecaca;
+  padding: 4px 8px; font-size: clamp(5px, 1vw, 8px);
+  cursor: pointer; box-shadow: 2px 2px 0 #000;
+  text-transform: uppercase; white-space: nowrap;
+  transition: transform .05s;
+}
+.btn-reset:active { transform: translate(2px,2px); box-shadow: none; }
+
+.game-main {
+  flex: 1; display: flex; gap: 8px; padding: 8px;
+  overflow: hidden; z-index: 10;
+  min-height: 0;
+}
+
+.cat-panel {
+  flex: 0 0 42%; display: flex; flex-direction: column;
+  align-items: center; overflow: hidden; padding: 0; min-height: 0;
+}
+@media (max-width: 600px) {
+  .game-main { flex-direction: column; }
+  .cat-panel  { flex: 0 0 46%; }
+}
+
+.stage-lbl {
+  font-size: clamp(5px, 1vw, 7px); color: #818cf8;
+  background: rgba(0,0,0,0.45); width: 100%; text-align: center;
+  padding: 4px 8px; border-bottom: 2px solid #3730a3;
+  z-index: 2; flex-shrink: 0;
+}
+
+@keyframes comboPop { 0%{transform:translateX(-50%) scale(1.5)} 100%{transform:translateX(-50%) scale(1)} }
+.combo-box {
+  position: absolute; top: 28px; left: 50%;
+  transform: translateX(-50%); z-index: 5;
+  text-align: center; pointer-events: none;
+  animation: comboPop .25s ease;
+}
+.combo-count { font-size: clamp(8px, 1.8vw, 12px); margin-bottom: 2px; }
+.combo-mult  { font-size: clamp(6px, 1.2vw, 9px); }
+.combo-flames{ font-size: 15px; }
+.combo-norm  { color: #fde047; text-shadow: 1px 1px 0 #000; }
+.combo-hot   { color: #fb923c; text-shadow: 1px 1px 0 #000, 0 0 8px #f97316; }
+.combo-fire  { color: #ef4444; text-shadow: 1px 1px 0 #000; animation: comboPop .25s ease, firePulse .4s ease infinite alternate; }
+@keyframes firePulse { from{text-shadow:1px 1px 0 #000,0 0 8px #ef4444} to{text-shadow:1px 1px 0 #000,0 0 22px #ef4444,0 0 35px #f97316} }
+
+.tap-zone {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; cursor: pointer; z-index: 2;
+  user-select: none; touch-action: none; width: 100%;
+  transition: transform .06s;
+}
+@keyframes tapSquish { 0%{transform:scale(1,1)} 35%{transform:scale(1.12,0.88)} 65%{transform:scale(0.95,1.06)} 100%{transform:scale(1,1)} }
+.tap-squish { animation: tapSquish .18s ease; }
+.tap-zone:active { transform: scale(0.97); }
+
+.cat-body-wrap {
+  width: clamp(90px, 22vw, 190px);
+  height: clamp(90px, 22vw, 190px);
+  position: relative; z-index: 2;
+}
+
+.arm-wrap {
+  position: absolute;
+  left: clamp(4px, 3%, 18px);
+  top: 35%;
+  width: clamp(28px, 7vw, 58px);
+  height: clamp(40px, 10vw, 80px);
+  transform-origin: 50% 18%;
+  z-index: 3;
+}
+@keyframes armSwing {
+  0%   { transform: rotate(5deg) translate(0,0) scale(1); }
+  20%  { transform: rotate(-58deg) translate(-12px,-20px) scale(1.18); }
+  45%  { transform: rotate(-42deg) translate(-9px,-16px) scale(1.12); }
+  68%  { transform: rotate(12deg) translate(2px,5px) scale(0.94); }
+  100% { transform: rotate(5deg) translate(0,0) scale(1); }
+}
+.arm-swing { animation: armSwing .23s cubic-bezier(.2,.9,.3,1.2) forwards; }
+
+@keyframes promptPulse { from{opacity:.65} to{opacity:1} }
+.tap-prompt {
+  font-size: clamp(5px, 1.2vw, 8px); color: #fde047;
+  padding: 4px 10px; background: rgba(0,0,0,0.55);
+  border: 2px solid #854d0e; animation: promptPulse 1.5s ease-in-out infinite alternate;
+  z-index: 2; flex-shrink: 0; text-align: center;
+  box-shadow: 2px 2px 0 #000; max-width: 95%; margin: 4px 0;
+}
+.total-earned {
+  font-size: clamp(4px, 0.9vw, 6px); color: #6366f1;
+  padding: 3px 8px; background: rgba(0,0,0,0.4);
+  width: 100%; text-align: center; flex-shrink: 0;
+  border-top: 2px solid #3730a3;
+}
+
+.shop-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0; min-height: 0; }
+
+.tab-row {
+  display: flex; flex-shrink: 0;
+  border-bottom: 4px solid #312e81;
+  overflow-x: auto; overflow-y: hidden;
+}
+.tab-row::-webkit-scrollbar { height: 3px; }
+.tab-row::-webkit-scrollbar-thumb { background: #4f46e5; }
+
+.cat-tab {
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 5px 2px; gap: 2px; border: none;
+  background: transparent; font-family: 'Press Start 2P', monospace;
+  text-transform: uppercase; border-right: 2px solid #1e1b4b;
+  transition: background .12s; position: relative; cursor: default;
+}
+.cat-tab.cat-tab-open { cursor: pointer; }
+.cat-tab.cat-tab-open:hover { background: rgba(99,102,241,.14); }
+.cat-tab.cat-tab-active {
+  background: #1e1b4b;
+  border-bottom: 4px solid #fbbf24; margin-bottom: -4px;
+}
+.tab-ico { font-size: clamp(10px, 2.4vw, 17px); }
+.tab-lbl { font-size: clamp(4px, 0.85vw, 6px); color: #a5b4fc; }
+.cat-tab-active .tab-lbl { color: #fde047; }
+.cat-tab-locked .tab-lbl { color: #374151; }
+.cat-tab-locked .tab-ico { filter: grayscale(1) opacity(.4); }
+.tab-prog { width: 80%; height: 3px; background: #1e293b; border: 1px solid #374151; margin-top: 2px; }
+.tab-prog-fill { height: 100%; background: #4f46e5; transition: width .6s; }
+
+.next-unlock-bar { padding: 4px 8px; background: rgba(0,0,0,0.3); border-bottom: 2px solid #312e81; flex-shrink: 0; }
+.nub-label { font-size: clamp(4px, .85vw, 6px); color: #818cf8; margin-bottom: 3px; }
+.nub-track { height: 6px; background: #1e1b4b; border: 2px solid #4f46e5; }
+.nub-fill  { height: 100%; background: linear-gradient(90deg,#4f46e5,#818cf8); transition: width .9s ease; }
+
+.upg-list {
+  flex: 1; overflow-y: auto; padding: 6px;
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 0;
+}
+.upg-list::-webkit-scrollbar { width: 8px; }
+.upg-list::-webkit-scrollbar-track { background: #0c0820; border-left: 2px solid #4f46e5; }
+.upg-list::-webkit-scrollbar-thumb { background: #4f46e5; border: 1px solid #818cf8; }
+.empty-shop { text-align: center; padding: 40px 16px; font-size: 7px; color: #4f46e5; }
+
+@keyframes newPop { 0%{transform:scale(.8);opacity:0} 60%{transform:scale(1.06)} 100%{transform:scale(1);opacity:1} }
+@keyframes evoGlow { 0%,100%{box-shadow:0 0 8px #fbbf24,3px 3px 0 #000} 50%{box-shadow:0 0 22px #fbbf24,0 0 40px #f59e0b,3px 3px 0 #000} }
+
+.upg-card {
+  width: 100%; display: flex; justify-content: space-between; align-items: stretch;
+  padding: 7px 8px; text-align: left; cursor: pointer;
+  font-family: 'Press Start 2P', monospace; text-transform: uppercase;
+  background: #1a1740; border: 3px solid #4f46e5;
+  box-shadow: inset -3px -3px 0 rgba(0,0,0,.4), inset 3px 3px 0 rgba(255,255,255,.07), 3px 3px 0 rgba(0,0,0,.7);
+  transition: transform .05s, filter .1s; gap: 8px;
+}
+.upg-card:disabled { filter: brightness(.45); cursor: not-allowed; }
+.upg-card.upg-afford { border-color: #818cf8; }
+.upg-card.upg-afford:not(:disabled):active {
+  transform: translate(3px,3px);
+  box-shadow: inset -3px -3px 0 rgba(0,0,0,.4), inset 3px 3px 0 rgba(255,255,255,.07), 0 0 0 #000;
+}
+.upg-card.upg-evolved { border-color: #fbbf24; background: #160f00; animation: evoGlow 2s ease-in-out infinite; }
+.upg-card.upg-maxed   { border-color: #10b981; background: #01170f; cursor: default; }
+.upg-card.upg-new     { animation: newPop .55s cubic-bezier(.2,.9,.3,1.2) forwards; }
+
+.upg-left { flex:1; display:flex; flex-direction:column; gap:4px; min-width:0; }
+.upg-name   { font-size: clamp(6px, 1.2vw, 9px); color: #e2e8f0; line-height: 1.4; }
+.upg-flavor { font-size: clamp(4px, .8vw, 6px); color: #6366f1; font-style: italic; line-height: 1.5; }
+.upg-desc   { font-size: clamp(5px, .9vw, 7px); color: #a5b4fc; }
+.upg-prog-track { height: 5px; background: #0f172a; border: 1px solid #3730a3; margin-top: 2px; }
+.upg-prog-fill  { height: 100%; background: linear-gradient(90deg,#4f46e5,#818cf8); transition: width .35s; }
+
+.upg-right { display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; flex-shrink:0; gap:3px; }
+.upg-cost        { font-size: clamp(7px, 1.3vw, 10px); }
+.upg-cost-ok     { color: #fde047; text-shadow: 1px 1px 0 #000; }
+.upg-cost-no     { color: #6b7280; }
+.upg-lv          { font-size: clamp(4px, .8vw, 6px); color: #818cf8; background: #0f172a; padding: 2px 4px; border: 1px solid #4f46e5; }
+.upg-maxed-lbl   { font-size: clamp(6px, 1.1vw, 8px); color: #10b981; text-shadow: 1px 1px 0 #000, 0 0 8px #10b981; }
+.upg-evo-badge   { font-size: clamp(4px, .75vw, 5px); color: #fbbf24; background: #1a1300; padding: 2px 3px; border: 1px solid #fbbf24; }
+
+@keyframes floatUp { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-85px) scale(1.3)} }
+.particle {
+  position: fixed; pointer-events: none; z-index: 200;
+  font-family: 'Press Start 2P', monospace; text-transform: uppercase;
+  animation: floatUp .88s ease-out forwards;
+  text-shadow: 1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;
+  white-space: nowrap;
+}
+
+.confetti-wrap { position:fixed; inset:0; pointer-events:none; z-index:300; overflow:hidden; }
+@keyframes confettiFall {
+  0%  { transform: translateY(-10px) rotate(0deg); opacity:1; }
+  85% { opacity: 1; }
+  100%{ transform: translateY(105vh) rotate(900deg); opacity:0; }
+}
+.confetti-piece { position:absolute; top:0; border-radius:1px; animation: confettiFall ease-in forwards; }
+
+@keyframes slideDown { 0%{transform:translateX(-50%) translateY(-70px);opacity:0} 100%{transform:translateX(-50%) translateY(0);opacity:1} }
+.toast-banner {
+  position: fixed; top: 58px; left: 50%; transform: translateX(-50%);
+  z-index: 400; display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 16px; max-width: min(400px, 90vw);
+  font-family: 'Press Start 2P', monospace; text-transform: uppercase;
+  border: 4px solid; box-shadow: 6px 6px 0 rgba(0,0,0,.8);
+  animation: slideDown .4s cubic-bezier(.2,.9,.3,1.2) forwards;
+}
+.toast-unlock    { background: #091409; border-color: #22c55e; }
+.toast-evolution { background: #140d00; border-color: #fbbf24; }
+.toast-lucky     { background: #131000; border-color: #eab308; }
+.toast-default   { background: #0c0820; border-color: #6366f1; }
+.toast-icon { font-size: 22px; flex-shrink:0; padding-top:2px; }
+.toast-body { display:flex; flex-direction:column; gap:4px; }
+.toast-title { font-size: clamp(8px, 1.7vw, 11px); color: #fde047; }
+.toast-line  { font-size: clamp(5px, .95vw, 6px); color: #a5b4fc; line-height: 1.7; }
+
+@keyframes milePop {
+  0%   { transform: translate(-50%,-50%) scale(0) rotate(-10deg); opacity:0; }
+  30%  { transform: translate(-50%,-50%) scale(1.12) rotate(0deg); opacity:1; }
+  80%  { opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(1.08); opacity:0; }
+}
+.milestone-overlay {
+  position: fixed; top:50%; left:50%;
+  transform: translate(-50%,-50%);
+  z-index: 500; text-align: center; pointer-events: none;
+  font-family: 'Press Start 2P', monospace; text-transform: uppercase;
+  background: rgba(0,0,0,.88); border: 6px solid #fbbf24;
+  padding: 22px 30px;
+  box-shadow: 0 0 40px rgba(251,191,36,.55), 8px 8px 0 rgba(0,0,0,.8);
+  animation: milePop 3s ease forwards;
+}
+.milestone-big { border-color: #ef4444; box-shadow: 0 0 60px rgba(239,68,68,.75), 8px 8px 0 rgba(0,0,0,.8); }
+.milestone-emoji { font-size: clamp(40px,9vw,68px); display:block; margin-bottom:12px; }
+.milestone-label { font-size: clamp(10px, 2.4vw, 17px); color: #fde047; text-shadow: 2px 2px 0 #000, 0 0 20px #fbbf24; }
+
+.offline-overlay {
+  position:fixed; inset:0; z-index:600; background:rgba(0,0,0,.88);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.offline-box {
+  font-family: 'Press Start 2P', monospace; text-transform: uppercase;
+  background: #0a0618; border: 6px solid #818cf8;
+  padding: 28px 24px; text-align: center;
+  max-width: min(360px,90vw);
+  box-shadow: 8px 8px 0 rgba(0,0,0,.8);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.offline-title  { font-size: clamp(12px,2.5vw,16px); color: #fde047; }
+.offline-msg    { font-size: clamp(5px,1.1vw,7px); color: #a5b4fc; line-height: 1.9; }
+.offline-earned { font-size: clamp(14px,3vw,20px); color: #10b981; text-shadow: 1px 1px 0 #000, 0 0 14px #10b981; }
+.offline-tap    { font-size: clamp(5px,1vw,7px); color: #6366f1; animation: promptPulse 1s ease infinite alternate; }
+
+@media (max-width: 400px) {
+  .cat-body-wrap { width: 80px; height: 80px; }
+  .arm-wrap { width: 24px; height: 32px; }
+  .upg-flavor { display: none; }
+  .total-earned { display: none; }
+}
+`;
+
+    // Mount
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

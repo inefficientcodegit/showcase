@@ -70,6 +70,15 @@
   "description": "compose your own soundscape",
   "iosLink": null,
   "androidLink": null
+ },
+{
+  "id": "moneymaow",
+  "title": "Moneymaow",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Moneymaow/index.html",
+  "description": "tap away and build your food empire",
+  "iosLink": null,
+  "androidLink": null
  }
 
 ]
