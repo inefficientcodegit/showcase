@@ -34,5 +34,33 @@
   "description": "Connect balls! casual arcade game",
   "iosLink": null,
   "androidLink": "https://play.google.com/store/apps/details?id=com.mfmc.balls"
+ },
+{
+  "id": "ballstacks",
+  "title": "Ballstacks",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Ballstacks/index.html",
+  "description": "drop balls, clear the grid, score points",
+  "iosLink": null,
+  "androidLink": null
+ },
+{
+  "id": "puzzoku",
+  "title": "Puzzoku",
+  "status": "final",
+  "url": "https://inefficientcodegit.github.io/showcase/puzzoku/index.html",
+  "description": "Sudoku jigsaw puzzle math logic game mashup",
+  "iosLink": "https://apps.apple.com/us/app/puzzoku/id6760819328",
+  "androidLink": "https://play.google.com/store/apps/details?id=com.inefficientcode.puzzoku"
+ },
+{
+  "id": "doomsday-trainer",
+  "title": "Doomsday Trainer",
+  "status": "final",
+  "url": "https://inefficientcodegit.github.io/showcase/doomsday%20trainer/index.html",
+  "description": "Learn how to work out the day of the week for any date using mental math",
+  "iosLink": "https://apps.apple.com/us/app/doomsday-trainer/id6760719687",
+  "androidLink": "https://play.google.com/store/apps/details?id=com.inefficientcode.doomsdaytrainer"
  }
+
 ]
