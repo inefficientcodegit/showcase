@@ -4,7 +4,7 @@
   "title": "Make No Mistakes",
   "status": "in-dev",
   "url": "https://inefficientcodegit.github.io/showcase/Make%20No%20Mistakes/index.html",
-  "description": "Vibecoding nightmares - can you deploy this app?",
+  "description": "Vibecoding nightmares - can you deploy this app? AI messed up your code, can you avoid system crashes?",
   "iosLink": null,
   "androidLink": null
  },
@@ -13,7 +13,7 @@
   "title": "Pondering Fish",
   "status": "in-dev",
   "url": "https://inefficientcodegit.github.io/showcase/Pondering%20Fish/index.html",
-  "description": "Swim through the maze",
+  "description": "Swim through the maze, just swim",
   "iosLink": null,
   "androidLink": null
  },
@@ -22,7 +22,7 @@
   "title": "Presidential Decisions",
   "status": "in-dev",
   "url": "https://inefficientcodegit.github.io/showcase/Presidential%20Decisions/index.html",
-  "description": "Tap your way to world domination",
+  "description": "Tap your way to world domination, idle tapper",
   "iosLink": null,
   "androidLink": null
  },
@@ -31,7 +31,7 @@
   "title": "Balls on my Screen",
   "status": "final",
   "url": "https://inefficientcodegit.github.io/showcase/Balls%20on%20my%20Screen/index.html",
-  "description": "Connect balls!",
+  "description": "Connect balls! casual arcade game",
   "iosLink": null,
   "androidLink": "https://play.google.com/store/apps/details?id=com.mfmc.balls"
  }
