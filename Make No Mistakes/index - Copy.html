@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Make No Mistakes</title>
+  
+  <!-- Load React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Load Babel for JSX compilation in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      touch-action: none; /* Prevent browser pull-to-refresh on mobile */
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Custom inline SVG Icons (replacing lucide-react imports for pure standalone HTML)
+    const Icon = ({ size = 24, className = '', style, onClick, children, ...props }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} onClick={onClick} style={style} {...props}>
+        {children}
+      </svg>
+    );
+    const Bug = (p) => <Icon {...p}><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M17.47 9c1.93-.2 3.53-1.9 3.53-3.7"/><path d="M8 14H6"/><path d="M18 14h-2"/><path d="M9 18h-2"/><path d="M17 18h-2"/></Icon>;
+    const Terminal = (p) => <Icon {...p}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></Icon>;
+    const AlertOctagon = (p) => <Icon {...p}><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Icon>;
+    const RotateCcw = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
+    const Volume2 = (p) => <Icon {...p}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></Icon>;
+    const VolumeX = (p) => <Icon {...p}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" x2="17" y1="9" y2="15"/><line x1="17" x2="23" y1="9" y2="15"/></Icon>;
+    const Star = (p) => <Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
+    const RefreshCw = (p) => <Icon {...p}><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></Icon>;
+    const X = (p) => <Icon {...p}><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></Icon>;
+    const Send = (p) => <Icon {...p}><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
+    const Coins = (p) => <Icon {...p}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></Icon>;
+    const Bot = (p) => <Icon {...p}><rect width="18" height="14" x="3" y="8" rx="2"/><path d="M12 5a3 3 0 1 0-3 3"/><line x1="9" x2="15" y1="13" y2="13"/><line x1="9" x2="9.01" y1="18" y2="18"/><line x1="15" x2="15.01" y1="18" y2="18"/></Icon>;
+
+    const SHAKE_CSS = `
+      @keyframes shake {
+        0% { transform: translate(1px, 1px) rotate(0deg); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        20% { transform: translate(-3px, 0px) rotate(1deg); }
+        30% { transform: translate(3px, 2px) rotate(0deg); }
+        40% { transform: translate(1px, -1px) rotate(1deg); }
+        50% { transform: translate(-1px, 2px) rotate(-1deg); }
+        60% { transform: translate(-3px, 1px) rotate(0deg); }
+        70% { transform: translate(3px, 1px) rotate(-1deg); }
+        80% { transform: translate(-1px, -1px) rotate(1deg); }
+        90% { transform: translate(1px, 2px) rotate(0deg); }
+        100% { transform: translate(1px, -2px) rotate(-1deg); }
+      }
+      .animate-shake {
+        animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+      }
+      .glitch-text {
+        text-shadow: 2px 0 red, -2px 0 blue;
+      }
+      @keyframes coin-spin {
+        0% { transform: rotateY(0deg); }
+        100% { transform: rotateY(360deg); }
+      }
+      .animate-coin {
+        animation: coin-spin 1s linear infinite;
+      }
+    `;
+
+    function App() {
+      const [level, setLevel] = useState(0);
+      const [mistakes, setMistakes] = useState(0);
+      const [isShaking, setIsShaking] = useState(false);
+      const [errorMessage, setErrorMessage] = useState("");
+      const [logs, setLogs] = useState([
+        "[System] Booting spaghetti.js...",
+        "[Info] git push --force origin main",
+        "[Warning] StackOverflow is down. Development halted.",
+        "[System] 'Works on my machine' protocol engaged."
+      ]);
+
+      // Level 3 specific state
+      const [ballPos, setBallPos] = useState({ top: '50%', left: '50%' });
+      
+      // Level 4, 6, 8, 11 States
+      const dlRef = useRef(null);
+      const [dlProgress, setDlProgress] = useState(0);
+      const [adPos, setAdPos] = useState({ x: 0, y: 0 });
+      const [adStart, setAdStart] = useState({ x: 0, y: 0 });
+      const [isDarkMode, setIsDarkMode] = useState(false);
+      const [loopSpinSpeed, setSpinSpeed] = useState(3);
+      const loopTimerRef = useRef(null);
+
+      // New Level 10 (Tokens) States
+      const [aiState, setAiState] = useState('idle'); // idle, error, raining
+      const [caughtTokens, setCaughtTokens] = useState(0);
+      const [fallingTokens, setFallingTokens] = useState([]);
+      const [aiInput, setAiInput] = useState('');
+
+      const addLog = (msg) => {
+        setLogs(prev => {
+          const newLogs = [...prev, msg];
+          return newLogs.slice(-5); // Keep last 5 logs
+        });
+      };
+
+      const triggerMistake = (errorMsg) => {
+        setErrorMessage(errorMsg);
+        setIsShaking(true);
+        setMistakes(m => m + 1);
+        addLog(`[FATAL ERROR] ${errorMsg}`);
+        
+        // Vibrate device if supported on mobile
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(200); } catch (e) {}
+        }
+
+        setTimeout(() => {
+          setIsShaking(false);
+          setErrorMessage("");
+          setLevel(0); // Back to start on any mistake!
+          
+          // Reset all states
+          setDlProgress(0);
+          setAdPos({x: 0, y: 0});
+          setIsDarkMode(false);
+          setSpinSpeed(3);
+          setAiState('idle');
+          setCaughtTokens(0);
+          setFallingTokens([]);
+          setAiInput('');
+          if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+        }, 2000);
+      };
+
+      // Level 3 (Bouncing ball) effect
+      useEffect(() => {
+        if (level === 3) {
+          const interval = setInterval(() => {
+            setBallPos({
+              top: `${Math.floor(Math.random() * 80) + 10}%`,
+              left: `${Math.floor(Math.random() * 80) + 10}%`
+            });
+          }, 600);
+          return () => clearInterval(interval);
+        }
+      }, [level]);
+
+      // Level 10 (Falling Tokens) effect
+      useEffect(() => {
+        let interval;
+        if (level === 10 && aiState === 'raining') {
+          interval = setInterval(() => {
+            setFallingTokens(prev => {
+              // Move existing tokens down
+              const next = prev.map(t => ({...t, top: t.top + t.speed}));
+              
+              // Drop a new token randomly (slightly less frequent)
+              if (Math.random() < 0.10) {
+                 next.push({ 
+                   id: Math.random().toString(), 
+                   left: 10 + Math.random() * 80, // percentage 10-90
+                   top: -10, 
+                   speed: 1.0 + Math.random() * 1.5 // slightly slower fall speed
+                 });
+              }
+              // Remove tokens that fell off screen
+              return next.filter(t => t.top < 120);
+            });
+          }, 50);
+        }
+        return () => clearInterval(interval);
+      }, [level, aiState]);
+
+      const renderLevel = () => {
+        switch (level) {
+          case 0:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-8 w-full h-full text-center px-4">
+                <h1 className="text-4xl md:text-5xl font-black font-mono tracking-tighter glitch-text flex flex-col">
+                  <span>MAKE NO</span>
+                  {/* TRICK: The word mistakes is the real start button */}
+                  <span 
+                    className="text-red-500 cursor-pointer active:scale-95 hover:text-red-400"
+                    onClick={() => setLevel(1)}
+                  >
+                    MISTAKES
+                  </span>
+                </h1>
+                <p className="text-gray-400 italic text-sm">LGTM! Ship it to production. 🚢</p>
+                
+                {/* TRICK: The obvious button crashes the game */}
+                <button 
+                  className="mt-12 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-lg shadow-[0_5px_0_rgb(37,99,235)] active:shadow-[0_0px_0_rgb(37,99,235)] active:translate-y-[5px] transition-all w-full max-w-xs"
+                  onClick={() => triggerMistake("Uncaught TypeError: start_game is not a function. Did you forget to compile?")}
+                >
+                  START GAME
+                </button>
+              </div>
+            );
+
+          case 1:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-6 w-full h-full px-6">
+                <h2 className="text-2xl font-bold font-sans text-center">
+                  Level 1: Verification
+                </h2>
+                <p className="text-lg text-gray-300 text-center">
+                  The intern copy-pasted this from StackOverflow. Please agree to the Terms to{' '}
+                  {/* TRICK: The word 'proceed' is the actual trigger */}
+                  <span 
+                    className="text-blue-400 underline cursor-pointer active:text-blue-300"
+                    onClick={() => setLevel(2)}
+                  >
+                    proceed
+                  </span>
+                  .
+                </p>
+
+                <div 
+                  className="flex items-center space-x-3 bg-zinc-800 p-4 rounded-md border-2 border-dashed border-zinc-600 w-full"
+                  onClick={() => triggerMistake("SecurityException: Reactstate mutation strictly forbidden by Senior Dev.")}
+                >
+                  <input type="checkbox" readOnly value="" className="w-6 h-6 pointer-events-none" />
+                  <label className="text-sm">I swear I read the docs.</label>
+                </div>
+
+                <button 
+                  className="bg-gray-600 text-white py-3 px-6 rounded opacity-50 w-full"
+                  onClick={() => triggerMistake("Validation Error: Cannot submit without agreement.")}
+                >
+                  Next Step
+                </button>
+              </div>
+            );
+
+          case 2:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-6 w-full h-full px-6">
+                <h2 className="text-2xl font-bold font-sans text-center">
+                  Level 2: 10x Dev Interview
+                </h2>
+                <p className="text-center text-gray-300 mb-4">
+                  Our <code>.sort()</code> method is behaving normally. Which of these arrays is sorted correctly in native JavaScript?
+                </p>
+
+                <div className="flex flex-col space-y-4 w-full">
+                  {/* TRICK: JS .sort() sorts alphabetically as strings by default! */}
+                  <button 
+                    className="bg-zinc-800 border border-zinc-600 p-4 rounded text-left font-mono hover:bg-zinc-700"
+                    onClick={() => triggerMistake("Assertion Error: Expected [1, 2, 10, 20] but got [1, 10, 2, 20].")}
+                  >
+                    A) [1, 2, 10, 20]
+                  </button>
+                  
+                  <button 
+                    className="bg-zinc-800 border border-zinc-600 p-4 rounded text-left font-mono hover:bg-zinc-700"
+                    onClick={() => setLevel(3)}
+                  >
+                    B) [1, 10, 2, 20]
+                  </button>
+
+                  <button 
+                    className="bg-zinc-800 border border-zinc-600 p-4 rounded text-left font-mono hover:bg-zinc-700"
+                    onClick={() => triggerMistake("SyntaxError: Array index out of bounds.")}
+                  >
+                    C) [20, 10, 2, 1]
+                  </button>
+                </div>
+              </div>
+            );
+
+          case 3:
+            return (
+              <div className="flex flex-col items-center justify-start pt-12 space-y-6 w-full h-full px-6 relative overflow-hidden">
+                <h2 className="text-2xl font-bold font-sans text-center z-10 relative">
+                  Level 3: Missing Deps
+                </h2>
+                <p className="text-center text-gray-300 z-10 relative bg-zinc-900/80 p-2 rounded">
+                  A wild memory leak appeared! Tap the{' '}
+                  {/* TRICK: Tap the text, not the ball */}
+                  <span 
+                    className="text-green-500 font-bold cursor-pointer underline"
+                    onClick={() => setLevel(4)}
+                  >
+                    green ball
+                  </span>
+                  {' '}to fix the useEffect loop.
+                </p>
+
+                {/* The physical ball that moves and causes an error */}
+                <div 
+                  className="absolute w-16 h-16 bg-green-500 rounded-full cursor-pointer shadow-[0_0_15px_#22c55e] transition-all duration-300 ease-in-out flex items-center justify-center text-xs text-black font-bold"
+                  style={{ top: ballPos.top, left: ballPos.left, transform: 'translate(-50%, -50%)' }}
+                  onClick={() => triggerMistake("Maximum update depth exceeded. The green ball is a lie.")}
+                >
+                  TAP ME
+                </div>
+              </div>
+            );
+
+          case 4:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-6 w-full h-full px-6"
+                onPointerMove={(e) => {
+                  if (dlRef.current) {
+                    const isDragging = dlRef.current.getAttribute('data-dragging') === 'true';
+                    if (isDragging) {
+                      const rect = dlRef.current.getBoundingClientRect();
+                      const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+                      const percent = ((clientX - rect.left) / rect.width) * 100;
+                      if (percent > 102) {
+                         dlRef.current.setAttribute('data-dragging', 'false');
+                         triggerMistake("BufferOverflow: You installed 3 gigabytes of node_modules.");
+                      } else {
+                         setDlProgress(Math.max(0, percent));
+                      }
+                    }
+                  }
+                }}
+                onPointerUp={() => {
+                  if (dlRef.current) dlRef.current.setAttribute('data-dragging', 'false');
+                }}
+                onPointerLeave={() => {
+                  if (dlRef.current) dlRef.current.setAttribute('data-dragging', 'false');
+                }}
+              >
+                <h2 className="text-2xl font-bold font-sans text-center glitch-text">
+                  Level 4: npm install
+                </h2>
+                <p className="text-center text-gray-400 text-sm">
+                  The package manager stalled. Swipe to manually fetch dependencies. Do NOT over-drag!
+                </p>
+                
+                <div 
+                  ref={dlRef}
+                  className="w-full bg-zinc-800 h-12 rounded-full overflow-hidden border-2 border-zinc-600 relative cursor-ew-resize touch-none"
+                  onPointerDown={() => dlRef.current.setAttribute('data-dragging', 'true')}
+                >
+                  <div 
+                    className="bg-blue-500 h-full flex items-center justify-end px-2 text-xs font-bold transition-all duration-75 pointer-events-none"
+                    style={{ width: `${dlProgress}%` }}
+                  >
+                    {Math.floor(dlProgress)}%
+                  </div>
+                </div>
+
+                {dlProgress >= 100 && dlProgress <= 102 && (
+                  <button 
+                    className="mt-4 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg w-full animate-bounce shadow-[0_0_15px_#16a34a]"
+                    onClick={() => setLevel(5)}
+                  >
+                    RESOLVE DEPENDENCIES
+                  </button>
+                )}
+              </div>
+            );
+
+          case 5:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-6 w-full h-full px-6">
+                <h2 className="text-2xl font-bold font-sans text-center">
+                  Level 5: QA Testing
+                </h2>
+                <p className="text-center text-gray-300">
+                  Select all grid squares containing a <span className="font-mono text-red-400 font-bold">10x developer</span> to verify you are human.
+                </p>
+
+                <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
+                  {[...Array(9)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="aspect-square bg-zinc-800 border border-zinc-600 flex items-center justify-center cursor-pointer hover:bg-zinc-700 active:bg-zinc-600"
+                      onClick={() => triggerMistake("It's a feature, not a bug! Try thinking outside the grid.")}
+                    >
+                      <div className="w-1/2 h-1/2 bg-zinc-700/50 rounded-sm"></div>
+                    </div>
+                  ))}
+                </div>
+                {/* TRICK: They must click the Bug icon in the header! */}
+                <p className="text-xs text-zinc-500 mt-8 italic">Hint: Look at the app bar.</p>
+              </div>
+            );
+
+          case 6:
+            return (
+              <div className="flex flex-col items-center justify-center w-full h-full relative overflow-hidden">
+                <div className="z-0 px-6 text-center space-y-4">
+                  <h2 className="text-2xl font-bold font-sans text-center">
+                    Level 6: Tech Debt
+                  </h2>
+                  <p className="text-gray-300">Monetization sprint! Close the ad to pay down tech debt.</p>
+                  <button className="bg-blue-600 text-white py-2 px-4 rounded opacity-50 cursor-not-allowed">
+                    Continue to Level 7
+                  </button>
+                </div>
+
+                {/* Draggable Ad */}
+                <div 
+                  className="absolute bg-yellow-400 text-black border-4 border-red-600 p-6 shadow-2xl w-64 h-64 flex flex-col items-center justify-center text-center touch-none cursor-move z-10 transition-transform duration-75"
+                  style={{ transform: `translate(${adPos.x}px, ${adPos.y}px)` }}
+                  onPointerDown={(e) => {
+                    const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+                    const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+                    setAdStart({ x: clientX - adPos.x, y: clientY - adPos.y });
+                    e.currentTarget.setAttribute('data-dragging', 'true');
+                  }}
+                  onPointerMove={(e) => {
+                    if (e.currentTarget.getAttribute('data-dragging') === 'true') {
+                      const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+                      const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+                      const newX = clientX - adStart.x;
+                      const newY = clientY - adStart.y;
+                      setAdPos({ x: newX, y: newY });
+                      
+                      // Lowered the threshold slightly to make it easier on mobile
+                      if (Math.abs(newX) > window.innerWidth / 2.2 || Math.abs(newY) > window.innerHeight / 2.2) {
+                        setLevel(7);
+                      }
+                    }
+                  }}
+                  onPointerUp={(e) => {
+                    e.currentTarget.setAttribute('data-dragging', 'false');
+                    // THE FIX: If they drop it before it triggers, snap it back to center!
+                    if (Math.abs(adPos.x) < window.innerWidth / 2.2 && Math.abs(adPos.y) < window.innerHeight / 2.2) {
+                      setAdPos({ x: 0, y: 0 });
+                    }
+                  }}
+                  onPointerLeave={(e) => {
+                    e.currentTarget.setAttribute('data-dragging', 'false');
+                    if (Math.abs(adPos.x) < window.innerWidth / 2.2 && Math.abs(adPos.y) < window.innerHeight / 2.2) {
+                      setAdPos({ x: 0, y: 0 });
+                    }
+                  }}
+                >
+                  <button 
+                    className="absolute top-2 right-2 bg-red-600 text-white w-8 h-8 flex items-center justify-center font-bold active:scale-90"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerMistake("MaliciousRedirect: The 'X' button triggered an infinite while loop.");
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+                  <h3 className="font-black text-xl mb-2 animate-pulse text-red-600">DOWNLOAD RAM NOW!</h3>
+                  <p className="font-bold text-sm">You are the 1,000,000th visitor to localhost:3000</p>
+                </div>
+              </div>
+            );
+
+          case 7:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-6 w-full h-full px-6">
+                <h2 className="text-2xl font-bold font-sans text-center">
+                  Level 7: node-gyp Error
+                </h2>
+                <p className="text-center text-gray-300 mb-4">
+                  Python dependencies missing for audio compiling. Set the volume to exactly 50% to compile.
+                </p>
+
+                <div className="flex items-center space-x-4 w-full max-w-xs bg-zinc-800 p-4 rounded-lg">
+                  <Volume2 className="text-zinc-400" />
+                  <input 
+                    type="range" 
+                    min="0" max="100" 
+                    defaultValue="0"
+                    className="flex-grow h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer"
+                    onChange={() => triggerMistake("AudioDriverCrash: Value jumped unexpectedly to NaN.")}
+                  />
+                </div>
+
+                {/* TRICK: Tap the speaker icon or text to mute/skip */}
+                <div className="mt-8">
+                  <button 
+                    className="flex items-center space-x-2 text-zinc-500 hover:text-white transition-colors p-4"
+                    onClick={() => setLevel(8)}
+                  >
+                    <VolumeX size={18} />
+                    <span className="text-sm">Or tap here to just ignore the warnings</span>
+                  </button>
+                </div>
+              </div>
+            );
+
+          case 8:
+            return (
+              <div className={`flex flex-col items-center justify-center space-y-6 w-full h-full px-6 transition-colors duration-500 ${isDarkMode ? 'bg-black text-black' : 'bg-zinc-950 text-white'}`}>
+                <h2 className="text-2xl font-bold font-sans text-center">
+                  Level 8: User Preferences
+                </h2>
+                <p className="text-center mb-8 max-w-sm">
+                  Light mode attracts moths... and bugs. Switch to Dark Mode to reveal the way forward.
+                </p>
+
+                <button 
+                  className={`py-3 px-6 rounded-full font-bold shadow-lg transition-colors border-2 ${isDarkMode ? 'bg-black border-black text-black' : 'bg-white border-white text-black'}`}
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                >
+                  {isDarkMode ? 'Dark Mode Active' : 'Enable Dark Mode'}
+                </button>
+
+                {/* TRICK: The next button is completely hidden in dark mode, and clicking anything else crashes */}
+                {isDarkMode && (
+                  <div 
+                    className="absolute inset-0 z-0"
+                    onClick={(e) => {
+                      if (e.target.id !== 'hidden-next') {
+                        triggerMistake("NullReferenceException: Clicked on darkness. Expected a div.");
+                      }
+                    }}
+                  />
+                )}
+
+                <button 
+                  id="hidden-next"
+                  className={`absolute bottom-12 right-8 py-4 px-6 rounded z-10 font-bold ${isDarkMode ? 'bg-black text-black opacity-1' : 'opacity-0 pointer-events-none'}`}
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     setLevel(9);
+                  }}
+                >
+                  git commit -m "next" {'->'}
+                </button>
+              </div>
+            );
+
+          case 9:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-6 w-full h-full px-6">
+                <h2 className="text-2xl font-bold font-sans text-center">
+                  Level 9: Code Review
+                </h2>
+                <p className="text-center text-gray-300">
+                  Works on my machine! Leave exactly <span 
+                    className="text-yellow-400 font-bold cursor-pointer inline-block p-2"
+                    onClick={() => setLevel(10)}
+                  >5</span> stars to merge this PR.
+                </p>
+
+                <div className="flex space-x-2 mt-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star 
+                      key={star}
+                      size={44}
+                      className="text-zinc-600 cursor-pointer hover:text-yellow-400 active:scale-90 transition-all"
+                      onClick={() => triggerMistake(
+                        star === 5 
+                        ? "BotProtection: Suspiciously positive PR review blocked."
+                        : "EgoException: Rating is below acceptable Senior Dev threshold (5)."
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+
+          case 10:
+            return (
+              <div className="flex flex-col w-full h-full relative touch-none">
+                {/* The void penalty has been removed. Catch tokens in peace! */}
+                <div 
+                  id="bg-layer" 
+                  className="absolute inset-0 z-0 pointer-events-none" 
+                />
+                
+                <div className="p-6 z-10 flex flex-col h-full pointer-events-none">
+                  <h2 className="text-2xl font-bold font-sans text-center mb-2">
+                    Level 10: Prompt Driven Dev
+                  </h2>
+                  <p className="text-center text-gray-400 text-sm mb-6">
+                    Write the prompt to generate the rest of the game code.
+                  </p>
+
+                  {aiState === 'error' && (
+                    <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg mb-4 animate-pulse">
+                      <span className="font-bold block">ERROR 429: API LIMIT REACHED</span>
+                      OUT OF TOKENS. PLEASE INSERT MORE TOKENS TO PROCEED.
+                    </div>
+                  )}
+
+                  {aiState === 'raining' && (
+                    <div className="text-center font-mono text-yellow-400 text-xl font-bold mb-4">
+                      TOKENS CAUGHT: {caughtTokens} / 10
+                    </div>
+                  )}
+
+                  <div className="mt-auto pointer-events-auto z-20 flex bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
+                    <div className="p-3 bg-zinc-700 text-zinc-400"><Bot size={20} /></div>
+                    <input 
+                      type="text" 
+                      disabled={aiState !== 'idle'}
+                      placeholder="Type your prompt..." 
+                      className="flex-grow bg-transparent px-3 text-white outline-none disabled:opacity-50"
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && aiState === 'idle') {
+                          setAiState('error');
+                          setTimeout(() => setAiState('raining'), 1500);
+                        }
+                      }}
+                    />
+                    <button 
+                      className="p-3 bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50"
+                      disabled={aiState !== 'idle'}
+                      onClick={() => {
+                        setAiState('error');
+                        setTimeout(() => setAiState('raining'), 1500);
+                      }}
+                    >
+                      <Send size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Falling Tokens */}
+                {aiState === 'raining' && fallingTokens.map(token => (
+                  <div
+                    key={token.id}
+                    className="absolute z-30 w-16 h-16 bg-yellow-500 rounded-full border-4 border-yellow-600 flex items-center justify-center cursor-pointer shadow-lg animate-coin"
+                    style={{ 
+                      left: `${token.left}%`, 
+                      top: `${token.top}%`,
+                      transform: 'translateX(-50%)' 
+                    }}
+                    onPointerDown={(e) => {
+                      e.stopPropagation(); 
+                      setFallingTokens(prev => prev.filter(t => t.id !== token.id));
+                      setCaughtTokens(c => {
+                        const newC = c + 1;
+                        if (newC >= 10) {
+                          setAiState('idle'); // stop rain
+                          setLevel(11); // Advance
+                        }
+                        return newC;
+                      });
+                    }}
+                  >
+                    <Coins size={24} className="text-yellow-900" />
+                  </div>
+                ))}
+              </div>
+            );
+
+          case 11:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-8 w-full h-full px-6">
+                <h2 className="text-2xl font-bold font-sans text-center text-red-500">
+                  Level 11: Infinite Loop
+                </h2>
+                <p className="text-center text-gray-300">
+                  <code>while(!coffee) {'{'} code() {'}'}</code> blocked the main thread. You must manually halt the cycle.
+                </p>
+
+                <div className="relative flex items-center justify-center w-48 h-48">
+                  <RefreshCw 
+                    size={100} 
+                    className="text-blue-500 touch-none cursor-pointer hover:text-blue-400"
+                    style={{ animation: `spin ${loopSpinSpeed}s linear infinite` }}
+                    onPointerDown={() => {
+                      loopTimerRef.current = setTimeout(() => {
+                        setLevel(12); // Success if held for 2 seconds
+                      }, 2000);
+                    }}
+                    onPointerUp={() => {
+                      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+                      setSpinSpeed(0.2); // Spins crazy fast
+                      triggerMistake("ConcurrencyError: Thread released prematurely. State corrupted.");
+                    }}
+                    onPointerLeave={() => {
+                      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+                    }}
+                  />
+                  <div className="absolute font-mono text-xs text-blue-300 pointer-events-none bg-zinc-950/80 px-2 rounded">
+                    eval(doom)
+                  </div>
+                </div>
+                <p className="text-sm text-zinc-500 animate-pulse font-bold">
+                  Hold to interrupt process...
+                </p>
+                <style>{`
+                  @keyframes spin { 100% { transform: rotate(360deg); } }
+                `}</style>
+              </div>
+            );
+
+          case 12:
+            return (
+              <div className="flex flex-col items-center justify-center space-y-6 w-full h-full px-6 bg-green-900/20">
+                <Terminal size={64} className="text-green-400 mb-4" />
+                <h2 className="text-3xl font-bold font-mono text-center text-green-400">
+                  DEPLOYMENT SUCCESSFUL
+                </h2>
+                <p className="text-center text-gray-300">
+                  Production is stable... for now. You survived the vibes.
+                </p>
+                
+                <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-700 w-full font-mono text-sm max-w-xs">
+                  <p className="text-gray-400">Total System Reboots:</p>
+                  <p className="text-3xl font-bold text-white">{mistakes}</p>
+                </div>
+
+                <button 
+                  className="mt-8 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3 px-6 rounded-lg w-full flex items-center justify-center space-x-2 max-w-xs"
+                  onClick={() => { 
+                    setLevel(0); 
+                    setMistakes(0); 
+                    setLogs([
+                      "[System] Booting spaghetti.js...",
+                      "[Info] git push --force origin main",
+                    ]); 
+                  }}
+                >
+                  <RotateCcw size={18} />
+                  <span>REFRESH PRODUCTION</span>
+                </button>
+              </div>
+            );
+
+          default:
+            return null;
+        }
+      };
+
+      return (
+        <>
+          <style>{SHAKE_CSS}</style>
+          <div className={`min-h-screen bg-zinc-950 text-zinc-100 font-sans flex flex-col ${isShaking ? 'animate-shake' : ''} selection:bg-red-900 selection:text-white overflow-hidden`}>
+            
+            {/* Top Header / App Bar */}
+            <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-md z-20">
+              <div className="flex items-center space-x-2">
+                <Bug 
+                  className={`text-red-500 ${level === 5 ? 'cursor-pointer hover:scale-110 active:scale-95' : ''}`} 
+                  size={20} 
+                  onClick={() => {
+                    if (level === 5) setLevel(6);
+                  }}
+                />
+                <span className="font-mono font-bold tracking-widest text-sm text-zinc-400">v0.0.1-alpha</span>
+              </div>
+              <div className="text-xs font-mono bg-zinc-800 px-2 py-1 rounded text-red-400 border border-red-900/50">
+                JIRA TICKETS: {mistakes}
+              </div>
+            </div>
+
+            {/* Main Game Area */}
+            <div className="flex-grow relative overflow-hidden flex items-center justify-center">
+              
+              {/* Error Overlay (Flashes when mistake is made) */}
+              {errorMessage && (
+                <div className="absolute inset-0 bg-red-600/90 z-50 flex flex-col items-center justify-center p-6 text-center">
+                  <AlertOctagon size={64} className="text-white mb-4 animate-bounce" />
+                  <h2 className="text-2xl font-black text-white mb-2 font-mono">SYSTEM CRASH</h2>
+                  <p className="text-red-100 font-mono bg-red-900 p-4 rounded shadow-inner border border-red-500/50 text-sm md:text-base">
+                    {errorMessage}
+                  </p>
+                  <p className="text-white mt-8 text-sm opacity-70">Rolling back changes...</p>
+                </div>
+              )}
+
+              {renderLevel()}
+            </div>
+
+            {/* Bottom Console Log */}
+            <div className="bg-black border-t border-zinc-800 h-32 p-3 overflow-hidden font-mono text-[10px] sm:text-xs leading-relaxed z-20 relative">
+              <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
+              {logs.map((log, i) => (
+                <div 
+                  key={i} 
+                  className={`mb-1 ${log.includes('FATAL') ? 'text-red-500 font-bold' : log.includes('Warning') ? 'text-yellow-500' : 'text-green-500/70'}`}
+                >
+                  <span className="opacity-50 select-none mr-2">{'>'}</span>{log}
+                </div>
+              ))}
+              {/* Fake blinking cursor */}
+              <div className="text-zinc-500 animate-pulse"><span className="opacity-50 mr-2">{'>'}</span>_</div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
