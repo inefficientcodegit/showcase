@@ -30,7 +30,7 @@
             position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;
         }
 
-        /* --- UI Controls Top (Categories & Instruments) --- */
+        /* --- UI Controls Top --- */
         .controls-top {
             position: absolute; top: 15px; left: 0; right: 0;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -71,6 +71,19 @@
             position: absolute; top: -2px; right: -2px;
             width: 6px; height: 6px; border-radius: 50%;
             box-shadow: 0 0 6px currentColor;
+        }
+
+        /* Top Right Record / Download Button */
+        .download-toggle {
+            position: absolute; top: 15px; right: 15px; pointer-events: auto; z-index: 30;
+            background: rgba(255, 50, 100, 0.2); border: 1px solid #ff3366; color: #ff3366;
+            padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;
+            cursor: pointer; box-shadow: 0 0 10px rgba(255,50,100,0.3);
+            transition: all 0.3s; display: flex; align-items: center; gap: 5px;
+        }
+        .download-toggle.recording {
+            background: rgba(255, 50, 100, 0.6); color: white;
+            animation: pulseRecord 1s infinite alternate;
         }
 
         /* Toggles - Made smaller */
@@ -150,10 +163,46 @@
         .track-label { width: 60px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
         .track-container { flex: 1; height: 45px; background: rgba(255,255,255,0.05); position: relative; border-radius: 6px; overflow: hidden; }
         .track-ruler { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 16.66% 100%; }
-        .loop-block { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(255,255,255,0.08); border: 1px solid; border-radius: 6px; cursor: grab; }
+        
+        .loop-block { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,0.08); border: 1px solid; border-radius: 6px; cursor: grab; }
         .loop-block:active { cursor: grabbing; background: rgba(255,255,255,0.15); }
         .loop-dot { position: absolute; top: 50%; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 6px currentColor; pointer-events: none; }
-        .resize-handle { position: absolute; right: 0; top: 0; bottom: 0; width: 25px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: rgba(255,255,255,0.8); cursor: ew-resize; border-left: 1px solid rgba(255,255,255,0.3); border-radius: 0 5px 5px 0; }
+        
+        .resize-handle { position: absolute; top: 0; bottom: 0; width: 15px; background: rgba(255,255,255,0.2); cursor: ew-resize; z-index: 5; }
+        .resize-handle.left { left: 0; border-right: 1px solid rgba(255,255,255,0.3); border-radius: 5px 0 0 5px; }
+        .resize-handle.right { right: 0; border-left: 1px solid rgba(255,255,255,0.3); border-radius: 0 5px 5px 0; }
+
+        .duplicate-btn {
+            background: none; border: none; color: white; cursor: pointer; opacity: 0.3;
+            font-size: 14px; margin-left: 10px; transition: opacity 0.3s;
+        }
+        .duplicate-btn:hover { opacity: 1; }
+
+        /* --- Modals --- */
+        .modal-backdrop {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px); pointer-events: auto;
+        }
+        .modal-content {
+            background: rgba(20, 25, 40, 0.95); border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px; border-radius: 10px; width: 85%; max-width: 400px;
+            color: white; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-content h3 { margin-top: 0; font-weight: 300; letter-spacing: 2px; color: #00ffcc; }
+        .modal-btn {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white; padding: 10px 15px; border-radius: 5px; cursor: pointer;
+            transition: all 0.2s; font-size: 11px; font-weight: bold; flex: 1; letter-spacing: 1px;
+        }
+        .modal-btn.primary { background: rgba(0, 255, 204, 0.2); border-color: #00ffcc; color: #00ffcc; }
+        .modal-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        .reset-btn {
+            background: none; border: 1px solid currentColor; color: inherit;
+            padding: 4px 8px; border-radius: 4px; font-size: 9px; cursor: pointer; opacity: 0.7;
+        }
+        .reset-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
 
         /* --- Visuals --- */
         .ripple {
@@ -245,35 +294,44 @@
         const WAVE_TYPES = ['sine', 'triangle', 'square', 'sawtooth'];
         const WAVE_NAMES = ['SINE', 'TRI', 'SQR', 'SAW'];
 
-        function LoopTrackRow({ pedal, trackData, onRestart, forceUpdate }) {
+        function LoopTrackRow({ pedal, trackData, onRestart, onDuplicate, forceUpdate }) {
             const trackRef = useRef(null);
-            const [localDur, setLocalDur] = useState(trackData.duration);
+            const [localStart, setLocalStart] = useState(trackData.loopStart || 0);
+            const [localEnd, setLocalEnd] = useState(trackData.loopEnd || 30000);
             const [localShift, setLocalShift] = useState(trackData.shift || 0);
             const inst = INSTRUMENTS[pedal.instKey];
 
             useEffect(() => {
-                setLocalDur(trackData.duration);
+                setLocalStart(trackData.loopStart || 0);
+                setLocalEnd(trackData.loopEnd || 30000);
                 setLocalShift(trackData.shift || 0);
-            }, [trackData.duration, trackData.shift]);
+            }, [trackData.loopStart, trackData.loopEnd, trackData.shift]);
 
             const handlePointerDown = (e, type) => {
                 e.stopPropagation();
                 const startX = e.clientX;
-                const startDuration = trackData.duration;
-                const startShift = trackData.shift || 0;
+                const sStart = trackData.loopStart || 0;
+                const sEnd = trackData.loopEnd || 30000;
+                const sShift = trackData.shift || 0;
+                
+                // Track width represents max possible loop duration (30s)
                 const trackWidth = trackRef.current.getBoundingClientRect().width;
                 const msPerPixel = 30000 / trackWidth;
 
                 const onMove = (moveEvent) => {
                     const deltaX = moveEvent.clientX - startX;
                     const deltaMs = deltaX * msPerPixel;
-                    if (type === 'resize') {
-                        let newDur = Math.min(30000, Math.max(1000, startDuration + deltaMs));
-                        setLocalDur(newDur); trackData.duration = newDur;
+                    
+                    if (type === 'resize-left') {
+                        let newStart = Math.min(sEnd - 500, Math.max(0, sStart + deltaMs));
+                        setLocalStart(newStart); trackData.loopStart = newStart;
+                    } else if (type === 'resize-right') {
+                        let newEnd = Math.min(30000, Math.max(sStart + 500, sEnd + deltaMs));
+                        setLocalEnd(newEnd); trackData.loopEnd = newEnd;
                     } else if (type === 'shift') {
-                        let newShift = (startShift + deltaMs);
-                        while(newShift < 0) newShift += trackData.duration;
-                        newShift = newShift % trackData.duration;
+                        const loopLength = sEnd - sStart;
+                        let newShift = (sShift + deltaMs) % loopLength;
+                        if (newShift < 0) newShift += loopLength;
                         setLocalShift(newShift); trackData.shift = newShift;
                     }
                     forceUpdate(Date.now()); 
@@ -285,22 +343,29 @@
                 window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp);
             };
 
-            const widthPct = (localDur / 30000) * 100;
+            const leftPct = (localStart / 30000) * 100;
+            const widthPct = ((localEnd - localStart) / 30000) * 100;
+
+            // Only visually render events that are within the trimmed loop window
+            const validEvents = trackData.events.filter(ev => ev.timeOffset >= localStart && ev.timeOffset <= localEnd);
 
             return (
                 <div className="track-row">
                     <div className="track-label" style={{color: inst.color}}>{inst.name}</div>
                     <div className="track-container" ref={trackRef}>
                         <div className="track-ruler"></div>
-                        <div className="loop-block" style={{ width: `${widthPct}%`, borderColor: inst.color }} onPointerDown={(e) => handlePointerDown(e, 'shift')}>
-                            {trackData.events.map((ev, i) => {
-                                let visualTime = (ev.timeOffset + localShift) % localDur;
-                                if (visualTime < 0) visualTime += localDur;
-                                return <div key={i} className="loop-dot" style={{ left: `${(visualTime / localDur) * 100}%`, backgroundColor: inst.color }} />
+                        <div className="loop-block" style={{ left: `${leftPct}%`, width: `${widthPct}%`, borderColor: inst.color }} onPointerDown={(e) => handlePointerDown(e, 'shift')}>
+                            {validEvents.map((ev, i) => {
+                                const loopLength = localEnd - localStart;
+                                let visualTime = (ev.timeOffset - localStart + localShift) % loopLength;
+                                if (visualTime < 0) visualTime += loopLength;
+                                return <div key={i} className="loop-dot" style={{ left: `${(visualTime / loopLength) * 100}%`, backgroundColor: inst.color }} />
                             })}
-                            <div className="resize-handle" onPointerDown={(e) => handlePointerDown(e, 'resize')}>||</div>
+                            <div className="resize-handle left" onPointerDown={(e) => handlePointerDown(e, 'resize-left')}></div>
+                            <div className="resize-handle right" onPointerDown={(e) => handlePointerDown(e, 'resize-right')}></div>
                         </div>
                     </div>
+                    <button className="duplicate-btn" onClick={() => onDuplicate(pedal.id)} title="Duplicate Loop">📋</button>
                 </div>
             );
         }
@@ -314,6 +379,15 @@
             const [isSoundscapeOpen, setIsSoundscapeOpen] = useState(false);
             const [, setForceRender] = useState(0);
             const [pedals, setPedals] = useState([]);
+
+            // Song Recording State
+            const [isRecordingSong, setIsRecordingSong] = useState(false);
+            const [songProgress, setSongProgress] = useState(0);
+            const [previewUrl, setPreviewUrl] = useState(null);
+            const [previewBlob, setPreviewBlob] = useState(null);
+            const mediaRecorderRef = useRef(null);
+            const recordedChunksRef = useRef([]);
+            const songIntervalRef = useRef(null);
 
             // Per-Instrument Settings State
             const [settings, setSettings] = useState(() => {
@@ -351,7 +425,7 @@
                 masterGainRef.current = masterGain;
 
                 const delay = ctx.createDelay(); delay.delayTime.value = 3.5; 
-                const feedback = ctx.createGain(); feedback.gain.value = 0.55; // Fixed global tail
+                const feedback = ctx.createGain(); feedback.gain.value = 0.55;
                 const delayFilter = ctx.createBiquadFilter(); delayFilter.type = 'lowpass'; delayFilter.frequency.value = 800;
 
                 delay.connect(feedback); feedback.connect(delayFilter);
@@ -364,8 +438,53 @@
                 for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
                 noiseBufferRef.current = noiseBuffer;
 
+                // Setup MediaStream Destination for downloading "Songs"
+                const dest = ctx.createMediaStreamDestination();
+                masterGain.connect(dest);
+                
+                // Use webm if supported (native in Chrome/Firefox offline), fallback gracefully
+                let mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = ''; // Let browser choose
+
+                mediaRecorderRef.current = new MediaRecorder(dest.stream, { mimeType });
+                mediaRecorderRef.current.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+                };
+                mediaRecorderRef.current.onstop = () => {
+                    const blob = new Blob(recordedChunksRef.current, { type: mimeType || 'audio/mp4' });
+                    const url = URL.createObjectURL(blob);
+                    setPreviewBlob({ blob, mimeType: mimeType || 'audio/mp4' });
+                    setPreviewUrl(url);
+                    recordedChunksRef.current = [];
+                    setIsRecordingSong(false);
+                    setSongProgress(0);
+                };
+
                 setHasStarted(true);
             }, []);
+
+            const toggleSongRecord = () => {
+                if (isRecordingSong) {
+                    mediaRecorderRef.current.stop();
+                    clearInterval(songIntervalRef.current);
+                } else {
+                    initAudio();
+                    recordedChunksRef.current = [];
+                    mediaRecorderRef.current.start();
+                    setIsRecordingSong(true);
+                    setSongProgress(0);
+                    
+                    let time = 0;
+                    songIntervalRef.current = setInterval(() => {
+                        time++;
+                        setSongProgress(time);
+                        if (time >= 180) { // Max song length 3 minutes
+                            mediaRecorderRef.current.stop();
+                            clearInterval(songIntervalRef.current);
+                        }
+                    }, 1000);
+                }
+            };
 
             const playTone = useCallback((relY, instrumentKey) => {
                 const ctx = audioCtxRef.current;
@@ -384,7 +503,6 @@
                 gain.connect(delaySend);
 
                 if (inst.isPerc || inst.isDrum) {
-                    // Percussive logic uses pitch, volume, decay, reverb
                     const pitchOffset = instSettings.pitch;
                     const volMult = instSettings.volume;
                     const decMult = instSettings.decay;
@@ -442,7 +560,6 @@
                     return; 
                 }
 
-                // Melodic instruments use full parameters
                 const noteIndex = Math.max(0, Math.min(Math.floor(relY * PENTATONIC_SCALE.length), PENTATONIC_SCALE.length - 1));
                 const frequency = PENTATONIC_SCALE[noteIndex];
 
@@ -464,12 +581,11 @@
                 osc.connect(filter); filter.connect(gain);
                 osc.start(now); osc.stop(now + inst.attack + releaseTime + 0.1);
 
-                // Chorus Effect
                 if (instSettings.chorus > 0) {
                     const chOsc = ctx.createOscillator();
                     chOsc.type = oscType;
                     chOsc.frequency.value = frequency;
-                    chOsc.detune.value = instSettings.pitch + 15; // slightly detuned
+                    chOsc.detune.value = instSettings.pitch + 15; 
                     
                     const chGain = ctx.createGain();
                     chGain.gain.setValueAtTime(0, now);
@@ -495,7 +611,10 @@
                 if (!isPlayback) {
                     pedals.forEach(pedal => {
                         if (pedal.state === 'recording' && pedal.instKey === instrumentKey) {
-                            tracksRef.current[pedal.id].events.push({ timeOffset: Date.now() - tracksRef.current[pedal.id].startTime, relX, relY, instrumentKey });
+                            tracksRef.current[pedal.id].events.push({ 
+                                timeOffset: Date.now() - tracksRef.current[pedal.id].startTime, 
+                                relX, relY, instrumentKey 
+                            });
                         }
                     });
                 }
@@ -509,20 +628,24 @@
 
             const startPlayback = useCallback((pedalId) => {
                 const track = tracksRef.current[pedalId];
-                if (!track || track.events.length === 0) return;
+                if (!track) return;
                 if (track.interval) clearInterval(track.interval);
                 if (track.timeouts) track.timeouts.forEach(clearTimeout);
 
+                const loopLength = (track.loopEnd || 30000) - (track.loopStart || 0);
+                if (loopLength <= 0) return;
+
                 const scheduleEvents = () => {
-                    track.timeouts = track.events.map(ev => {
-                        let scheduledTime = (ev.timeOffset + (track.shift || 0)) % track.duration;
-                        if (scheduledTime < 0) scheduledTime += track.duration;
+                    const validEvents = track.events.filter(e => e.timeOffset >= (track.loopStart || 0) && e.timeOffset <= (track.loopEnd || 30000));
+                    track.timeouts = validEvents.map(ev => {
+                        let scheduledTime = (ev.timeOffset - (track.loopStart || 0) + (track.shift || 0)) % loopLength;
+                        if (scheduledTime < 0) scheduledTime += loopLength;
                         return setTimeout(() => triggerEvent(ev.relX, ev.relY, ev.instrumentKey, true), scheduledTime);
                     });
                 };
 
                 scheduleEvents(); 
-                track.interval = setInterval(scheduleEvents, track.duration);
+                track.interval = setInterval(scheduleEvents, loopLength);
             }, [triggerEvent]);
 
             const stopPlayback = useCallback((pedalId) => {
@@ -533,7 +656,6 @@
 
             const switchCategory = (catId) => {
                 setActiveCat(catId);
-                // Auto-select first instrument in category
                 const firstInst = Object.values(INSTRUMENTS).find(i => i.cat === catId);
                 if (firstInst) switchInstrument(firstInst.id);
             };
@@ -543,7 +665,10 @@
                     let changed = false;
                     const updated = prev.map(p => {
                         if (p.state === 'recording') {
-                            changed = true; tracksRef.current[p.id].duration = Math.max(Date.now() - tracksRef.current[p.id].startTime, 1000);
+                            changed = true; 
+                            const duration = Math.min(Date.now() - tracksRef.current[p.id].startTime, 30000);
+                            tracksRef.current[p.id].originalDuration = duration;
+                            tracksRef.current[p.id].loopEnd = duration;
                             startPlayback(p.id);
                             return { ...p, state: 'playing' };
                         }
@@ -561,7 +686,10 @@
                     const pedal = prev.find(p => p.id === pedalId);
                     if (!pedal) return prev;
                     if (pedal.state === 'recording') {
-                        tracksRef.current[pedalId].duration = Math.max(Date.now() - tracksRef.current[pedalId].startTime, 1000);
+                        const duration = Math.min(Date.now() - tracksRef.current[pedalId].startTime, 30000);
+                        tracksRef.current[pedalId].originalDuration = duration;
+                        tracksRef.current[pedalId].loopEnd = duration;
+                        tracksRef.current[pedalId].loopStart = 0;
                         startPlayback(pedalId);
                         return prev.map(p => p.id === pedalId ? { ...p, state: 'playing' } : p);
                     } else if (pedal.state === 'playing') {
@@ -575,15 +703,76 @@
             const startNewLoop = (e) => {
                 e.stopPropagation(); initAudio();
                 const newId = `pedal-${Date.now()}`;
-                tracksRef.current[newId] = { events: [], startTime: Date.now(), duration: 0, interval: null, timeouts: [], shift: 0 };
+                tracksRef.current[newId] = { events: [], startTime: Date.now(), loopStart: 0, loopEnd: 30000, shift: 0, interval: null, timeouts: [] };
                 setPedals(prev => [...prev, { id: newId, instKey: activeInstKey, state: 'recording' }]);
+
+                // Auto stop recording at exactly 30s max loop length
+                setTimeout(() => {
+                    setPedals(currentPedals => {
+                        const p = currentPedals.find(ped => ped.id === newId);
+                        if (p && p.state === 'recording') {
+                            tracksRef.current[newId].originalDuration = 30000;
+                            tracksRef.current[newId].loopEnd = 30000;
+                            startPlayback(newId);
+                            return currentPedals.map(ped => ped.id === newId ? { ...ped, state: 'playing' } : ped);
+                        }
+                        return currentPedals;
+                    });
+                }, 30000);
             };
+
+            const duplicateLoop = useCallback((pedalId) => {
+                const trackToCopy = tracksRef.current[pedalId];
+                if (!trackToCopy) return;
+                const pedalToCopy = pedals.find(p => p.id === pedalId);
+                
+                const newId = `pedal-${Date.now()}`;
+                tracksRef.current[newId] = {
+                    events: JSON.parse(JSON.stringify(trackToCopy.events)),
+                    startTime: Date.now(),
+                    loopStart: trackToCopy.loopStart,
+                    loopEnd: trackToCopy.loopEnd,
+                    originalDuration: trackToCopy.originalDuration,
+                    shift: trackToCopy.shift,
+                    interval: null, timeouts: []
+                };
+                setPedals(prev => [...prev, { id: newId, instKey: pedalToCopy.instKey, state: 'playing' }]);
+                startPlayback(newId);
+            }, [pedals, startPlayback]);
 
             const updateInstSetting = (param, value) => {
                 setSettings(prev => ({
                     ...prev,
                     [activeInstKey]: { ...prev[activeInstKey], [param]: parseFloat(value) }
                 }));
+            };
+
+            const resetCurrentSettings = () => {
+                const inst = INSTRUMENTS[activeInstKey];
+                setSettings(prev => ({
+                    ...prev,
+                    [activeInstKey]: {
+                        pitch: 0, volume: 0.6, reverb: 0.5,
+                        waveform: inst.type ? WAVE_TYPES.indexOf(inst.type) : 0,
+                        decay: 1.0, chorus: 0.0
+                    }
+                }));
+            };
+
+            const downloadPreview = () => {
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = previewUrl;
+                a.download = `bloom-song-${Date.now()}.${previewBlob.mimeType.includes('webm') ? 'webm' : 'mp4'}`;
+                document.body.appendChild(a);
+                a.click();
+                closePreview();
+            };
+
+            const closePreview = () => {
+                if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+                setPreviewUrl(null);
+                setPreviewBlob(null);
             };
 
             const activePedals = pedals.filter(p => p.instKey === activeInstKey);
@@ -603,6 +792,9 @@
 
                     {hasStarted && (
                         <>
+                            <button className={`download-toggle ${isRecordingSong ? 'recording' : ''}`} onClick={toggleSongRecord} title="Record Song (Max 3 mins)">
+                                {isRecordingSong ? `⏹️ REC (${Math.floor(songProgress/60)}:${(songProgress%60).toString().padStart(2, '0')})` : '⬇️ RECORD SONG'}
+                            </button>
                             <button className={`editor-toggle ${isEditorOpen ? 'open' : ''}`} onClick={() => { setIsEditorOpen(!isEditorOpen); setIsSoundscapeOpen(false); }}>
                                 {isEditorOpen ? 'CLOSE EDITOR' : '🎛️ ADJUST LOOPS'}
                             </button>
@@ -656,21 +848,24 @@
                     <div className={`editor-panel ${isEditorOpen ? 'open' : ''}`}>
                         <div className="editor-header">
                             LOOP EDITOR
-                            <span>Drag edge to change length (max 30s) • Drag body to shift start time</span>
+                            <span>Drag edges to trim parts (max 30s) • Drag body to shift phase • Click 📋 to duplicate</span>
                         </div>
                         <div className="editor-scroll" onPointerDown={e => e.stopPropagation()}>
                             {playingLoops.length === 0 && <div style={{opacity: 0.5, fontSize: '12px'}}>No active loops to adjust.</div>}
                             {playingLoops.map(pedal => (
-                                <LoopTrackRow key={pedal.id} pedal={pedal} trackData={tracksRef.current[pedal.id]} onRestart={startPlayback} forceUpdate={setForceRender} />
+                                <LoopTrackRow key={pedal.id} pedal={pedal} trackData={tracksRef.current[pedal.id]} onRestart={startPlayback} onDuplicate={duplicateLoop} forceUpdate={setForceRender} />
                             ))}
                         </div>
                     </div>
 
                     {/* Per-Instrument Soundscape Panel */}
                     <div className={`editor-panel ${isSoundscapeOpen ? 'open' : ''}`}>
-                        <div className="editor-header" style={{color: INSTRUMENTS[activeInstKey].color}}>
-                            SOUNDSCAPE: {INSTRUMENTS[activeInstKey].name}
-                            <span>These settings apply only to the currently selected instrument.</span>
+                        <div className="editor-header" style={{color: INSTRUMENTS[activeInstKey].color, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                            <div>
+                                SOUNDSCAPE: {INSTRUMENTS[activeInstKey].name}
+                                <span>These settings apply only to the currently selected instrument.</span>
+                            </div>
+                            <button className="reset-btn" onClick={resetCurrentSettings}>RESET</button>
                         </div>
                         <div className="editor-scroll" onPointerDown={e => e.stopPropagation()}>
                             <div className="slider-row">
@@ -709,6 +904,21 @@
                             )}
                         </div>
                     </div>
+
+                    {/* Song Preview Modal */}
+                    {previewUrl && (
+                        <div className="modal-backdrop">
+                            <div className="modal-content" onPointerDown={e => e.stopPropagation()}>
+                                <h3>SONG RECORDED</h3>
+                                <p style={{fontSize: '11px', opacity: 0.8, marginBottom: '20px'}}>Preview your composition below.</p>
+                                <audio controls src={previewUrl} style={{width: '100%', marginBottom: '20px', outline: 'none'}}></audio>
+                                <div style={{display: 'flex', gap: '10px'}}>
+                                    <button className="modal-btn primary" onClick={downloadPreview}>⬇️ DOWNLOAD</button>
+                                    <button className="modal-btn" onClick={closePreview}>DISCARD</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
