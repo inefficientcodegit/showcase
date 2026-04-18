@@ -15,7 +15,7 @@
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-            background: linear-gradient(180deg, #151a30 0%, #080811 100%);
+            background: #000;
             touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none; -webkit-user-select: none;
         }
@@ -24,6 +24,7 @@
 
         .container {
             width: 100vw; height: 100vh; position: relative; overflow: hidden;
+            transition: background 0.5s ease;
         }
 
         .play-area {
@@ -32,7 +33,7 @@
 
         /* --- UI Controls Top --- */
         .controls-top {
-            position: absolute; top: 15px; left: 0; right: 0;
+            position: absolute; top: 50px; left: 0; right: 0;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             padding: 0 10px; z-index: 10; pointer-events: none;
         }
@@ -72,6 +73,29 @@
             width: 6px; height: 6px; border-radius: 50%;
             box-shadow: 0 0 6px currentColor;
         }
+
+        /* Top Left Theme Toggle */
+        .theme-toggle {
+            position: absolute; top: 15px; left: 15px; pointer-events: auto; z-index: 40;
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: white;
+            padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;
+            cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 5px;
+        }
+        .theme-toggle:hover { background: rgba(255,255,255,0.2); }
+        .theme-menu {
+            position: absolute; top: 45px; left: 15px; z-index: 40;
+            background: rgba(10, 15, 30, 0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+            padding: 5px; display: flex; flex-direction: column; gap: 5px;
+            transform-origin: top left; transition: all 0.2s;
+            opacity: 0; pointer-events: none; transform: scale(0.95);
+        }
+        .theme-menu.open { opacity: 1; pointer-events: auto; transform: scale(1); }
+        .theme-option {
+            background: transparent; border: none; color: white; text-align: left;
+            padding: 8px 12px; border-radius: 5px; font-size: 10px; cursor: pointer;
+            transition: all 0.2s; font-weight: bold; display: flex; align-items: center; gap: 8px;
+        }
+        .theme-option:hover, .theme-option.active { background: rgba(255,255,255,0.15); }
 
         /* Top Right Record / Download Button */
         .download-toggle {
@@ -232,10 +256,41 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        const PENTATONIC_SCALE = [
-            261.63, 293.66, 329.63, 392.00, 440.00,
-            523.25, 587.33, 659.25, 783.99, 880.00
-        ].reverse();
+        // Vibe/Theme Configurations
+        const THEMES = {
+            SOOTHING: {
+                id: 'SOOTHING', name: 'Soothing', icon: '🌿',
+                bg: 'linear-gradient(180deg, #151a30 0%, #080811 100%)',
+                scale: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00].reverse(), // C Maj Pent
+                attackMult: 1.0, releaseMult: 1.0, filterMult: 1.0, drumPitch: 0, drumDecay: 1.0, chorus: 0.0
+            },
+            DANCE: {
+                id: 'DANCE', name: 'Dance', icon: '🪩',
+                bg: 'linear-gradient(180deg, #1c0024 0%, #000000 100%)',
+                scale: [261.63, 311.13, 349.23, 392.00, 466.16, 523.25, 622.25, 698.46, 783.99, 932.33].reverse(), // C Min Pent
+                attackMult: 0.1, releaseMult: 0.5, filterMult: 1.5, drumPitch: -150, drumDecay: 0.6, chorus: 0.0,
+                waveMap: { 'sine': 'triangle' } // Make soft sines slightly buzzier
+            },
+            POP: {
+                id: 'POP', name: 'Pop', icon: '⭐',
+                bg: 'linear-gradient(180deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
+                scale: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00].reverse(), // C Maj Pent
+                attackMult: 0.3, releaseMult: 0.7, filterMult: 1.2, drumPitch: 50, drumDecay: 0.8, chorus: 0.1
+            },
+            LOFI: {
+                id: 'LOFI', name: 'Lo-Fi', icon: '☕',
+                bg: 'linear-gradient(180deg, #2a1f1a 0%, #0a0805 100%)',
+                scale: [174.61, 196.00, 220.00, 261.63, 293.66, 349.23, 392.00, 440.00, 523.25, 587.33].reverse(), // F Maj Pent (Warm/Low)
+                attackMult: 1.5, releaseMult: 1.2, filterMult: 0.4, drumPitch: -300, drumDecay: 1.2, chorus: 0.5 // High default chorus for wobble
+            },
+            ELECTRO: {
+                id: 'ELECTRO', name: 'Electro', icon: '⚡',
+                bg: 'linear-gradient(180deg, #001f11 0%, #000000 100%)',
+                scale: [261.63, 311.13, 349.23, 392.00, 466.16, 523.25, 622.25, 698.46, 783.99, 932.33].reverse(), // C Min Pent
+                attackMult: 0.05, releaseMult: 0.3, filterMult: 2.0, drumPitch: -50, drumDecay: 0.4, chorus: 0.2,
+                waveOverride: 'sawtooth' // Force harsh waves
+            }
+        };
 
         const CATEGORIES = [
             { id: 'STRING', icon: '🎻', name: 'String' },
@@ -372,6 +427,9 @@
 
         function App() {
             const [hasStarted, setHasStarted] = useState(false);
+            const [activeThemeId, setActiveThemeId] = useState('SOOTHING');
+            const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+            
             const [activeCat, setActiveCat] = useState('DIGITAL');
             const [activeInstKey, setActiveInstKey] = useState('BELL');
             const [ripples, setRipples] = useState([]);
@@ -408,8 +466,10 @@
             const noiseBufferRef = useRef(null);
             const tracksRef = useRef({});
             const settingsRef = useRef(settings);
+            const themeRef = useRef('SOOTHING');
 
             useEffect(() => { settingsRef.current = settings; }, [settings]);
+            useEffect(() => { themeRef.current = activeThemeId; }, [activeThemeId]);
 
             const initAudio = useCallback(() => {
                 if (audioCtxRef.current) {
@@ -490,6 +550,9 @@
                 const ctx = audioCtxRef.current;
                 if (!ctx) return;
 
+                const theme = THEMES[themeRef.current];
+                const currentScale = theme.scale;
+                
                 const inst = INSTRUMENTS[instrumentKey];
                 const instSettings = settingsRef.current[instrumentKey];
                 const now = ctx.currentTime;
@@ -503,56 +566,57 @@
                 gain.connect(delaySend);
 
                 if (inst.isPerc || inst.isDrum) {
-                    const pitchOffset = instSettings.pitch;
+                    const pitchOffset = instSettings.pitch + theme.drumPitch;
                     const volMult = instSettings.volume;
-                    const decMult = instSettings.decay;
+                    const decMult = instSettings.decay * theme.drumDecay;
+                    const fMult = theme.filterMult; // For modifying percussive noises per theme
 
                     if (inst.isPerc) {
                         if (relY < 0.25) { 
                             const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = pitchOffset;
-                            osc.frequency.setValueAtTime(2500, now); osc.frequency.exponentialRampToValueAtTime(2000, now + (0.05 * decMult));
+                            osc.frequency.setValueAtTime(2500 * fMult, now); osc.frequency.exponentialRampToValueAtTime(2000 * fMult, now + (0.05 * decMult));
                             osc.connect(gain); gain.gain.setValueAtTime(0.5 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.05 * decMult));
                             osc.start(now); osc.stop(now + (0.05 * decMult));
                         } else if (relY < 0.5) { 
                             const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
-                            const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 5000;
+                            const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 5000 * fMult;
                             noiseSrc.connect(filter); filter.connect(gain);
                             gain.gain.setValueAtTime(0.5 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.03 * decMult));
                             noiseSrc.start(now);
                         } else if (relY < 0.75) { 
                             const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = pitchOffset;
-                            osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(200, now + (0.15 * decMult));
+                            osc.frequency.setValueAtTime(400 * fMult, now); osc.frequency.exponentialRampToValueAtTime(200 * fMult, now + (0.15 * decMult));
                             osc.connect(gain); gain.gain.setValueAtTime(0.6 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.15 * decMult));
                             osc.start(now); osc.stop(now + (0.15 * decMult));
                         } else { 
                             const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = pitchOffset;
-                            osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + (0.2 * decMult));
+                            osc.frequency.setValueAtTime(200 * fMult, now); osc.frequency.exponentialRampToValueAtTime(100 * fMult, now + (0.2 * decMult));
                             osc.connect(gain); gain.gain.setValueAtTime(0.7 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.2 * decMult));
                             osc.start(now); osc.stop(now + (0.2 * decMult));
                         }
                     } else if (inst.isDrum) {
                         if (relY < 0.25) { 
                             const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
-                            const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 8000;
+                            const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 8000 * fMult;
                             noiseSrc.connect(filter); filter.connect(gain);
                             gain.gain.setValueAtTime(0.3 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.1 * decMult));
                             noiseSrc.start(now);
                         } else if (relY < 0.5) { 
                             const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
-                            const filter = ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 2500;
+                            const filter = ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 2500 * fMult;
                             const noiseGain = ctx.createGain(); noiseSrc.connect(filter); filter.connect(noiseGain); noiseGain.connect(gain);
                             noiseGain.gain.setValueAtTime(0.4 * volMult, now); noiseGain.gain.exponentialRampToValueAtTime(0.01, now + (0.25 * decMult));
                             noiseSrc.start(now);
-                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + (0.1 * decMult));
+                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(200 * fMult, now); osc.frequency.exponentialRampToValueAtTime(100 * fMult, now + (0.1 * decMult));
                             const oscGain = ctx.createGain(); osc.connect(oscGain); oscGain.connect(gain);
                             oscGain.gain.setValueAtTime(0.3 * volMult, now); oscGain.gain.exponentialRampToValueAtTime(0.01, now + (0.2 * decMult));
                             osc.start(now); osc.stop(now + (0.2 * decMult));
                         } else if (relY < 0.75) { 
-                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(250, now); osc.frequency.exponentialRampToValueAtTime(120, now + (0.1 * decMult));
+                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(250 * fMult, now); osc.frequency.exponentialRampToValueAtTime(120 * fMult, now + (0.1 * decMult));
                             osc.connect(gain); gain.gain.setValueAtTime(0.4 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.3 * decMult));
                             osc.start(now); osc.stop(now + (0.3 * decMult));
                         } else { 
-                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(40, now + (0.1 * decMult));
+                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(120 * fMult, now); osc.frequency.exponentialRampToValueAtTime(40 * fMult, now + (0.1 * decMult));
                             osc.connect(gain); gain.gain.setValueAtTime(0.8 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.5 * decMult));
                             osc.start(now); osc.stop(now + (0.5 * decMult));
                         }
@@ -560,11 +624,17 @@
                     return; 
                 }
 
-                const noteIndex = Math.max(0, Math.min(Math.floor(relY * PENTATONIC_SCALE.length), PENTATONIC_SCALE.length - 1));
-                const frequency = PENTATONIC_SCALE[noteIndex];
+                // Melodic Instrument Theme Mapping
+                const noteIndex = Math.max(0, Math.min(Math.floor(relY * currentScale.length), currentScale.length - 1));
+                const frequency = currentScale[noteIndex];
 
-                const oscType = WAVE_TYPES[instSettings.waveform] || inst.type;
-                const releaseTime = inst.release * instSettings.decay;
+                let oscType = WAVE_TYPES[instSettings.waveform] || inst.type;
+                if (theme.waveOverride) oscType = theme.waveOverride;
+                else if (theme.waveMap && theme.waveMap[oscType]) oscType = theme.waveMap[oscType];
+
+                // Ensure attack is > 0 for linearRamp
+                const attackTime = Math.max(0.001, inst.attack * theme.attackMult);
+                const releaseTime = Math.max(0.01, inst.release * instSettings.decay * theme.releaseMult);
                 
                 const osc = ctx.createOscillator();
                 osc.type = oscType;
@@ -572,30 +642,31 @@
                 osc.detune.value = instSettings.pitch;
 
                 const filter = ctx.createBiquadFilter();
-                filter.type = 'lowpass'; filter.frequency.value = inst.filterFreq;
+                filter.type = 'lowpass'; filter.frequency.value = inst.filterFreq * theme.filterMult;
 
                 gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(instSettings.volume, now + inst.attack);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + inst.attack + releaseTime);
+                gain.gain.linearRampToValueAtTime(instSettings.volume, now + attackTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + attackTime + releaseTime);
 
                 osc.connect(filter); filter.connect(gain);
-                osc.start(now); osc.stop(now + inst.attack + releaseTime + 0.1);
+                osc.start(now); osc.stop(now + attackTime + releaseTime + 0.1);
 
-                if (instSettings.chorus > 0) {
+                const activeChorus = Math.max(instSettings.chorus, theme.chorus);
+                if (activeChorus > 0) {
                     const chOsc = ctx.createOscillator();
                     chOsc.type = oscType;
                     chOsc.frequency.value = frequency;
-                    chOsc.detune.value = instSettings.pitch + 15; 
+                    chOsc.detune.value = instSettings.pitch + 15; // detune for chorus width
                     
                     const chGain = ctx.createGain();
                     chGain.gain.setValueAtTime(0, now);
-                    chGain.gain.linearRampToValueAtTime(instSettings.volume * instSettings.chorus, now + inst.attack);
-                    chGain.gain.exponentialRampToValueAtTime(0.001, now + inst.attack + releaseTime);
+                    chGain.gain.linearRampToValueAtTime(instSettings.volume * activeChorus, now + attackTime);
+                    chGain.gain.exponentialRampToValueAtTime(0.001, now + attackTime + releaseTime);
 
                     chOsc.connect(filter); filter.connect(chGain);
                     chGain.connect(masterGainRef.current); chGain.connect(delaySend);
                     
-                    chOsc.start(now); chOsc.stop(now + inst.attack + releaseTime + 0.1);
+                    chOsc.start(now); chOsc.stop(now + attackTime + releaseTime + 0.1);
                 }
             }, []);
 
@@ -622,6 +693,10 @@
 
             const handlePlayAreaClick = (e) => {
                 initAudio();
+                setIsThemeMenuOpen(false); // Close theme menu if open
+                setIsEditorOpen(false);
+                setIsSoundscapeOpen(false);
+                
                 const rect = e.currentTarget.getBoundingClientRect();
                 triggerEvent((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height, activeInstKey, false);
             };
@@ -706,7 +781,6 @@
                 tracksRef.current[newId] = { events: [], startTime: Date.now(), loopStart: 0, loopEnd: 30000, shift: 0, interval: null, timeouts: [] };
                 setPedals(prev => [...prev, { id: newId, instKey: activeInstKey, state: 'recording' }]);
 
-                // Auto stop recording at exactly 30s max loop length
                 setTimeout(() => {
                     setPedals(currentPedals => {
                         const p = currentPedals.find(ped => ped.id === newId);
@@ -781,7 +855,7 @@
             const curSettings = settings[activeInstKey];
 
             return (
-                <div className="container">
+                <div className="container" style={{ background: THEMES[activeThemeId].bg }}>
                     <div className="play-area" onPointerDown={handlePlayAreaClick} />
 
                     {!hasStarted && <div className="instruction">TAP TO PLAY<br/><span style={{fontSize: '10px', marginTop: '10px', display: 'block'}}>Use bottom controls to loop</span></div>}
@@ -790,15 +864,37 @@
                         <div key={ripple.id} className="ripple" style={{ left: ripple.x, top: ripple.y, color: ripple.color }} />
                     ))}
 
+                    {/* Theme Selector */}
+                    <div style={{ position: 'absolute', top: '15px', left: '15px', zIndex: 40 }}>
+                        <button className="theme-toggle" onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}>
+                            {THEMES[activeThemeId].icon} {THEMES[activeThemeId].name.toUpperCase()}
+                        </button>
+                        <div className={`theme-menu ${isThemeMenuOpen ? 'open' : ''}`}>
+                            {Object.values(THEMES).map(th => (
+                                <button 
+                                    key={th.id} 
+                                    className={`theme-option ${activeThemeId === th.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        setActiveThemeId(th.id);
+                                        setIsThemeMenuOpen(false);
+                                        initAudio();
+                                    }}
+                                >
+                                    {th.icon} {th.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {hasStarted && (
                         <>
                             <button className={`download-toggle ${isRecordingSong ? 'recording' : ''}`} onClick={toggleSongRecord} title="Record Song (Max 3 mins)">
                                 {isRecordingSong ? `⏹️ REC (${Math.floor(songProgress/60)}:${(songProgress%60).toString().padStart(2, '0')})` : '⬇️ RECORD SONG'}
                             </button>
-                            <button className={`editor-toggle ${isEditorOpen ? 'open' : ''}`} onClick={() => { setIsEditorOpen(!isEditorOpen); setIsSoundscapeOpen(false); }}>
+                            <button className={`editor-toggle ${isEditorOpen ? 'open' : ''}`} onClick={() => { setIsEditorOpen(!isEditorOpen); setIsSoundscapeOpen(false); setIsThemeMenuOpen(false); }}>
                                 {isEditorOpen ? 'CLOSE EDITOR' : '🎛️ ADJUST LOOPS'}
                             </button>
-                            <button className={`soundscape-toggle ${isSoundscapeOpen ? 'open' : ''}`} onClick={() => { setIsSoundscapeOpen(!isSoundscapeOpen); setIsEditorOpen(false); }}>
+                            <button className={`soundscape-toggle ${isSoundscapeOpen ? 'open' : ''}`} onClick={() => { setIsSoundscapeOpen(!isSoundscapeOpen); setIsEditorOpen(false); setIsThemeMenuOpen(false); }}>
                                 {isSoundscapeOpen ? 'CLOSE SCAPE' : '🌊 SOUNDSCAPE'}
                             </button>
                         </>
@@ -863,7 +959,7 @@
                         <div className="editor-header" style={{color: INSTRUMENTS[activeInstKey].color, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                             <div>
                                 SOUNDSCAPE: {INSTRUMENTS[activeInstKey].name}
-                                <span>These settings apply only to the currently selected instrument.</span>
+                                <span>These settings apply only to the currently selected instrument. Theme overrides may also apply.</span>
                             </div>
                             <button className="reset-btn" onClick={resetCurrentSettings}>RESET</button>
                         </div>
