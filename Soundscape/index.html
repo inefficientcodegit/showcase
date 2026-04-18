@@ -30,18 +30,36 @@
             position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;
         }
 
-        /* --- UI Controls --- */
+        /* --- UI Controls Top (Categories & Instruments) --- */
         .controls-top {
-            position: absolute; top: 20px; left: 0; right: 0;
-            display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-            padding: 0 15px; z-index: 10; pointer-events: none;
+            position: absolute; top: 15px; left: 0; right: 0;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            padding: 0 10px; z-index: 10; pointer-events: none;
+        }
+
+        .categories-row {
+            display: flex; justify-content: center; gap: 15px;
+            background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 30px;
+            pointer-events: auto; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .category-icon {
+            font-size: 20px; cursor: pointer; opacity: 0.4; filter: grayscale(100%);
+            transition: all 0.3s; line-height: 1; margin: 0; padding: 0; background: none; border: none;
+        }
+        .category-icon.active {
+            opacity: 1; filter: grayscale(0%); transform: scale(1.2);
+        }
+
+        .instruments-row {
+            display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; pointer-events: auto;
         }
 
         .instrument-btn {
             position: relative; pointer-events: auto;
             background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15);
-            color: rgba(255, 255, 255, 0.7); padding: 6px 12px; border-radius: 20px;
-            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.7); padding: 5px 10px; border-radius: 20px;
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
             transition: all 0.3s; cursor: pointer;
         }
         .instrument-btn.active {
@@ -51,67 +69,63 @@
 
         .active-dot {
             position: absolute; top: -2px; right: -2px;
-            width: 8px; height: 8px; border-radius: 50%;
-            box-shadow: 0 0 8px currentColor;
+            width: 6px; height: 6px; border-radius: 50%;
+            box-shadow: 0 0 6px currentColor;
         }
 
+        /* Toggles - Made smaller */
         .editor-toggle {
-            position: absolute; bottom: 35px; right: 20px; pointer-events: auto; z-index: 30;
+            position: absolute; bottom: 25px; right: 15px; pointer-events: auto; z-index: 30;
             background: rgba(0, 255, 204, 0.2); border: 1px solid #00ffcc; color: #00ffcc;
-            padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: bold;
-            cursor: pointer; box-shadow: 0 0 10px rgba(0,255,204,0.3);
+            padding: 4px 8px; border-radius: 15px; font-size: 9px; font-weight: bold; letter-spacing: 0.5px;
+            cursor: pointer; box-shadow: 0 0 8px rgba(0,255,204,0.3);
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        
-        .editor-toggle.open {
-            transform: translateY(-45vh);
-        }
+        .editor-toggle.open { transform: translateY(-45vh); }
 
         .soundscape-toggle {
-            position: absolute; bottom: 35px; left: 20px; pointer-events: auto; z-index: 30;
+            position: absolute; bottom: 25px; left: 15px; pointer-events: auto; z-index: 30;
             background: rgba(255, 170, 0, 0.2); border: 1px solid #ffaa00; color: #ffaa00;
-            padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: bold;
-            cursor: pointer; box-shadow: 0 0 10px rgba(255,170,0,0.3);
+            padding: 4px 8px; border-radius: 15px; font-size: 9px; font-weight: bold; letter-spacing: 0.5px;
+            cursor: pointer; box-shadow: 0 0 8px rgba(255,170,0,0.3);
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        
-        .soundscape-toggle.open {
-            transform: translateY(-45vh);
-        }
+        .soundscape-toggle.open { transform: translateY(-45vh); }
 
         .slider-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; font-size: 11px; }
         .slider-row label { width: 90px; font-weight: bold; color: rgba(255,255,255,0.8); text-transform: uppercase;}
         .slider-row input[type=range] { flex: 1; margin: 0 15px; accent-color: #ffaa00; cursor: pointer; }
-        .slider-row span { width: 35px; text-align: right; opacity: 0.6; }
+        .slider-row span { width: 45px; text-align: right; opacity: 0.6; }
 
+        /* --- Loops Bottom --- */
         .controls-bottom {
             position: absolute; bottom: 30px; left: 0; right: 0;
-            display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
-            padding: 0 20px; z-index: 10; pointer-events: none;
+            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;
+            padding: 0 90px; z-index: 10; pointer-events: none; /* Pads for toggles */
         }
 
         .pedal {
-            pointer-events: auto; width: 45px; height: 45px; border-radius: 50%;
+            pointer-events: auto; width: 40px; height: 40px; border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(0, 0, 0, 0.4);
             cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;
         }
         
         .pedal.recording {
             border-color: #ff3366; background: rgba(255, 51, 102, 0.2);
-            box-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.6);
             animation: pulseRecord 1s infinite alternate;
         }
 
         .pedal.playing {
             border-color: #00ffcc; background: rgba(0, 255, 204, 0.2);
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
         }
 
         .pedal.add-loop { border-color: rgba(255, 255, 255, 0.2); border-style: dashed; }
         .pedal-icon { transition: all 0.3s; }
-        .pedal.recording .pedal-icon { width: 14px; height: 14px; background: #ff3366; border-radius: 3px; }
-        .pedal-icon.plus { color: rgba(255,255,255,0.5); font-size: 24px; font-weight: 300; line-height: 1; margin-top: -2px;}
-        .pedal-icon.delete-icon { position: relative; width: 14px; height: 14px; }
+        .pedal.recording .pedal-icon { width: 12px; height: 12px; background: #ff3366; border-radius: 2px; }
+        .pedal-icon.plus { color: rgba(255,255,255,0.5); font-size: 20px; font-weight: 300; line-height: 1; margin-top: -2px;}
+        .pedal-icon.delete-icon { position: relative; width: 12px; height: 12px; }
         .pedal-icon.delete-icon::before, .pedal-icon.delete-icon::after {
             content: ''; position: absolute; top: 50%; left: 0; right: 0;
             height: 2px; background: #00ffcc; border-radius: 2px;
@@ -119,7 +133,7 @@
         .pedal-icon.delete-icon::before { transform: translateY(-50%) rotate(45deg); }
         .pedal-icon.delete-icon::after { transform: translateY(-50%) rotate(-45deg); }
 
-        /* --- Loop Editor --- */
+        /* --- Panels --- */
         .editor-panel {
             position: absolute; bottom: 0; left: 0; right: 0; height: 45vh;
             background: rgba(10, 15, 30, 0.95); border-top: 1px solid rgba(255,255,255,0.1);
@@ -135,7 +149,7 @@
         .track-row { display: flex; align-items: center; margin-bottom: 20px; }
         .track-label { width: 60px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
         .track-container { flex: 1; height: 45px; background: rgba(255,255,255,0.05); position: relative; border-radius: 6px; overflow: hidden; }
-        .track-ruler { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 16.66% 100%; /* 5s intervals */ }
+        .track-ruler { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 16.66% 100%; }
         .loop-block { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(255,255,255,0.08); border: 1px solid; border-radius: 6px; cursor: grab; }
         .loop-block:active { cursor: grabbing; background: rgba(255,255,255,0.15); }
         .loop-dot { position: absolute; top: 50%; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 6px currentColor; pointer-events: none; }
@@ -169,33 +183,74 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // C Major Pentatonic Scale
         const PENTATONIC_SCALE = [
             261.63, 293.66, 329.63, 392.00, 440.00,
             523.25, 587.33, 659.25, 783.99, 880.00
         ].reverse();
 
-        // Distinct ambient instrument profiles
+        const CATEGORIES = [
+            { id: 'STRING', icon: '🎻', name: 'String' },
+            { id: 'WOODWIND', icon: '🎷', name: 'Woodwind' },
+            { id: 'BRASS', icon: '🎺', name: 'Brass' },
+            { id: 'KEYBOARD', icon: '🎹', name: 'Keyboard' },
+            { id: 'PERCUSSION', icon: '🥁', name: 'Percussion' },
+            { id: 'DIGITAL', icon: '💻', name: 'Digital' }
+        ];
+
         const INSTRUMENTS = {
-            BELL: { id: 'BELL', name: 'Bell', type: 'sine', attack: 0.05, release: 2.5, filterFreq: 2000, color: '#00ffff' },
-            PAD: { id: 'PAD', name: 'Pad', type: 'triangle', attack: 0.8, release: 3.5, filterFreq: 1200, color: '#ffaa00' },
-            SYNTH: { id: 'SYNTH', name: 'Synth', type: 'square', attack: 0.1, release: 1.5, filterFreq: 600, color: '#ff00ff' },
-            STRINGS: { id: 'STRINGS', name: 'Strings', type: 'sawtooth', attack: 1.2, release: 4.0, filterFreq: 800, color: '#aaff00' },
-            FLUTE: { id: 'FLUTE', name: 'Flute', type: 'sine', attack: 0.2, release: 1.0, filterFreq: 1500, color: '#88ffcc' },
-            MARIMBA: { id: 'MARIMBA', name: 'Marimba', type: 'triangle', attack: 0.01, release: 0.6, filterFreq: 2500, color: '#ffcc77' },
-            CHOIR: { id: 'CHOIR', name: 'Choir', type: 'triangle', attack: 1.5, release: 3.0, filterFreq: 900, color: '#ccaaff' },
-            DRUMS: { id: 'DRUMS', name: 'Drums', isDrum: true, color: '#ff5555' },
-            PERC: { id: 'PERC', name: 'Perc', isPerc: true, color: '#ffffaa' }
+            // Strings
+            HARP: { id: 'HARP', cat: 'STRING', name: 'Harp', type: 'sine', attack: 0.01, release: 2.0, filterFreq: 3000, color: '#ffaaaa' },
+            CELLO: { id: 'CELLO', cat: 'STRING', name: 'Cello', type: 'sawtooth', attack: 0.5, release: 1.5, filterFreq: 800, color: '#ff8888' },
+            VIOLIN: { id: 'VIOLIN', cat: 'STRING', name: 'Violin', type: 'sawtooth', attack: 0.3, release: 1.0, filterFreq: 1200, color: '#ff6666' },
+            GUITAR: { id: 'GUITAR', cat: 'STRING', name: 'Guitar', type: 'triangle', attack: 0.02, release: 1.5, filterFreq: 2500, color: '#ffaa66' },
+            SITAR: { id: 'SITAR', cat: 'STRING', name: 'Sitar', type: 'triangle', attack: 0.01, release: 2.5, filterFreq: 4000, color: '#ff8844' },
+            KOTO: { id: 'KOTO', cat: 'STRING', name: 'Koto', type: 'sine', attack: 0.01, release: 1.0, filterFreq: 3500, color: '#ff6622' },
+            // Woodwind
+            FLUTE: { id: 'FLUTE', cat: 'WOODWIND', name: 'Flute', type: 'sine', attack: 0.2, release: 1.0, filterFreq: 1500, color: '#88ffcc' },
+            CLARINET: { id: 'CLARINET', cat: 'WOODWIND', name: 'Clarinet', type: 'square', attack: 0.1, release: 0.8, filterFreq: 1000, color: '#66ffaa' },
+            OBOE: { id: 'OBOE', cat: 'WOODWIND', name: 'Oboe', type: 'sawtooth', attack: 0.1, release: 0.8, filterFreq: 1200, color: '#44ff88' },
+            BASSOON: { id: 'BASSOON', cat: 'WOODWIND', name: 'Bassoon', type: 'square', attack: 0.2, release: 1.0, filterFreq: 600, color: '#22ff66' },
+            SHAKUHACHI: { id: 'SHAKUHACHI', cat: 'WOODWIND', name: 'Shakuhachi', type: 'sine', attack: 0.3, release: 1.5, filterFreq: 1000, color: '#00ff44' },
+            PAN_FLUTE: { id: 'PAN_FLUTE', cat: 'WOODWIND', name: 'Pan Flute', type: 'triangle', attack: 0.1, release: 1.2, filterFreq: 1800, color: '#00cc22' },
+            // Brass
+            TRUMPET: { id: 'TRUMPET', cat: 'BRASS', name: 'Trumpet', type: 'sawtooth', attack: 0.1, release: 0.5, filterFreq: 2500, color: '#ffffaa' },
+            FRENCH_HORN: { id: 'FRENCH_HORN', cat: 'BRASS', name: 'Horn', type: 'sawtooth', attack: 0.3, release: 1.0, filterFreq: 1000, color: '#ffff88' },
+            TROMBONE: { id: 'TROMBONE', cat: 'BRASS', name: 'Trombone', type: 'square', attack: 0.2, release: 0.8, filterFreq: 800, color: '#ffff66' },
+            TUBA: { id: 'TUBA', cat: 'BRASS', name: 'Tuba', type: 'square', attack: 0.3, release: 1.0, filterFreq: 400, color: '#ffff44' },
+            SYNTH_BRASS: { id: 'SYNTH_BRASS', cat: 'BRASS', name: 'Synth', type: 'sawtooth', attack: 0.1, release: 1.5, filterFreq: 3000, color: '#ffff22' },
+            MUTED_TRUMPET: { id: 'MUTED_TRUMPET', cat: 'BRASS', name: 'Muted', type: 'triangle', attack: 0.05, release: 0.6, filterFreq: 1500, color: '#cccc00' },
+            // Keyboard
+            PIANO: { id: 'PIANO', cat: 'KEYBOARD', name: 'Piano', type: 'triangle', attack: 0.01, release: 2.0, filterFreq: 2000, color: '#eeaaff' },
+            RHODES: { id: 'RHODES', cat: 'KEYBOARD', name: 'Rhodes', type: 'sine', attack: 0.02, release: 2.5, filterFreq: 1200, color: '#dd88ff' },
+            ORGAN: { id: 'ORGAN', cat: 'KEYBOARD', name: 'Organ', type: 'square', attack: 0.05, release: 0.5, filterFreq: 1800, color: '#cc66ff' },
+            HARPSICHORD: { id: 'HARPSICHORD', cat: 'KEYBOARD', name: 'Harpsichord', type: 'sawtooth', attack: 0.01, release: 1.0, filterFreq: 3500, color: '#bb44ff' },
+            CELESTA: { id: 'CELESTA', cat: 'KEYBOARD', name: 'Celesta', type: 'sine', attack: 0.01, release: 1.5, filterFreq: 4000, color: '#aa22ff' },
+            CLAVINET: { id: 'CLAVINET', cat: 'KEYBOARD', name: 'Clavinet', type: 'square', attack: 0.01, release: 0.5, filterFreq: 2500, color: '#9900ff' },
+            // Percussion
+            DRUMS: { id: 'DRUMS', cat: 'PERCUSSION', name: 'Drums', isDrum: true, color: '#ff5555' },
+            PERC: { id: 'PERC', cat: 'PERCUSSION', name: 'Perc', isPerc: true, color: '#ff3333' },
+            TIMPANI: { id: 'TIMPANI', cat: 'PERCUSSION', name: 'Timpani', type: 'sine', attack: 0.05, release: 2.0, filterFreq: 400, color: '#ff1111' },
+            MARIMBA: { id: 'MARIMBA', cat: 'PERCUSSION', name: 'Marimba', type: 'triangle', attack: 0.01, release: 0.6, filterFreq: 2500, color: '#ffcc77' },
+            VIBRAPHONE: { id: 'VIBRAPHONE', cat: 'PERCUSSION', name: 'Vibraphone', type: 'sine', attack: 0.01, release: 3.0, filterFreq: 2000, color: '#ccaa55' },
+            STEEL_PAN: { id: 'STEEL_PAN', cat: 'PERCUSSION', name: 'Steel Pan', type: 'triangle', attack: 0.02, release: 1.5, filterFreq: 3000, color: '#aa8833' },
+            // Digital
+            BELL: { id: 'BELL', cat: 'DIGITAL', name: 'Bell', type: 'sine', attack: 0.05, release: 2.5, filterFreq: 2000, color: '#00ffff' },
+            PAD: { id: 'PAD', cat: 'DIGITAL', name: 'Pad', type: 'triangle', attack: 0.8, release: 3.5, filterFreq: 1200, color: '#00ccff' },
+            SYNTH: { id: 'SYNTH', cat: 'DIGITAL', name: 'Synth', type: 'square', attack: 0.1, release: 1.5, filterFreq: 600, color: '#0099ff' },
+            CHOIR: { id: 'CHOIR', cat: 'DIGITAL', name: 'Choir', type: 'triangle', attack: 1.5, release: 3.0, filterFreq: 900, color: '#0066ff' },
+            BIT8: { id: 'BIT8', cat: 'DIGITAL', name: '8-Bit', type: 'square', attack: 0.01, release: 0.5, filterFreq: 4000, color: '#0033ff' },
+            DRONE: { id: 'DRONE', cat: 'DIGITAL', name: 'Drone', type: 'sawtooth', attack: 2.0, release: 5.0, filterFreq: 400, color: '#0000ff' }
         };
 
-        // Inner component to render each editable track row
+        const WAVE_TYPES = ['sine', 'triangle', 'square', 'sawtooth'];
+        const WAVE_NAMES = ['SINE', 'TRI', 'SQR', 'SAW'];
+
         function LoopTrackRow({ pedal, trackData, onRestart, forceUpdate }) {
             const trackRef = useRef(null);
             const [localDur, setLocalDur] = useState(trackData.duration);
             const [localShift, setLocalShift] = useState(trackData.shift || 0);
             const inst = INSTRUMENTS[pedal.instKey];
 
-            // Sync with global track data if it changes
             useEffect(() => {
                 setLocalDur(trackData.duration);
                 setLocalShift(trackData.shift || 0);
@@ -207,34 +262,27 @@
                 const startDuration = trackData.duration;
                 const startShift = trackData.shift || 0;
                 const trackWidth = trackRef.current.getBoundingClientRect().width;
-                const msPerPixel = 30000 / trackWidth; // Map screen pixels to 30s max scale
+                const msPerPixel = 30000 / trackWidth;
 
                 const onMove = (moveEvent) => {
                     const deltaX = moveEvent.clientX - startX;
                     const deltaMs = deltaX * msPerPixel;
-
                     if (type === 'resize') {
                         let newDur = Math.min(30000, Math.max(1000, startDuration + deltaMs));
-                        setLocalDur(newDur);
-                        trackData.duration = newDur;
+                        setLocalDur(newDur); trackData.duration = newDur;
                     } else if (type === 'shift') {
                         let newShift = (startShift + deltaMs);
-                        while(newShift < 0) newShift += trackData.duration; // Ensure positive wrap
+                        while(newShift < 0) newShift += trackData.duration;
                         newShift = newShift % trackData.duration;
-                        setLocalShift(newShift);
-                        trackData.shift = newShift;
+                        setLocalShift(newShift); trackData.shift = newShift;
                     }
                     forceUpdate(Date.now()); 
                 };
-
                 const onUp = () => {
-                    window.removeEventListener('pointermove', onMove);
-                    window.removeEventListener('pointerup', onUp);
-                    onRestart(pedal.id); // Restart loop with new timings!
+                    window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
+                    onRestart(pedal.id);
                 };
-
-                window.addEventListener('pointermove', onMove);
-                window.addEventListener('pointerup', onUp);
+                window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp);
             };
 
             const widthPct = (localDur / 30000) * 100;
@@ -244,17 +292,11 @@
                     <div className="track-label" style={{color: inst.color}}>{inst.name}</div>
                     <div className="track-container" ref={trackRef}>
                         <div className="track-ruler"></div>
-                        <div 
-                            className="loop-block" 
-                            style={{ width: `${widthPct}%`, borderColor: inst.color }}
-                            onPointerDown={(e) => handlePointerDown(e, 'shift')}
-                        >
-                            {/* Render the dots indicating events, accounting for Phase Shift */}
+                        <div className="loop-block" style={{ width: `${widthPct}%`, borderColor: inst.color }} onPointerDown={(e) => handlePointerDown(e, 'shift')}>
                             {trackData.events.map((ev, i) => {
                                 let visualTime = (ev.timeOffset + localShift) % localDur;
                                 if (visualTime < 0) visualTime += localDur;
-                                const leftPct = (visualTime / localDur) * 100;
-                                return <div key={i} className="loop-dot" style={{ left: `${leftPct}%`, backgroundColor: inst.color, color: inst.color }} />
+                                return <div key={i} className="loop-dot" style={{ left: `${(visualTime / localDur) * 100}%`, backgroundColor: inst.color }} />
                             })}
                             <div className="resize-handle" onPointerDown={(e) => handlePointerDown(e, 'resize')}>||</div>
                         </div>
@@ -265,71 +307,52 @@
 
         function App() {
             const [hasStarted, setHasStarted] = useState(false);
+            const [activeCat, setActiveCat] = useState('DIGITAL');
             const [activeInstKey, setActiveInstKey] = useState('BELL');
             const [ripples, setRipples] = useState([]);
             const [isEditorOpen, setIsEditorOpen] = useState(false);
             const [isSoundscapeOpen, setIsSoundscapeOpen] = useState(false);
-            const [soundscape, setSoundscape] = useState({ depth: 0.45, tone: 3000, bass: 0, tune: 0 });
-            const [, setForceRender] = useState(0); // Dummy state to trigger UI refreshes
-            
-            // Dynamic Looper slots state: { id, instKey, state: 'recording' | 'playing' }
+            const [, setForceRender] = useState(0);
             const [pedals, setPedals] = useState([]);
 
-            // Refs for Audio Systems
+            // Per-Instrument Settings State
+            const [settings, setSettings] = useState(() => {
+                const init = {};
+                Object.values(INSTRUMENTS).forEach(inst => {
+                    init[inst.id] = {
+                        pitch: 0, volume: 0.6, reverb: 0.5,
+                        waveform: inst.type ? WAVE_TYPES.indexOf(inst.type) : 0,
+                        decay: 1.0, chorus: 0.0
+                    };
+                });
+                return init;
+            });
+
             const audioCtxRef = useRef(null);
             const masterGainRef = useRef(null);
-            const masterToneRef = useRef(null);
-            const masterBassRef = useRef(null);
-            const feedbackRef = useRef(null);
-            const soundscapeRef = useRef({ depth: 0.45, tone: 3000, bass: 0, tune: 0 });
             const delayRef = useRef(null);
             const noiseBufferRef = useRef(null);
-            
-            // Loop tracks data dynamic mapping
             const tracksRef = useRef({});
+            const settingsRef = useRef(settings);
 
-            // --- 1. Audio Initialization ---
+            useEffect(() => { settingsRef.current = settings; }, [settings]);
+
             const initAudio = useCallback(() => {
                 if (audioCtxRef.current) {
                     if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
                     return;
                 }
-
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const ctx = new AudioContext();
                 audioCtxRef.current = ctx;
 
-                const masterGain = ctx.createGain();
-                masterGain.gain.value = 0.5;
-
-                // Setup Master Tone (Lowpass)
-                const masterTone = ctx.createBiquadFilter();
-                masterTone.type = 'lowpass';
-                masterTone.frequency.value = soundscapeRef.current.tone;
-                masterToneRef.current = masterTone;
-
-                // Setup Master Bass (Lowshelf)
-                const masterBass = ctx.createBiquadFilter();
-                masterBass.type = 'lowshelf';
-                masterBass.frequency.value = 200;
-                masterBass.gain.value = soundscapeRef.current.bass;
-                masterBassRef.current = masterBass;
-
-                // Master Routing
-                masterGain.connect(masterTone);
-                masterTone.connect(masterBass);
-                masterBass.connect(ctx.destination);
+                const masterGain = ctx.createGain(); masterGain.gain.value = 0.5;
+                masterGain.connect(ctx.destination);
                 masterGainRef.current = masterGain;
 
-                const delay = ctx.createDelay();
-                delay.delayTime.value = 3.5; 
-                const feedback = ctx.createGain();
-                feedback.gain.value = soundscapeRef.current.depth;
-                feedbackRef.current = feedback;
-
-                const delayFilter = ctx.createBiquadFilter();
-                delayFilter.type = 'lowpass';
-                delayFilter.frequency.value = 800;
+                const delay = ctx.createDelay(); delay.delayTime.value = 3.5; 
+                const feedback = ctx.createGain(); feedback.gain.value = 0.55; // Fixed global tail
+                const delayFilter = ctx.createBiquadFilter(); delayFilter.type = 'lowpass'; delayFilter.frequency.value = 800;
 
                 delay.connect(feedback); feedback.connect(delayFilter);
                 delayFilter.connect(delay); delay.connect(masterGain);
@@ -344,98 +367,124 @@
                 setHasStarted(true);
             }, []);
 
-            // --- 2. Tone Generation ---
             const playTone = useCallback((relY, instrumentKey) => {
                 const ctx = audioCtxRef.current;
                 if (!ctx) return;
 
                 const inst = INSTRUMENTS[instrumentKey];
+                const instSettings = settingsRef.current[instrumentKey];
                 const now = ctx.currentTime;
+                
                 const gain = ctx.createGain();
                 gain.connect(masterGainRef.current);
                 
                 const delaySend = ctx.createGain();
-                delaySend.gain.value = (inst.isDrum || inst.isPerc) ? 0.1 : 0.6;
+                delaySend.gain.value = instSettings.reverb;
                 delaySend.connect(delayRef.current);
                 gain.connect(delaySend);
 
-                if (inst.isPerc) {
-                    if (relY < 0.25) { 
-                        const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = soundscapeRef.current.tune;
-                        osc.frequency.setValueAtTime(2500, now); osc.frequency.exponentialRampToValueAtTime(2000, now + 0.05);
-                        osc.connect(gain); gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-                        osc.start(now); osc.stop(now + 0.05);
-                    } else if (relY < 0.5) { 
-                        const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
-                        const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 5000;
-                        noiseSrc.connect(filter); filter.connect(gain);
-                        gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
-                        noiseSrc.start(now);
-                    } else if (relY < 0.75) { 
-                        const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = soundscapeRef.current.tune;
-                        osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
-                        osc.connect(gain); gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                        osc.start(now); osc.stop(now + 0.15);
-                    } else { 
-                        const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = soundscapeRef.current.tune;
-                        osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
-                        osc.connect(gain); gain.gain.setValueAtTime(0.7, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                        osc.start(now); osc.stop(now + 0.2);
-                    }
-                    return;
-                }
+                if (inst.isPerc || inst.isDrum) {
+                    // Percussive logic uses pitch, volume, decay, reverb
+                    const pitchOffset = instSettings.pitch;
+                    const volMult = instSettings.volume;
+                    const decMult = instSettings.decay;
 
-                if (inst.isDrum) {
-                    if (relY < 0.25) { 
-                        const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
-                        const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 8000;
-                        noiseSrc.connect(filter); filter.connect(gain);
-                        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                        noiseSrc.start(now);
-                    } else if (relY < 0.5) { 
-                        const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
-                        const filter = ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 2500;
-                        const noiseGain = ctx.createGain(); noiseSrc.connect(filter); filter.connect(noiseGain); noiseGain.connect(gain);
-                        noiseGain.gain.setValueAtTime(0.4, now); noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-                        noiseSrc.start(now);
-                        const osc = ctx.createOscillator(); osc.detune.value = soundscapeRef.current.tune; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-                        const oscGain = ctx.createGain(); osc.connect(oscGain); oscGain.connect(gain);
-                        oscGain.gain.setValueAtTime(0.3, now); oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                        osc.start(now); osc.stop(now + 0.2);
-                    } else if (relY < 0.75) { 
-                        const osc = ctx.createOscillator(); osc.detune.value = soundscapeRef.current.tune; osc.frequency.setValueAtTime(250, now); osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
-                        osc.connect(gain); gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                        osc.start(now); osc.stop(now + 0.3);
-                    } else { 
-                        const osc = ctx.createOscillator(); osc.detune.value = soundscapeRef.current.tune; osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
-                        osc.connect(gain); gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                        osc.start(now); osc.stop(now + 0.5);
+                    if (inst.isPerc) {
+                        if (relY < 0.25) { 
+                            const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = pitchOffset;
+                            osc.frequency.setValueAtTime(2500, now); osc.frequency.exponentialRampToValueAtTime(2000, now + (0.05 * decMult));
+                            osc.connect(gain); gain.gain.setValueAtTime(0.5 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.05 * decMult));
+                            osc.start(now); osc.stop(now + (0.05 * decMult));
+                        } else if (relY < 0.5) { 
+                            const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
+                            const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 5000;
+                            noiseSrc.connect(filter); filter.connect(gain);
+                            gain.gain.setValueAtTime(0.5 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.03 * decMult));
+                            noiseSrc.start(now);
+                        } else if (relY < 0.75) { 
+                            const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = pitchOffset;
+                            osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(200, now + (0.15 * decMult));
+                            osc.connect(gain); gain.gain.setValueAtTime(0.6 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.15 * decMult));
+                            osc.start(now); osc.stop(now + (0.15 * decMult));
+                        } else { 
+                            const osc = ctx.createOscillator(); osc.type = 'sine'; osc.detune.value = pitchOffset;
+                            osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + (0.2 * decMult));
+                            osc.connect(gain); gain.gain.setValueAtTime(0.7 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.2 * decMult));
+                            osc.start(now); osc.stop(now + (0.2 * decMult));
+                        }
+                    } else if (inst.isDrum) {
+                        if (relY < 0.25) { 
+                            const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
+                            const filter = ctx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 8000;
+                            noiseSrc.connect(filter); filter.connect(gain);
+                            gain.gain.setValueAtTime(0.3 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.1 * decMult));
+                            noiseSrc.start(now);
+                        } else if (relY < 0.5) { 
+                            const noiseSrc = ctx.createBufferSource(); noiseSrc.buffer = noiseBufferRef.current;
+                            const filter = ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 2500;
+                            const noiseGain = ctx.createGain(); noiseSrc.connect(filter); filter.connect(noiseGain); noiseGain.connect(gain);
+                            noiseGain.gain.setValueAtTime(0.4 * volMult, now); noiseGain.gain.exponentialRampToValueAtTime(0.01, now + (0.25 * decMult));
+                            noiseSrc.start(now);
+                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + (0.1 * decMult));
+                            const oscGain = ctx.createGain(); osc.connect(oscGain); oscGain.connect(gain);
+                            oscGain.gain.setValueAtTime(0.3 * volMult, now); oscGain.gain.exponentialRampToValueAtTime(0.01, now + (0.2 * decMult));
+                            osc.start(now); osc.stop(now + (0.2 * decMult));
+                        } else if (relY < 0.75) { 
+                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(250, now); osc.frequency.exponentialRampToValueAtTime(120, now + (0.1 * decMult));
+                            osc.connect(gain); gain.gain.setValueAtTime(0.4 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.3 * decMult));
+                            osc.start(now); osc.stop(now + (0.3 * decMult));
+                        } else { 
+                            const osc = ctx.createOscillator(); osc.detune.value = pitchOffset; osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(40, now + (0.1 * decMult));
+                            osc.connect(gain); gain.gain.setValueAtTime(0.8 * volMult, now); gain.gain.exponentialRampToValueAtTime(0.01, now + (0.5 * decMult));
+                            osc.start(now); osc.stop(now + (0.5 * decMult));
+                        }
                     }
                     return; 
                 }
 
+                // Melodic instruments use full parameters
                 const noteIndex = Math.max(0, Math.min(Math.floor(relY * PENTATONIC_SCALE.length), PENTATONIC_SCALE.length - 1));
                 const frequency = PENTATONIC_SCALE[noteIndex];
 
+                const oscType = WAVE_TYPES[instSettings.waveform] || inst.type;
+                const releaseTime = inst.release * instSettings.decay;
+                
                 const osc = ctx.createOscillator();
-                osc.detune.value = soundscapeRef.current.tune;
-                const filter = ctx.createBiquadFilter();
+                osc.type = oscType;
+                osc.frequency.value = frequency;
+                osc.detune.value = instSettings.pitch;
 
-                osc.type = inst.type; osc.frequency.value = frequency;
+                const filter = ctx.createBiquadFilter();
                 filter.type = 'lowpass'; filter.frequency.value = inst.filterFreq;
 
                 gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.5, now + inst.attack);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + inst.attack + inst.release);
+                gain.gain.linearRampToValueAtTime(instSettings.volume, now + inst.attack);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + inst.attack + releaseTime);
 
                 osc.connect(filter); filter.connect(gain);
-                osc.start(now); osc.stop(now + inst.attack + inst.release + 0.1);
+                osc.start(now); osc.stop(now + inst.attack + releaseTime + 0.1);
+
+                // Chorus Effect
+                if (instSettings.chorus > 0) {
+                    const chOsc = ctx.createOscillator();
+                    chOsc.type = oscType;
+                    chOsc.frequency.value = frequency;
+                    chOsc.detune.value = instSettings.pitch + 15; // slightly detuned
+                    
+                    const chGain = ctx.createGain();
+                    chGain.gain.setValueAtTime(0, now);
+                    chGain.gain.linearRampToValueAtTime(instSettings.volume * instSettings.chorus, now + inst.attack);
+                    chGain.gain.exponentialRampToValueAtTime(0.001, now + inst.attack + releaseTime);
+
+                    chOsc.connect(filter); filter.connect(chGain);
+                    chGain.connect(masterGainRef.current); chGain.connect(delaySend);
+                    
+                    chOsc.start(now); chOsc.stop(now + inst.attack + releaseTime + 0.1);
+                }
             }, []);
 
-            // --- 3. Event Handling (Visuals + Audio + Recording) ---
             const triggerEvent = useCallback((relX, relY, instrumentKey, isPlayback = false) => {
                 playTone(relY, instrumentKey);
-
                 const absX = relX * window.innerWidth;
                 const absY = relY * window.innerHeight;
                 
@@ -446,8 +495,7 @@
                 if (!isPlayback) {
                     pedals.forEach(pedal => {
                         if (pedal.state === 'recording' && pedal.instKey === instrumentKey) {
-                            const track = tracksRef.current[pedal.id];
-                            track.events.push({ timeOffset: Date.now() - track.startTime, relX, relY, instrumentKey });
+                            tracksRef.current[pedal.id].events.push({ timeOffset: Date.now() - tracksRef.current[pedal.id].startTime, relX, relY, instrumentKey });
                         }
                     });
                 }
@@ -456,48 +504,46 @@
             const handlePlayAreaClick = (e) => {
                 initAudio();
                 const rect = e.currentTarget.getBoundingClientRect();
-                const relX = (e.clientX - rect.left) / rect.width;
-                const relY = (e.clientY - rect.top) / rect.height;
-                triggerEvent(relX, relY, activeInstKey, false);
+                triggerEvent((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height, activeInstKey, false);
             };
 
-            // --- 4. Looper System (Instrument Specific) ---
             const startPlayback = useCallback((pedalId) => {
                 const track = tracksRef.current[pedalId];
                 if (!track || track.events.length === 0) return;
-
-                // Stop current iteration if it's already playing
                 if (track.interval) clearInterval(track.interval);
                 if (track.timeouts) track.timeouts.forEach(clearTimeout);
 
                 const scheduleEvents = () => {
                     track.timeouts = track.events.map(ev => {
-                        // Apply user-defined phase shift and wrap within duration
                         let scheduledTime = (ev.timeOffset + (track.shift || 0)) % track.duration;
                         if (scheduledTime < 0) scheduledTime += track.duration;
                         return setTimeout(() => triggerEvent(ev.relX, ev.relY, ev.instrumentKey, true), scheduledTime);
                     });
                 };
 
-                scheduleEvents(); // Play immediately to re-sync phase
+                scheduleEvents(); 
                 track.interval = setInterval(scheduleEvents, track.duration);
             }, [triggerEvent]);
 
             const stopPlayback = useCallback((pedalId) => {
                 const track = tracksRef.current[pedalId];
                 if (!track) return;
-                clearInterval(track.interval);
-                track.timeouts.forEach(clearTimeout);
+                clearInterval(track.interval); track.timeouts.forEach(clearTimeout);
             }, []);
+
+            const switchCategory = (catId) => {
+                setActiveCat(catId);
+                // Auto-select first instrument in category
+                const firstInst = Object.values(INSTRUMENTS).find(i => i.cat === catId);
+                if (firstInst) switchInstrument(firstInst.id);
+            };
 
             const switchInstrument = (newInstKey) => {
                 setPedals(prev => {
                     let changed = false;
                     const updated = prev.map(p => {
                         if (p.state === 'recording') {
-                            changed = true;
-                            const track = tracksRef.current[p.id];
-                            track.duration = Math.max(Date.now() - track.startTime, 1000);
+                            changed = true; tracksRef.current[p.id].duration = Math.max(Date.now() - tracksRef.current[p.id].startTime, 1000);
                             startPlayback(p.id);
                             return { ...p, state: 'playing' };
                         }
@@ -514,15 +560,12 @@
                 setPedals(prev => {
                     const pedal = prev.find(p => p.id === pedalId);
                     if (!pedal) return prev;
-
                     if (pedal.state === 'recording') {
-                        const track = tracksRef.current[pedalId];
-                        track.duration = Math.max(Date.now() - track.startTime, 1000);
+                        tracksRef.current[pedalId].duration = Math.max(Date.now() - tracksRef.current[pedalId].startTime, 1000);
                         startPlayback(pedalId);
                         return prev.map(p => p.id === pedalId ? { ...p, state: 'playing' } : p);
                     } else if (pedal.state === 'playing') {
-                        stopPlayback(pedalId);
-                        delete tracksRef.current[pedalId]; 
+                        stopPlayback(pedalId); delete tracksRef.current[pedalId]; 
                         return prev.filter(p => p.id !== pedalId); 
                     }
                     return prev;
@@ -536,27 +579,17 @@
                 setPedals(prev => [...prev, { id: newId, instKey: activeInstKey, state: 'recording' }]);
             };
 
-            const updateSoundscape = (param, value) => {
-                const val = parseFloat(value);
-                setSoundscape(prev => ({...prev, [param]: val}));
-                soundscapeRef.current[param] = val;
-                
-                const ctx = audioCtxRef.current;
-                if (!ctx) return;
-                const now = ctx.currentTime;
-
-                if (param === 'depth' && feedbackRef.current) {
-                    feedbackRef.current.gain.linearRampToValueAtTime(val, now + 0.1);
-                } else if (param === 'tone' && masterToneRef.current) {
-                    masterToneRef.current.frequency.linearRampToValueAtTime(val, now + 0.1);
-                } else if (param === 'bass' && masterBassRef.current) {
-                    masterBassRef.current.gain.linearRampToValueAtTime(val, now + 0.1);
-                }
+            const updateInstSetting = (param, value) => {
+                setSettings(prev => ({
+                    ...prev,
+                    [activeInstKey]: { ...prev[activeInstKey], [param]: parseFloat(value) }
+                }));
             };
 
             const activePedals = pedals.filter(p => p.instKey === activeInstKey);
             const isCurrentlyRecording = activePedals.some(p => p.state === 'recording');
             const playingLoops = pedals.filter(p => p.state === 'playing');
+            const curSettings = settings[activeInstKey];
 
             return (
                 <div className="container">
@@ -580,20 +613,29 @@
                     )}
 
                     <div className="controls-top">
-                        {Object.values(INSTRUMENTS).map(inst => {
-                            const hasActiveLoops = pedals.some(p => p.instKey === inst.id && p.state === 'playing');
-                            return (
-                                <button 
-                                    key={inst.id}
-                                    className={`instrument-btn ${activeInstKey === inst.id ? 'active' : ''}`}
-                                    style={activeInstKey === inst.id ? { color: inst.color, borderColor: inst.color } : {}}
-                                    onClick={(e) => { e.stopPropagation(); switchInstrument(inst.id); }}
-                                >
-                                    {inst.name}
-                                    {hasActiveLoops && <span className="active-dot" style={{ backgroundColor: inst.color }}></span>}
+                        <div className="categories-row">
+                            {CATEGORIES.map(cat => (
+                                <button key={cat.id} className={`category-icon ${activeCat === cat.id ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); switchCategory(cat.id); }} title={cat.name}>
+                                    {cat.icon}
                                 </button>
-                            );
-                        })}
+                            ))}
+                        </div>
+                        <div className="instruments-row">
+                            {Object.values(INSTRUMENTS).filter(i => i.cat === activeCat).map(inst => {
+                                const hasActiveLoops = pedals.some(p => p.instKey === inst.id && p.state === 'playing');
+                                return (
+                                    <button 
+                                        key={inst.id}
+                                        className={`instrument-btn ${activeInstKey === inst.id ? 'active' : ''}`}
+                                        style={activeInstKey === inst.id ? { color: inst.color, borderColor: inst.color } : {}}
+                                        onClick={(e) => { e.stopPropagation(); switchInstrument(inst.id); }}
+                                    >
+                                        {inst.name}
+                                        {hasActiveLoops && <span className="active-dot" style={{ backgroundColor: inst.color }}></span>}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div className="controls-bottom">
@@ -619,44 +661,52 @@
                         <div className="editor-scroll" onPointerDown={e => e.stopPropagation()}>
                             {playingLoops.length === 0 && <div style={{opacity: 0.5, fontSize: '12px'}}>No active loops to adjust.</div>}
                             {playingLoops.map(pedal => (
-                                <LoopTrackRow 
-                                    key={pedal.id} 
-                                    pedal={pedal} 
-                                    trackData={tracksRef.current[pedal.id]} 
-                                    onRestart={startPlayback}
-                                    forceUpdate={setForceRender}
-                                />
+                                <LoopTrackRow key={pedal.id} pedal={pedal} trackData={tracksRef.current[pedal.id]} onRestart={startPlayback} forceUpdate={setForceRender} />
                             ))}
                         </div>
                     </div>
 
-                    {/* Soundscape Panel */}
+                    {/* Per-Instrument Soundscape Panel */}
                     <div className={`editor-panel ${isSoundscapeOpen ? 'open' : ''}`}>
-                        <div className="editor-header" style={{color: '#ffaa00'}}>
-                            SONIC LANDSCAPE
-                            <span>Adjust global depth, tone, bass, and tuning in real-time.</span>
+                        <div className="editor-header" style={{color: INSTRUMENTS[activeInstKey].color}}>
+                            SOUNDSCAPE: {INSTRUMENTS[activeInstKey].name}
+                            <span>These settings apply only to the currently selected instrument.</span>
                         </div>
                         <div className="editor-scroll" onPointerDown={e => e.stopPropagation()}>
                             <div className="slider-row">
-                                <label>Wash (Depth)</label>
-                                <input type="range" min="0" max="0.8" step="0.01" value={soundscape.depth} onChange={(e) => updateSoundscape('depth', e.target.value)} />
-                                <span>{Math.round(soundscape.depth * 100)}%</span>
+                                <label>Volume</label>
+                                <input type="range" min="0" max="1" step="0.05" value={curSettings.volume} onChange={(e) => updateInstSetting('volume', e.target.value)} style={{accentColor: INSTRUMENTS[activeInstKey].color}}/>
+                                <span>{Math.round(curSettings.volume * 100)}%</span>
                             </div>
                             <div className="slider-row">
-                                <label>Tone (Bright)</label>
-                                <input type="range" min="500" max="6000" step="10" value={soundscape.tone} onChange={(e) => updateSoundscape('tone', e.target.value)} />
-                                <span>{soundscape.tone}hz</span>
+                                <label>Pitch</label>
+                                <input type="range" min="-1200" max="1200" step="10" value={curSettings.pitch} onChange={(e) => updateInstSetting('pitch', e.target.value)} style={{accentColor: INSTRUMENTS[activeInstKey].color}}/>
+                                <span>{curSettings.pitch > 0 ? '+' : ''}{curSettings.pitch}c</span>
                             </div>
                             <div className="slider-row">
-                                <label>Bass (Low)</label>
-                                <input type="range" min="-15" max="15" step="1" value={soundscape.bass} onChange={(e) => updateSoundscape('bass', e.target.value)} />
-                                <span>{soundscape.bass > 0 ? '+' : ''}{soundscape.bass}db</span>
+                                <label>Reverb (Send)</label>
+                                <input type="range" min="0" max="1" step="0.05" value={curSettings.reverb} onChange={(e) => updateInstSetting('reverb', e.target.value)} style={{accentColor: INSTRUMENTS[activeInstKey].color}}/>
+                                <span>{Math.round(curSettings.reverb * 100)}%</span>
                             </div>
                             <div className="slider-row">
-                                <label>Tune (Register)</label>
-                                <input type="range" min="-1200" max="1200" step="10" value={soundscape.tune} onChange={(e) => updateSoundscape('tune', e.target.value)} />
-                                <span>{soundscape.tune > 0 ? '+' : ''}{soundscape.tune}c</span>
+                                <label>Decay/Sustain</label>
+                                <input type="range" min="0.1" max="3" step="0.1" value={curSettings.decay} onChange={(e) => updateInstSetting('decay', e.target.value)} style={{accentColor: INSTRUMENTS[activeInstKey].color}}/>
+                                <span>{curSettings.decay.toFixed(1)}x</span>
                             </div>
+                            {!INSTRUMENTS[activeInstKey].isDrum && !INSTRUMENTS[activeInstKey].isPerc && (
+                                <>
+                                    <div className="slider-row">
+                                        <label>Waveform</label>
+                                        <input type="range" min="0" max="3" step="1" value={curSettings.waveform} onChange={(e) => updateInstSetting('waveform', e.target.value)} style={{accentColor: INSTRUMENTS[activeInstKey].color}}/>
+                                        <span>{WAVE_NAMES[curSettings.waveform]}</span>
+                                    </div>
+                                    <div className="slider-row">
+                                        <label>Chorus</label>
+                                        <input type="range" min="0" max="1" step="0.05" value={curSettings.chorus} onChange={(e) => updateInstSetting('chorus', e.target.value)} style={{accentColor: INSTRUMENTS[activeInstKey].color}}/>
+                                        <span>{Math.round(curSettings.chorus * 100)}%</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
