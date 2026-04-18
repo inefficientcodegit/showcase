@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blossom</title>
+    <!-- React & Babel CDNs -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body, html { 
+            margin: 0; padding: 0; 
+            width: 100%; height: 100%; 
+            background-color: #0b132b; 
+            overflow: hidden; 
+            touch-action: none; 
+            -webkit-user-select: none; user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        #root { width: 100%; height: 100%; }
+        
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: bloomFade 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            filter: blur(4px);
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+        }
+
+        @keyframes bloomFade {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
+            30% { opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        .hud-text {
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef } = React;
+
+        // C Major Pentatonic Scale frequencies
+        const PENTATONIC_SCALE = [
+            261.63, 293.66, 329.63, 392.00, 440.00, 
+            523.25, 587.33, 659.25, 783.99, 880.00, 1046.50
+        ];
+        const BLOOM_COLORS = ['#3a86ff', '#8338ec', '#ff006e', '#fb5607', '#ffbe0b', '#48cae4'];
+
+        let audioCtx = null;
+        const initAudio = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        const playTone = (freq, velocity) => {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            
+            const attackTime = 0.05;
+            const releaseTime = 3.5;
+            const maxVol = velocity * 0.4;
+            
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(maxVol, audioCtx.currentTime + attackTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + attackTime + releaseTime);
+            
+            osc.stop(audioCtx.currentTime + attackTime + releaseTime);
+        };
+
+        const App = () => {
+            const [started, setStarted] = useState(false);
+            const [, setTick] = useState(0); 
+            
+            // Core Game State
+            const gameState = useRef({
+                ripples: [],
+                stars: [],
+                floatingTexts: [],
+                score: 0,
+                combo: 1,
+                lastSpawnTime: 0,
+                gameStartTime: 0,
+                gameOver: false
+            });
+
+            // Event trigger (handles taps and immediate chain reactions)
+            const triggerEvent = useCallback((x, y, freq, color, baseVelocity, depth = 0, currentCombo = 1) => {
+                // Diminish reach and volume for chain reactions
+                const attenuation = Math.pow(0.55, depth);
+                const velocity = baseVelocity * attenuation;
+
+                if (velocity < 0.05) return;
+                
+                playTone(freq, velocity);
+                
+                const id = Date.now() + Math.random();
+                
+                // Reduced radius so taps have smaller impact
+                const maxRadius = 90 * velocity; 
+                
+                gameState.current.ripples.push({ 
+                    id, x, y, color, maxRadius, 
+                    createdAt: performance.now(),
+                    velocity,
+                    depth,
+                    combo: currentCombo
+                });
+            }, []);
+
+            // Game Loop
+            useEffect(() => {
+                if (!started) return;
+
+                let animationFrameId;
+                
+                const loop = (time) => {
+                    const state = gameState.current;
+                    const height = window.innerHeight;
+                    const width = window.innerWidth;
+                    const centerY = height / 2;
+
+                    // Initialize start time for global progression
+                    if (state.gameStartTime === 0) state.gameStartTime = time;
+                    const elapsed = time - state.gameStartTime;
+                    
+                    // Global speed multiplier increases slowly over 2 minutes, maxing at 2x
+                    const progressiveMultiplier = Math.min(2.0, 1 + (elapsed / 120000));
+                    // Slightly increase spawn rate over time (from 800ms down to 500ms)
+                    const spawnDelay = Math.max(500, 800 - (elapsed / 300));
+
+                    // 1. Spawn new stars
+                    if (time - state.lastSpawnTime > spawnDelay) {
+                        // Every dot falls at a different speed (0.6 to 1.6 base)
+                        const randomBaseSpeed = 0.6 + (Math.random() * 1.0);
+                        // 50% chance to go down (1), 50% chance to go up (-1)
+                        const direction = Math.random() > 0.5 ? 1 : -1;
+                        
+                        state.stars.push({
+                            id: Math.random(),
+                            x: Math.random() * (width - 40) + 20,
+                            y: direction === 1 ? -20 : height + 20,
+                            speed: randomBaseSpeed * progressiveMultiplier,
+                            direction: direction,
+                            size: Math.random() * 4 + 4
+                        });
+                        state.lastSpawnTime = time;
+                    }
+
+                    // 2. Update Star Positions & Check Bounds
+                    for (let i = state.stars.length - 1; i >= 0; i--) {
+                        const star = state.stars[i];
+                        star.y += star.speed * star.direction;
+                        
+                        // Missed star (Crosses Center Line): Game Over
+                        if ((star.direction === 1 && star.y > centerY) || 
+                            (star.direction === -1 && star.y < centerY)) {
+                            state.gameOver = true;
+                            setStarted(false); // Stop the game loop
+                            playTone(150, 1.0); // Low thud for game over
+                            break; 
+                        }
+                    }
+
+                    // 3. Collision Detection (Stars vs Ripples)
+                    for (let i = state.stars.length - 1; i >= 0; i--) {
+                        const star = state.stars[i];
+                        
+                        // Prevent popping dots that haven't entered the screen yet
+                        if ((star.direction === 1 && star.y < 0) || 
+                            (star.direction === -1 && star.y > height)) continue;
+
+                        let caught = false;
+                        let catchingRipple = null;
+
+                        for (let j = 0; j < state.ripples.length; j++) {
+                            const ripple = state.ripples[j];
+                            const age = time - ripple.createdAt;
+                            
+                            if (age > 4000) continue;
+
+                            // Approximate CSS cubic-bezier expansion
+                            const progress = Math.min(1, age / 4000);
+                            const easeOut = 1 - Math.pow(1 - progress, 3);
+                            const currentRadius = ripple.maxRadius * easeOut;
+
+                            const dx = star.x - ripple.x;
+                            const dy = star.y - ripple.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < currentRadius) {
+                                caught = true;
+                                catchingRipple = ripple;
+                                break;
+                            }
+                        }
+
+                        // Handle Catch
+                        if (caught) {
+                            // Calculate score based on distance traveled towards the Center Line
+                            const travelProgress = star.direction === 1 ? (star.y / centerY) : ((height - star.y) / centerY);
+                            const normalizedProgress = Math.max(0, Math.min(1, travelProgress));
+                            const positionScore = 10 + Math.floor(normalizedProgress * 90); // 10 at start, 100 at center line
+                            
+                            const catchCombo = catchingRipple.combo;
+                            const pointsEarned = positionScore * catchCombo;
+                            
+                            state.score += pointsEarned;
+                            state.combo = catchCombo; // Update HUD combo
+                            
+                            // Map absolute Y position to Pitch (Top is high pitch, bottom is low pitch)
+                            const absoluteNormalizedY = Math.max(0, Math.min(1, star.y / height));
+                            const scaleIndex = Math.floor((1 - absoluteNormalizedY) * PENTATONIC_SCALE.length);
+                            const safeIndex = Math.max(0, Math.min(PENTATONIC_SCALE.length - 1, scaleIndex));
+                            
+                            const freq = PENTATONIC_SCALE[safeIndex];
+                            const color = BLOOM_COLORS[safeIndex % BLOOM_COLORS.length];
+                            
+                            // Add floating text for visual feedback
+                            state.floatingTexts.push({
+                                id: Math.random(),
+                                x: star.x,
+                                y: star.y,
+                                text: `+${pointsEarned}`,
+                                createdAt: time,
+                                color: color
+                            });
+                            
+                            // Increase depth based on the ripple that caused this catch
+                            const newDepth = (catchingRipple.depth || 0) + 1;
+                            
+                            triggerEvent(star.x, star.y, freq, color, 1.0, newDepth, catchCombo + 1);
+                            
+                            // Remove star
+                            state.stars.splice(i, 1);
+                        }
+                    }
+
+                    // 4. Cleanup old ripples and floating texts
+                    state.ripples = state.ripples.filter(r => (time - r.createdAt) < 4000);
+                    state.floatingTexts = state.floatingTexts.filter(ft => (time - ft.createdAt) < 1000);
+
+                    // Force React render for visual update
+                    setTick(t => t + 1);
+                    animationFrameId = requestAnimationFrame(loop);
+                };
+
+                animationFrameId = requestAnimationFrame(loop);
+                return () => cancelAnimationFrame(animationFrameId);
+            }, [started, triggerEvent]);
+
+            const handleInteract = (clientX, clientY) => {
+                if (gameState.current.gameOver) return; // Prevent tapping while game over screen is shown
+
+                if (!started) {
+                    initAudio();
+                    setStarted(true);
+                }
+                
+                const height = window.innerHeight;
+                const normalizedY = 1 - (clientY / height);
+                const scaleIndex = Math.floor(normalizedY * PENTATONIC_SCALE.length);
+                const safeIndex = Math.max(0, Math.min(PENTATONIC_SCALE.length - 1, scaleIndex));
+                
+                const freq = PENTATONIC_SCALE[safeIndex];
+                const color = BLOOM_COLORS[safeIndex % BLOOM_COLORS.length];
+                
+                // Player taps start at depth 0 and reset the current chain combo to 1
+                gameState.current.combo = 1;
+                triggerEvent(clientX, clientY, freq, color, 1.0, 0, 1);
+            };
+
+            const onTouch = (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    handleInteract(touch.clientX, touch.clientY);
+                }
+            };
+
+            const { ripples, stars, floatingTexts, score, combo } = gameState.current;
+
+            return (
+                <div 
+                    className="w-full h-full relative overflow-hidden bg-[#0b132b]"
+                    onMouseDown={(e) => handleInteract(e.clientX, e.clientY)}
+                    onTouchStart={onTouch}
+                >
+                    {/* Glowing Center Line */}
+                    <div className="absolute top-1/2 left-0 w-full h-px bg-[#48cae4]/50 shadow-[0_0_12px_2px_rgba(72,202,228,0.5)] pointer-events-none z-0"></div>
+
+                    {/* HUD */}
+                    <div className="absolute top-6 left-6 text-white/80 pointer-events-none hud-text z-10">
+                        <div className="text-sm font-light uppercase tracking-widest text-white/50">Score</div>
+                        <div className="text-4xl font-bold">{score}</div>
+                    </div>
+                    
+                    <div className="absolute top-6 right-6 text-white/80 pointer-events-none text-right hud-text z-10">
+                        <div className="text-sm font-light uppercase tracking-widest text-white/50">Combo</div>
+                        <div className={`text-4xl font-bold transition-colors ${combo > 5 ? 'text-yellow-300' : ''}`}>x{combo}</div>
+                    </div>
+
+                    {!started && !gameState.current.gameOver && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-[#0b132b]/80 backdrop-blur-sm">
+                            <h1 className="text-white text-3xl font-light tracking-widest mb-4 text-center">BLOSSOM</h1>
+                            <p className="text-white/60 mb-8 max-w-xs text-center text-sm">
+                                Tap to create ripples. Catch falling stardust before they cross the center line to build combos. Inspired by Brian Eno's Bloom.
+                            </p>
+                            <div className="text-white tracking-widest uppercase text-sm animate-pulse border border-white/30 px-6 py-3 rounded-full">
+                                Tap to begin
+                            </div>
+                        </div>
+                    )}
+
+                    {gameState.current.gameOver && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto z-30 bg-[#0b132b]/90 backdrop-blur-md">
+                            <h1 className="text-red-400 text-4xl font-light tracking-widest mb-2 text-center">GAME OVER</h1>
+                            <div className="text-white/80 text-xl mb-8">Final Score: {score}</div>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    gameState.current = {
+                                        ripples: [],
+                                        stars: [],
+                                        floatingTexts: [],
+                                        score: 0,
+                                        combo: 1,
+                                        lastSpawnTime: performance.now(),
+                                        gameStartTime: performance.now(),
+                                        gameOver: false
+                                    };
+                                    setStarted(true);
+                                }}
+                                className="text-white tracking-widest uppercase text-sm border border-white/30 px-6 py-3 rounded-full hover:bg-white/10 transition-colors pointer-events-auto cursor-pointer"
+                            >
+                                Play Again
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Render Ripples */}
+                    {ripples.map(r => (
+                        <div 
+                            key={r.id} 
+                            className="ripple"
+                            style={{ 
+                                left: r.x, 
+                                top: r.y, 
+                                backgroundColor: r.color,
+                                width: r.maxRadius * 2,
+                                height: r.maxRadius * 2,
+                                boxShadow: `0 0 ${r.maxRadius}px ${r.color}`
+                            }} 
+                        />
+                    ))}
+
+                    {/* Render Stars */}
+                    {stars.map(s => (
+                        <div
+                            key={s.id}
+                            className="star"
+                            style={{
+                                left: s.x,
+                                top: s.y,
+                                width: s.size,
+                                height: s.size,
+                                backgroundColor: 'white',
+                                boxShadow: '0 0 10px 2px rgba(255, 255, 255, 0.8)'
+                            }}
+                        />
+                    ))}
+
+                    {/* Render Floating Texts */}
+                    {floatingTexts.map(ft => {
+                        const age = performance.now() - ft.createdAt;
+                        const progress = age / 1000;
+                        return (
+                            <div
+                                key={ft.id}
+                                className="absolute font-bold pointer-events-none text-xl"
+                                style={{
+                                    left: ft.x,
+                                    top: ft.y - (progress * 50),
+                                    color: ft.color,
+                                    opacity: 1 - progress,
+                                    transform: 'translate(-50%, -50%)',
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                                }}
+                            >
+                                {ft.text}
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

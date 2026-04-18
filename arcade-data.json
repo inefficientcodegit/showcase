@@ -88,6 +88,24 @@
   "description": "logic/math/knowledge quiz game",
   "iosLink": null,
   "androidLink": null
+ },
+{
+  "id": "blossom",
+  "title": "Blossom",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Blossom/index.html",
+  "description": "sonic game of timing and calm",
+  "iosLink": null,
+  "androidLink": null
+ },
+{
+  "id": "seedling",
+  "title": "Seedling",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Seedling/index.html",
+  "description": "tap for sound, that's it",
+  "iosLink": null,
+  "androidLink": null
  }
 
 ]

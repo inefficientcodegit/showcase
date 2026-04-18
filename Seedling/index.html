@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Optimized for mobile portrait, disables zooming/scrolling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Seedling</title>
+    
+    <!-- React & Babel CDNs for on-the-fly compilation -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #05080f; /* Deep dark blue */
+            overflow: hidden;
+            touch-action: none; /* Prevents mobile pull-to-refresh & scrolling */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #root { width: 100%; height: 100%; }
+        
+        .instructions {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.6; pointer-events: none; text-align: center;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .instructions h2 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        
+        .instructions p {
+            font-weight: 200;
+            font-size: 0.9rem;
+            color: #8fa0ba;
+        }
+
+        .ripple {
+            position: absolute; border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: expandFade 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        @keyframes expandFade {
+            0% { width: 0; height: 0; opacity: 0.8; }
+            100% { width: 400px; height: 400px; opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // C Major Pentatonic frequencies across 3 octaves (higher pitch at top of screen)
+        const PENTATONIC = [
+            130.81, 146.83, 164.81, 196.00, 220.00,
+            261.63, 293.66, 329.63, 392.00, 440.00,
+            523.25, 587.33, 659.25, 783.99, 880.00
+        ].reverse(); 
+
+        // Tonal & Rhythm settings
+        const BPM = 120;
+        const BEAT_DURATION = 60 / BPM; // 0.5s per beat
+        const LOOP_DURATION_SEC = BEAT_DURATION * 8; // 4 seconds (2 full bars)
+        const QUANTIZE_STEP = BEAT_DURATION / 4; // 16th note quantization (0.125s)
+        const MAX_LOOPS = 12; // Prevent browser overload and audio clipping
+
+        function App() {
+            const [started, setStarted] = useState(false);
+            const [ripples, setRipples] = useState([]);
+            const audioCtx = useRef(null);
+            const rippleIdCount = useRef(0);
+            
+            // Central scheduler variables
+            const activeEvents = useRef([]);
+            const activeTouches = useRef({}); // Tracks fingers currently held down
+            const requestRef = useRef();
+
+            // Initialize Audio Context on first tap (Browsers require user gesture to play sound)
+            const initAudio = () => {
+                if (!audioCtx.current) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx.current = new AudioContext();
+                }
+                if (audioCtx.current.state === 'suspended') {
+                    audioCtx.current.resume();
+                }
+                setStarted(true);
+            };
+
+            // --- AUDIO SYNTH FACTORIES (Upgraded for sustain and velocity) ---
+            const createKick = (ctx) => {
+                return {
+                    start: (time, velocity) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain); gain.connect(ctx.destination);
+                        
+                        osc.frequency.setValueAtTime(150, time);
+                        osc.frequency.exponentialRampToValueAtTime(30, time + 0.1);
+                        
+                        gain.gain.setValueAtTime(0, time);
+                        gain.gain.linearRampToValueAtTime(0.8 * velocity, time + 0.01);
+                        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+                        
+                        osc.start(time); osc.stop(time + 0.6);
+                    },
+                    release: () => {} // Kick doesn't sustain
+                };
+            };
+
+            const createStrings = (ctx, baseFreq) => {
+                const masterGain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+                masterGain.connect(ctx.destination);
+                filter.connect(masterGain);
+                
+                filter.type = 'lowpass';
+                const oscs = [];
+                let isReleased = false;
+
+                return {
+                    start: (time, velocity) => {
+                        filter.frequency.setValueAtTime(600, time);
+                        filter.frequency.linearRampToValueAtTime(1200, time + 2); 
+
+                        masterGain.gain.setValueAtTime(0, time);
+                        masterGain.gain.setTargetAtTime(0.15 * velocity, time, 0.5); // Soft attack, holds indefinitely
+                        
+                        const frequencies = [baseFreq / 2, baseFreq, baseFreq * 1.5];
+                        frequencies.forEach(f => {
+                            const osc = ctx.createOscillator();
+                            osc.type = 'sawtooth'; 
+                            osc.frequency.setValueAtTime(f + (Math.random() * 2 - 1), time); 
+                            osc.connect(filter);
+                            osc.start(time);
+                            oscs.push(osc);
+                        });
+                    },
+                    release: (time) => {
+                        if (isReleased) return;
+                        isReleased = true;
+                        // Lush long release fade out
+                        masterGain.gain.setTargetAtTime(0, time, 1.5); 
+                        oscs.forEach(osc => osc.stop(time + 6)); // Cleanup nodes after tail ends
+                    }
+                };
+            };
+
+            const createChime = (ctx, freq) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                let isReleased = false;
+
+                return {
+                    start: (time, velocity) => {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, time);
+                        gain.gain.setValueAtTime(0, time);
+                        gain.gain.setTargetAtTime(0.3 * velocity, time, 0.05); // Fast bell attack, holds indefinitely
+                        osc.start(time);
+                    },
+                    release: (time) => {
+                        if (isReleased) return;
+                        isReleased = true;
+                        gain.gain.setTargetAtTime(0, time, 1.0); // Bell release
+                        osc.stop(time + 4);
+                    }
+                };
+            };
+
+            // Central scheduling loop (runs constantly to queue audio right before it needs to play)
+            const scheduleAudio = () => {
+                if (!audioCtx.current) return;
+                
+                const timeNow = audioCtx.current.currentTime;
+                const scheduleAheadTime = 0.15; // Look ahead 150ms
+                
+                // 1. Remove events that have fully faded out
+                activeEvents.current = activeEvents.current.filter(event => event.velocity > 0.05);
+                
+                activeEvents.current.forEach(event => {
+                    // Is it time to schedule this event?
+                    if (event.nextPlayTime < timeNow + scheduleAheadTime) {
+                        const playTime = event.nextPlayTime;
+                        const ctx = audioCtx.current;
+                        
+                        // Instantiate instruments for this specific hit
+                        const kick = createKick(ctx);
+                        const strings = createStrings(ctx, event.freq);
+                        const chime = createChime(ctx, event.freq);
+                        
+                        const newVoices = [];
+                        
+                        if (event.isBeat) {
+                            kick.start(playTime, event.velocity);
+                            newVoices.push(kick);
+                        } else {
+                            strings.start(playTime, event.velocity);
+                            chime.start(playTime, event.velocity);
+                            newVoices.push(strings, chime);
+                        }
+
+                        if (event.sustainTime !== null) {
+                            // Finger already lifted: schedule the release automatically based on recorded drag duration
+                            const releaseTime = playTime + Math.max(0.05, event.sustainTime);
+                            newVoices.forEach(v => v.release(releaseTime));
+                        } else {
+                            // Finger still held down live!
+                            if (event.voices && event.voices.length > 0) {
+                                // If held so long the loop wrapped around, fade out the old sound smoothly
+                                event.voices.forEach(v => v.release(playTime)); 
+                            }
+                            event.voices = newVoices; // Store active voices so pointerUp can release them
+                        }
+                        
+                        // Schedule Visuals with matching fading velocity
+                        const delayMs = Math.max(0, (playTime - timeNow) * 1000);
+                        setTimeout(() => {
+                            const id = rippleIdCount.current++;
+                            setRipples(prev => [...prev, { 
+                                id, x: event.x, y: event.y, hue: event.hue, isBeat: event.isBeat, velocity: event.velocity 
+                            }]);
+                            
+                            setTimeout(() => {
+                                setRipples(prev => prev.filter(r => r.id !== id));
+                            }, 4000);
+                        }, delayMs);
+                        
+                        // FADE LOGIC: Decrease velocity for the next loop (Beats fade slightly slower than melodies)
+                        event.velocity *= event.isBeat ? 0.92 : 0.85;
+
+                        // Advance to the next loop iteration
+                        event.nextPlayTime += event.isBeat ? BEAT_DURATION : LOOP_DURATION_SEC;
+                    }
+                });
+                
+                requestRef.current = requestAnimationFrame(scheduleAudio);
+            };
+
+            const handlePointerDown = (e) => {
+                // Ensure audio is initialized and scheduler is running
+                if (!audioCtx.current) {
+                    initAudio();
+                    requestRef.current = requestAnimationFrame(scheduleAudio);
+                }
+
+                const clientX = e.clientX;
+                const clientY = e.clientY;
+                // isPrimary is true for the 1st finger, false for the 2nd/3rd fingers
+                const isBeat = !e.isPrimary; 
+
+                // Map Y to frequency
+                const yRatio = clientY / window.innerHeight;
+                const noteIndex = Math.floor(yRatio * PENTATONIC.length);
+                const freq = PENTATONIC[Math.max(0, Math.min(noteIndex, PENTATONIC.length - 1))];
+                const hue = Math.floor((clientX / window.innerWidth) * 360);
+
+                const timeNow = audioCtx.current.currentTime;
+                
+                // QUANTIZATION: Snap the tap to the next exact 16th note on the master grid
+                const remainder = timeNow % QUANTIZE_STEP;
+                const timeToNextStep = QUANTIZE_STEP - remainder;
+                const quantizedPlayTime = timeNow + timeToNextStep;
+
+                if (isBeat) {
+                    // clear the previous beat to replace it with the new groove
+                    activeEvents.current = activeEvents.current.filter(ev => !ev.isBeat);
+                }
+
+                const eventId = Math.random().toString(); // Link touch event to audio event
+
+                activeEvents.current.push({
+                    id: eventId,
+                    x: clientX,
+                    y: clientY,
+                    freq: freq,
+                    hue: hue,
+                    isBeat: isBeat,
+                    nextPlayTime: quantizedPlayTime,
+                    sustainTime: null, // Null means "currently holding"
+                    velocity: 1.0, // Full volume start
+                    voices: []
+                });
+
+                // Track the live finger for release
+                activeTouches.current[e.pointerId] = { eventId, startTime: quantizedPlayTime };
+
+                // Memory management: enforce loop limits on melodies
+                const melodicCount = activeEvents.current.filter(ev => !ev.isBeat).length;
+                if (melodicCount > MAX_LOOPS) {
+                    const oldestMelodyIndex = activeEvents.current.findIndex(ev => !ev.isBeat);
+                    if (oldestMelodyIndex !== -1) {
+                        activeEvents.current.splice(oldestMelodyIndex, 1);
+                    }
+                }
+            };
+
+            const handlePointerRelease = (e) => {
+                const touch = activeTouches.current[e.pointerId];
+                if (!touch) return;
+                
+                const event = activeEvents.current.find(ev => ev.id === touch.eventId);
+                if (event) {
+                    const timeNow = audioCtx.current.currentTime;
+                    // Calculate exactly how long the user dragged/held the note out
+                    event.sustainTime = Math.max(0.05, timeNow - touch.startTime);
+                    
+                    // Trigger the release phase on the actively playing synth nodes
+                    if (event.voices && event.voices.length > 0) {
+                        event.voices.forEach(v => v.release(timeNow));
+                        event.voices = []; 
+                    }
+                }
+                delete activeTouches.current[e.pointerId];
+            };
+
+            // Cleanup scheduler if component unmounts
+            useEffect(() => {
+                return () => cancelAnimationFrame(requestRef.current);
+            }, []);
+
+            return (
+                <div 
+                    style={{ width: '100%', height: '100%', position: 'relative', cursor: 'crosshair' }} 
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerRelease}
+                    onPointerCancel={handlePointerRelease}
+                    onPointerLeave={handlePointerRelease}
+                >
+                    {!started && (
+                        <div className="instructions">
+                            <h2>Seedling</h2>
+                            <p>Make sure your device sound is on.</p>
+                            <p style={{ marginTop: '10px', fontSize: '0.8rem', opacity: 0.8 }}>Hold one finger down and tap with another for a beat.</p>
+                        </div>
+                    )}
+                    
+                    {ripples.map(r => (
+                        <div key={r.id} className="ripple" style={{
+                            left: r.x, top: r.y,
+                            backgroundColor: r.isBeat ? `rgba(255, 255, 255, ${0.2 * r.velocity})` : `hsla(${r.hue}, 70%, 60%, ${0.4 * r.velocity})`,
+                            boxShadow: r.isBeat ? `0 0 40px rgba(255, 255, 255, ${0.4 * r.velocity})` : `0 0 40px hsla(${r.hue}, 80%, 70%, ${0.6 * r.velocity})`
+                        }}/>
+                    ))}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
