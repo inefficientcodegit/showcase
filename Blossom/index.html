@@ -14,7 +14,7 @@
         body, html { 
             margin: 0; padding: 0; 
             width: 100%; height: 100%; 
-            background-color: #0b132b; 
+            background-color: #020617; /* Dark outer background for the frame */
             overflow: hidden; 
             touch-action: none; 
             -webkit-user-select: none; user-select: none;
@@ -32,6 +32,16 @@
             filter: blur(4px);
         }
 
+        .ripple-outline {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: bloomOutline 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            border: 1px dashed;
+        }
+
         .star {
             position: absolute;
             border-radius: 50%;
@@ -45,6 +55,26 @@
             100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
         }
 
+        @keyframes bloomOutline {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
+            95% { opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        @keyframes dudPulse {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        .dud-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            animation: dudPulse 0.3s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
         .hud-text {
             text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
@@ -56,14 +86,57 @@
     <script type="text/babel">
         const { useState, useEffect, useCallback, useRef } = React;
 
-        // C Major Pentatonic Scale frequencies
-        const PENTATONIC_SCALE = [
-            261.63, 293.66, 329.63, 392.00, 440.00, 
-            523.25, 587.33, 659.25, 783.99, 880.00, 1046.50
+        // 5 Distinct Sonic Experiences (Soundscapes)
+        // All use stacked perfect fifths to guarantee mathematically soothing consonance.
+        const SOUNDSCAPES = [
+            {
+                name: 'Ethereal',
+                colors: ['#48cae4', '#ff99c8', '#fcf6bd'],
+                matrix: [
+                    [130.81, 261.63, 523.25], // C
+                    [196.00, 392.00, 783.99], // G
+                    [146.83, 293.66, 587.33]  // D
+                ]
+            },
+            {
+                name: 'Midnight',
+                colors: ['#7b2cbf', '#3a0ca3', '#4cc9f0'],
+                matrix: [
+                    [110.00, 220.00, 440.00], // A
+                    [164.81, 329.63, 659.25], // E
+                    [123.47, 246.94, 493.88]  // B
+                ]
+            },
+            {
+                name: 'Sunrise',
+                colors: ['#fb8500', '#ffb703', '#ff006e'],
+                matrix: [
+                    [146.83, 293.66, 587.33], // D
+                    [220.00, 440.00, 880.00], // A
+                    [164.81, 329.63, 659.25]  // E
+                ]
+            },
+            {
+                name: 'Forest',
+                colors: ['#2a9d8f', '#e9c46a', '#8ab17d'],
+                matrix: [
+                    [174.61, 349.23, 698.46], // F
+                    [261.63, 523.25, 1046.50], // C
+                    [196.00, 392.00, 783.99]  // G
+                ]
+            },
+            {
+                name: 'Ember',
+                colors: ['#e63946', '#f4a261', '#f1faee'],
+                matrix: [
+                    [155.56, 311.13, 622.25], // Eb
+                    [233.08, 466.16, 932.33], // Bb
+                    [174.61, 349.23, 698.46]  // F
+                ]
+            }
         ];
-        const BLOOM_COLORS = ['#3a86ff', '#8338ec', '#ff006e', '#fb5607', '#ffbe0b', '#48cae4'];
 
-        // Instrument Definitions for Web Audio Synth
+        // Instrument Definitions
         const INSTRUMENTS = [
             { id: 0, name: 'Bells', color: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)', wave: 'sine', attack: 0.05, release: 3.5, vol: 0.4 },
             { id: 1, name: 'Keys', color: '#fcf6bd', glow: 'rgba(252, 246, 189, 0.8)', wave: 'triangle', attack: 0.02, release: 2.5, vol: 0.2 },
@@ -115,24 +188,65 @@
             }
         };
 
+        const playFlatBeat = () => {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.value = 100; // Low, flat thud
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                
+                const attackTime = 0.01;
+                const releaseTime = 0.15; // Very short duration
+                
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + attackTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + attackTime + releaseTime);
+                
+                osc.stop(audioCtx.currentTime + attackTime + releaseTime);
+            } catch(e) {
+                console.error("Failed to play flat beat", e);
+            }
+        };
+
         const App = () => {
             const [started, setStarted] = useState(false);
             const [, setTick] = useState(0); 
+            const [menuOpen, setMenuOpen] = useState(false);
+            const [activeSoundscape, setActiveSoundscape] = useState(0);
             
-            // Core Game State mapped to refs for high performance and stability
+            // Layout Scale Engine: S is the size of one square
+            const [boardSize, setBoardSize] = useState(() => Math.min(window.innerWidth, window.innerHeight / 2));
+            
+            useEffect(() => {
+                const handleResize = () => setBoardSize(Math.min(window.innerWidth, window.innerHeight / 2));
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
+            
+            // Core Game State
             const gameState = useRef({
                 ripples: [],
+                duds: [],
                 stars: [],
                 floatingTexts: [],
                 score: 0,
                 tapsAvailable: 0,
                 unlockedStage: 0,
+                soundscapeIdx: 0,
                 lastSpawnTime: 0,
                 gameStartTime: 0,
-                gameOver: false
+                gameOver: false,
+                lastValidTapTime: 0 // Tracks the last successful note to prevent ghost-click overlap
             });
 
-            // Event trigger
+            // Event trigger (Spawns ripples and plays tones)
             const triggerEvent = useCallback((x, y, freq, color, baseVelocity, depth = 0, instrumentId = 0) => {
                 const attenuation = Math.pow(0.55, depth);
                 const velocity = baseVelocity * attenuation;
@@ -141,8 +255,12 @@
                 
                 playTone(freq, velocity, instrumentId);
                 
+                // Scale ripple to board size (Baseline 400px = 84px radius)
+                const currentS = Math.min(window.innerWidth, window.innerHeight / 2);
+                const scaleFactor = currentS / 400; 
+                
                 const id = Date.now() + Math.random();
-                const maxRadius = 120 * velocity; 
+                const maxRadius = 84 * velocity * scaleFactor; 
                 
                 gameState.current.ripples.push({ 
                     id, x, y, color, maxRadius, 
@@ -161,10 +279,14 @@
                 
                 const loop = () => {
                     const state = gameState.current;
-                    const height = window.innerHeight;
-                    const width = window.innerWidth;
-                    const centerY = height / 2;
                     const now = performance.now();
+                    
+                    // Math constraints based on dual-square scalable layout
+                    const S = Math.min(window.innerWidth, window.innerHeight / 2);
+                    const width = S;
+                    const height = S * 2;
+                    const centerY = S;
+                    const scaleFactor = S / 400; 
 
                     if (state.gameStartTime === 0) state.gameStartTime = now;
                     const elapsed = now - state.gameStartTime;
@@ -204,13 +326,13 @@
                         
                         state.stars.push({
                             id: Math.random(),
-                            x: Math.random() * (width - 40) + 20,
-                            y: direction === 1 ? -20 : height + 20,
-                            speed: randomBaseSpeed * progressiveMultiplier,
+                            x: Math.random() * (width - 40 * scaleFactor) + 20 * scaleFactor,
+                            y: direction === 1 ? -20 * scaleFactor : height + 20 * scaleFactor,
+                            speed: randomBaseSpeed * scaleFactor * progressiveMultiplier,
                             direction: direction,
-                            size: Math.random() * 4 + 4,
+                            size: (Math.random() * 4 + 4) * scaleFactor,
                             instrumentId: dotInstrumentId,
-                            hasGrantedTap: false // Start false, grant when entering visible screen
+                            hasGrantedTap: false
                         });
                         
                         state.lastSpawnTime = now;
@@ -221,12 +343,12 @@
                         const star = state.stars[i];
                         star.y += star.speed * star.direction;
                         
-                        // Check if dot has crossed into the visible screen to grant a tap exactly once
+                        // Check if dot crossed into the visible screen to grant a tap
                         if (!star.hasGrantedTap) {
                             if ((star.direction === 1 && star.y >= 0) || 
                                 (star.direction === -1 && star.y <= height)) {
                                 star.hasGrantedTap = true;
-                                state.tapsAvailable += 1; // Pure 1:1 economy
+                                state.tapsAvailable = Math.min(state.tapsAvailable + 1, 3);
                             }
                         }
 
@@ -244,7 +366,6 @@
                     for (let i = state.stars.length - 1; i >= 0; i--) {
                         const star = state.stars[i];
                         
-                        // Prevent popping dots that are still off-screen
                         if ((star.direction === 1 && star.y < 0) || 
                             (star.direction === -1 && star.y > height)) continue;
 
@@ -255,8 +376,9 @@
                             const ripple = state.ripples[j];
                             const age = now - ripple.createdAt;
                             
-                            // Ripple must be within 80% of its 4000ms life to catch anything
-                            if (age > 3200) continue;
+                            // The dashed outline is visible for the full 4000ms.
+                            // The ripple remains active as long as it's on screen.
+                            if (age >= 4000) continue;
 
                             const progress = Math.min(1, age / 4000);
                             const easeOut = 1 - Math.pow(1 - progress, 3);
@@ -266,7 +388,6 @@
                             const dy = star.y - ripple.y;
                             const dist = Math.sqrt(dx * dx + dy * dy);
 
-                            // Strict collision: 1.01 edge
                             if (dist < currentRadius * 1.01) {
                                 caught = true;
                                 catchingRipple = ripple;
@@ -278,18 +399,28 @@
                         if (caught && catchingRipple) {
                             catchingRipple.dotsCaught = (catchingRipple.dotsCaught || 0) + 1;
 
+                            // Calculate score (0 to 50) based on proximity to center line
                             const travelProgress = star.direction === 1 ? (star.y / centerY) : ((height - star.y) / centerY);
                             const normalizedProgress = Math.max(0, Math.min(1, travelProgress));
-                            const baseScore = 10 + Math.floor(normalizedProgress * 90); 
+                            const baseScore = Math.floor(normalizedProgress * 50); // Now ranges strictly from 0 to 50
                             
                             const pointsEarned = baseScore * catchingRipple.dotsCaught;
                             state.score += pointsEarned;
                             
-                            const absoluteNormalizedY = Math.max(0, Math.min(1, star.y / height));
-                            const scaleIndex = Math.floor((1 - absoluteNormalizedY) * PENTATONIC_SCALE.length);
-                            const safeIndex = Math.max(0, Math.min(PENTATONIC_SCALE.length - 1, scaleIndex));
+                            const normalizedX = Math.max(0, Math.min(1, star.x / width));
+                            const sectionIndex = Math.floor(normalizedX * 3); 
+                            const safeSectionIndex = Math.max(0, Math.min(2, sectionIndex));
                             
-                            const freq = PENTATONIC_SCALE[safeIndex];
+                            const absoluteNormalizedY = Math.max(0, Math.min(1, star.y / height));
+                            const invertedY = 1 - absoluteNormalizedY;
+                            
+                            const activeSoundscape = SOUNDSCAPES[state.soundscapeIdx];
+                            const columnPitches = activeSoundscape.matrix[safeSectionIndex];
+                            
+                            const pitchIndex = Math.floor(invertedY * columnPitches.length);
+                            const safePitchIndex = Math.max(0, Math.min(columnPitches.length - 1, pitchIndex));
+                            
+                            const freq = columnPitches[safePitchIndex];
                             const instConfig = INSTRUMENTS[star.instrumentId] || INSTRUMENTS[0];
                             const color = instConfig.color;
                             
@@ -309,8 +440,17 @@
                         }
                     }
 
-                    // 4. Cleanup old objects
+                    // 4. Strict Tap Economy Enforcement
+                    const visibleStarsCount = state.stars.filter(s => s.hasGrantedTap).length;
+                    if (visibleStarsCount === 0) {
+                        state.tapsAvailable = 0;
+                    } else {
+                        state.tapsAvailable = Math.min(state.tapsAvailable, visibleStarsCount, 3);
+                    }
+
+                    // 5. Cleanup old objects
                     state.ripples = state.ripples.filter(r => (now - r.createdAt) < 4000);
+                    state.duds = state.duds.filter(d => (now - d.createdAt) < 300);
                     state.floatingTexts = state.floatingTexts.filter(ft => (now - ft.createdAt) < (ft.isUnlock ? 3000 : 1000));
 
                     setTick(t => t + 1);
@@ -331,9 +471,35 @@
                     return; 
                 }
                 
-                // Bulletproof Tap Guard
+                // Calculate pure math coordinates relative to the centered play board
+                const S = Math.min(window.innerWidth, window.innerHeight / 2);
+                const boardLeft = (window.innerWidth - S) / 2;
+                const boardTop = (window.innerHeight - S * 2) / 2;
+                
+                const x = clientX - boardLeft;
+                const y = clientY - boardTop;
+                
+                // Ignore taps strictly outside the board boundaries
+                if (x < 0 || x > S || y < 0 || y > S * 2) return;
+
+                const now = performance.now();
+
+                // Tap Guard: If zero taps, play flat beat, pulse HUD, and block ripple
                 if (isNaN(state.tapsAvailable) || state.tapsAvailable < 1) {
-                    state.tapsAvailable = 0; // Hard clamp any weird JS math bugs
+                    state.tapsAvailable = 0; 
+                    
+                    // Prevent ghost clicks or simultaneous multi-touches from triggering a dud immediately after the last note
+                    if (now - state.lastValidTapTime < 200) return;
+                    
+                    playFlatBeat(); 
+                    
+                    // Quick pulse of a white circle for visual feedback (non-functional)
+                    state.duds.push({
+                        id: Date.now() + Math.random(),
+                        x: x,
+                        y: y,
+                        createdAt: now
+                    });
                     
                     const hud = document.getElementById('taps-hud');
                     if (hud) {
@@ -343,163 +509,258 @@
                             if (hud) hud.style.transform = 'scale(1)';
                         }, 200);
                     }
-                    return; // Explicitly block the tap
+                    return; 
                 }
                 
-                // Safely consume exactly 1 tap per physical touch
                 state.tapsAvailable -= 1;
+                state.lastValidTapTime = now;
                 
-                const height = window.innerHeight || 1; 
-                const normalizedY = 1 - (clientY / height);
-                const scaleIndex = Math.floor(normalizedY * PENTATONIC_SCALE.length);
-                const safeIndex = Math.max(0, Math.min(PENTATONIC_SCALE.length - 1, scaleIndex));
+                // Map coordinates
+                const normalizedX = Math.max(0, Math.min(1, x / S));
+                const sectionIndex = Math.floor(normalizedX * 3);
+                const safeSectionIndex = Math.max(0, Math.min(2, sectionIndex));
                 
-                const freq = PENTATONIC_SCALE[safeIndex];
-                const color = BLOOM_COLORS[safeIndex % BLOOM_COLORS.length];
+                const normalizedY = Math.max(0, Math.min(1, y / (S * 2)));
+                const invertedY = 1 - normalizedY;
                 
-                triggerEvent(clientX, clientY, freq, color, 1.0, 0, 0);
+                const activeSoundscape = SOUNDSCAPES[state.soundscapeIdx];
+                const columnPitches = activeSoundscape.matrix[safeSectionIndex];
+                
+                const pitchIndex = Math.floor(invertedY * columnPitches.length);
+                const safePitchIndex = Math.max(0, Math.min(columnPitches.length - 1, pitchIndex));
+                
+                const freq = columnPitches[safePitchIndex];
+                const color = activeSoundscape.colors[safeSectionIndex];
+                
+                triggerEvent(x, y, freq, color, 1.0, 0, 0);
             };
 
-            // Safely route touch events (Preventing ghost mouse events on mobile)
             const handleTouchStart = (e) => {
-                if (e.cancelable) e.preventDefault(); // Stop mobile Safari ghost clicks
+                if (e.cancelable) e.preventDefault(); 
                 for (let i = 0; i < e.changedTouches.length; i++) {
                     processTap(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
                 }
             };
 
-            // Safely route mouse clicks (Ignored natively on mobile due to above preventDefault)
             const handleMouseDown = (e) => {
                 processTap(e.clientX, e.clientY);
             };
 
             const { ripples, stars, floatingTexts, score, tapsAvailable } = gameState.current;
+            const maxTapsDisplay = 3;
 
             return (
                 <div 
-                    className="w-full h-full relative overflow-hidden bg-[#0b132b]"
+                    className="w-full h-full flex items-center justify-center bg-[#020617]"
                     onTouchStart={handleTouchStart}
                     onMouseDown={handleMouseDown}
                     style={{ touchAction: 'none' }}
                 >
-                    {/* Glowing Center Line */}
-                    <div className="absolute top-1/2 left-0 w-full h-px bg-[#48cae4]/50 shadow-[0_0_12px_2px_rgba(72,202,228,0.5)] pointer-events-none z-0"></div>
+                    {/* The Scaled Game Board Container */}
+                    <div 
+                        id="game-board"
+                        className="relative overflow-hidden bg-[#0b132b] shadow-[0_0_60px_rgba(0,0,0,0.8)] border-x border-white/5"
+                        style={{ width: boardSize, height: boardSize * 2 }}
+                    >
+                        {/* Glowing Center Line dividing the top and bottom squares */}
+                        <div className="absolute top-1/2 left-0 w-full h-px bg-[#48cae4]/50 shadow-[0_0_12px_2px_rgba(72,202,228,0.5)] pointer-events-none z-0"></div>
 
-                    {/* HUD */}
-                    <div className="absolute top-6 left-6 text-white/80 pointer-events-none hud-text z-10">
-                        <div className="text-sm font-light uppercase tracking-widest text-white/50">Score</div>
-                        <div className="text-4xl font-bold">{score}</div>
-                    </div>
-                    
-                    {/* Transparent Tap Economy HUD */}
-                    <div className="absolute top-6 right-6 text-white/80 pointer-events-none text-right z-10">
-                        <div className="text-sm font-light uppercase tracking-widest text-white/50 hud-text">Taps</div>
-                        <div 
-                            id="taps-hud"
-                            className="text-4xl font-bold transition-all duration-200 ease-out hud-text"
-                            style={{ color: tapsAvailable <= 0 ? '#ef4444' : 'white' }}
-                        >
-                            {tapsAvailable}
+                        {/* HUD */}
+                        <div className="absolute top-6 left-6 text-white/80 pointer-events-none hud-text z-10">
+                            <div className="text-sm font-light uppercase tracking-widest text-white/50">Score</div>
+                            <div className="text-4xl font-bold">{score}</div>
                         </div>
-                    </div>
-
-                    {!started && !gameState.current.gameOver && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-[#0b132b]/80 backdrop-blur-sm">
-                            <h1 className="text-white text-4xl font-light tracking-widest mb-4 text-center">BLOSSOM</h1>
-                            <p className="text-white/60 mb-8 max-w-xs text-center text-sm leading-relaxed">
-                                Each new dot grants 1 tap. Tap to create ripples and catch falling stardust before they cross the center line.
-                            </p>
-                            <div className="text-white tracking-widest uppercase text-sm animate-pulse border border-white/30 px-6 py-3 rounded-full">
-                                Tap to begin
+                        
+                        {/* Transparent Tap Economy HUD */}
+                        <div className="absolute top-6 right-6 text-white/80 pointer-events-none text-right z-10 flex flex-col items-end">
+                            <div className="text-sm font-light uppercase tracking-widest text-white/50 hud-text mb-1">Notes</div>
+                            <div 
+                                id="taps-hud"
+                                className="flex gap-2 transition-transform duration-200 ease-out"
+                            >
+                                {[...Array(maxTapsDisplay)].map((_, i) => (
+                                    <div 
+                                        key={i}
+                                        className={`w-4 h-4 rounded-full border border-white transition-all duration-200 ${i < tapsAvailable ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] scale-100' : 'bg-transparent opacity-30 scale-75'}`}
+                                    />
+                                ))}
                             </div>
                         </div>
-                    )}
 
-                    {gameState.current.gameOver && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto z-30 bg-[#0b132b]/90 backdrop-blur-md">
-                            <h1 className="text-red-400 text-4xl font-light tracking-widest mb-2 text-center">GAME OVER</h1>
-                            <div className="text-white/80 text-xl mb-8">Final Score: {score}</div>
+                        {!started && !gameState.current.gameOver && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-[#0b132b]/80 backdrop-blur-sm">
+                                <h1 className="text-white text-4xl font-light tracking-widest mb-4 text-center">BLOSSOM</h1>
+                                <p className="text-white/60 mb-8 px-8 text-center text-sm leading-relaxed">
+                                    You can hold a maximum of 3 notes. Tap the left, center, or right sections of the screen to create harmonic ripples and catch falling stardust.
+                                </p>
+                                <div className="text-white tracking-widest uppercase text-sm animate-pulse border border-white/30 px-6 py-3 rounded-full">
+                                    Tap to begin
+                                </div>
+                            </div>
+                        )}
+
+                        {gameState.current.gameOver && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto z-30 bg-[#0b132b]/90 backdrop-blur-md">
+                                <h1 className="text-red-400 text-4xl font-light tracking-widest mb-2 text-center">GAME OVER</h1>
+                                <div className="text-white/80 text-xl mb-8">Final Score: {score}</div>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Preserve the selected soundscape on reset
+                                        const currentSoundscape = activeSoundscape; 
+                                        
+                                        gameState.current = {
+                                            ripples: [],
+                                            duds: [],
+                                            stars: [],
+                                            floatingTexts: [],
+                                            score: 0,
+                                            tapsAvailable: 0,
+                                            unlockedStage: 0,
+                                            soundscapeIdx: currentSoundscape,
+                                            lastSpawnTime: performance.now(),
+                                            gameStartTime: performance.now(),
+                                            gameOver: false,
+                                            lastValidTapTime: 0
+                                        };
+                                        setStarted(true);
+                                    }}
+                                    className="text-white tracking-widest uppercase text-sm border border-white/30 px-6 py-3 rounded-full hover:bg-white/10 transition-colors pointer-events-auto cursor-pointer"
+                                >
+                                    Play Again
+                                </button>
+                            </div>
+                        )}
+                        
+                        {/* Render Ripples */}
+                        {ripples.map(r => (
+                            <React.Fragment key={r.id}>
+                                {/* Glowing Body */}
+                                <div 
+                                    className="ripple"
+                                    style={{ 
+                                        left: r.x, 
+                                        top: r.y, 
+                                        backgroundColor: r.color,
+                                        width: r.maxRadius * 2,
+                                        height: r.maxRadius * 2,
+                                        boxShadow: `0 0 ${r.maxRadius}px ${r.color}`
+                                    }} 
+                                />
+                                {/* Faint Dashed Mechanical Edge */}
+                                <div 
+                                    className="ripple-outline"
+                                    style={{ 
+                                        left: r.x, 
+                                        top: r.y, 
+                                        width: r.maxRadius * 2,
+                                        height: r.maxRadius * 2,
+                                        borderColor: r.color
+                                    }} 
+                                />
+                            </React.Fragment>
+                        ))}
+
+                        {/* Render Dud Ripples (Empty Taps) */}
+                        {(gameState.current.duds || []).map(d => {
+                            const scaleFactor = boardSize / 400;
+                            return (
+                                <div 
+                                    key={d.id}
+                                    className="dud-ripple"
+                                    style={{
+                                        left: d.x,
+                                        top: d.y,
+                                        width: 50 * scaleFactor,
+                                        height: 50 * scaleFactor
+                                    }}
+                                />
+                            );
+                        })}
+
+                        {/* Render Stars */}
+                        {stars.map(s => {
+                            const instConfig = INSTRUMENTS[s.instrumentId] || INSTRUMENTS[0];
+                            return (
+                                <div
+                                    key={s.id}
+                                    className="star"
+                                    style={{
+                                        left: s.x,
+                                        top: s.y,
+                                        width: s.size,
+                                        height: s.size,
+                                        backgroundColor: instConfig.color,
+                                        boxShadow: `0 0 10px 2px ${instConfig.glow}`
+                                    }}
+                                />
+                            );
+                        })}
+
+                        {/* Render Floating Texts */}
+                        {floatingTexts.map(ft => {
+                            const age = performance.now() - ft.createdAt;
+                            const duration = ft.isUnlock ? 3000 : 1000;
+                            const progress = Math.max(0, Math.min(1, age / duration));
+                            
+                            return (
+                                <div
+                                    key={ft.id}
+                                    className={`absolute font-bold pointer-events-none ${ft.isUnlock ? 'text-2xl tracking-widest uppercase' : 'text-xl'}`}
+                                    style={{
+                                        left: ft.x,
+                                        top: ft.y - (progress * (ft.isUnlock ? 20 : 50)),
+                                        color: ft.color,
+                                        opacity: ft.isUnlock ? (progress < 0.2 ? progress / 0.2 : 1 - progress) : 1 - progress,
+                                        transform: 'translate(-50%, -50%)',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                                    }}
+                                >
+                                    {ft.text}
+                                </div>
+                            );
+                        })}
+
+                        {/* Soundscape Menu Tray */}
+                        <div 
+                            className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center"
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                        >
+                            <div className={`transition-all duration-300 ease-in-out origin-bottom ${menuOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 mb-0 h-0 overflow-hidden'}`}>
+                                <div className="bg-[#0b132b]/90 border border-white/20 backdrop-blur-md rounded-2xl p-2 flex flex-col gap-1 w-48 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                                    {SOUNDSCAPES.map((s, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => {
+                                                setActiveSoundscape(i);
+                                                gameState.current.soundscapeIdx = i;
+                                                setMenuOpen(false);
+                                                playTone(s.matrix[1][1], 0.5, 0); // Brief preview sound
+                                            }}
+                                            className={`px-4 py-3 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors text-left flex items-center justify-between ${activeSoundscape === i ? 'bg-white/20 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white/80'}`}
+                                        >
+                                            {s.name}
+                                            {activeSoundscape === i && (
+                                                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    gameState.current = {
-                                        ripples: [],
-                                        stars: [],
-                                        floatingTexts: [],
-                                        score: 0,
-                                        tapsAvailable: 0,
-                                        unlockedStage: 0,
-                                        lastSpawnTime: performance.now(),
-                                        gameStartTime: performance.now(),
-                                        gameOver: false
-                                    };
-                                    setStarted(true);
-                                }}
-                                className="text-white tracking-widest uppercase text-sm border border-white/30 px-6 py-3 rounded-full hover:bg-white/10 transition-colors pointer-events-auto cursor-pointer"
+                                onClick={() => setMenuOpen(!menuOpen)}
+                                className={`w-12 h-12 rounded-full border flex items-center justify-center text-white/80 hover:bg-white/20 transition-all backdrop-blur-sm ${menuOpen ? 'bg-white/20 border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-white/10 border-white/20 hover:scale-105'}`}
                             >
-                                Play Again
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 18V5l12-2v13"></path>
+                                    <circle cx="6" cy="18" r="3"></circle>
+                                    <circle cx="18" cy="16" r="3"></circle>
+                                </svg>
                             </button>
                         </div>
-                    )}
-                    
-                    {/* Render Ripples */}
-                    {ripples.map(r => (
-                        <div 
-                            key={r.id} 
-                            className="ripple"
-                            style={{ 
-                                left: r.x, 
-                                top: r.y, 
-                                backgroundColor: r.color,
-                                width: r.maxRadius * 2,
-                                height: r.maxRadius * 2,
-                                boxShadow: `0 0 ${r.maxRadius}px ${r.color}`
-                            }} 
-                        />
-                    ))}
-
-                    {/* Render Stars */}
-                    {stars.map(s => {
-                        const instConfig = INSTRUMENTS[s.instrumentId] || INSTRUMENTS[0];
-                        return (
-                            <div
-                                key={s.id}
-                                className="star"
-                                style={{
-                                    left: s.x,
-                                    top: s.y,
-                                    width: s.size,
-                                    height: s.size,
-                                    backgroundColor: instConfig.color,
-                                    boxShadow: `0 0 10px 2px ${instConfig.glow}`
-                                }}
-                            />
-                        );
-                    })}
-
-                    {/* Render Floating Texts */}
-                    {floatingTexts.map(ft => {
-                        const age = performance.now() - ft.createdAt;
-                        const duration = ft.isUnlock ? 3000 : 1000;
-                        const progress = Math.max(0, Math.min(1, age / duration));
-                        
-                        return (
-                            <div
-                                key={ft.id}
-                                className={`absolute font-bold pointer-events-none ${ft.isUnlock ? 'text-2xl tracking-widest uppercase' : 'text-xl'}`}
-                                style={{
-                                    left: ft.x,
-                                    top: ft.y - (progress * (ft.isUnlock ? 20 : 50)),
-                                    color: ft.color,
-                                    opacity: ft.isUnlock ? (progress < 0.2 ? progress / 0.2 : 1 - progress) : 1 - progress,
-                                    transform: 'translate(-50%, -50%)',
-                                    textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                                }}
-                            >
-                                {ft.text}
-                            </div>
-                        );
-                    })}
+                    </div>
                 </div>
             );
         };
