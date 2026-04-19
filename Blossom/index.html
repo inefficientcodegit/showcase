@@ -14,7 +14,7 @@
         body, html { 
             margin: 0; padding: 0; 
             width: 100%; height: 100%; 
-            background-color: #020617; /* Dark outer background for the frame */
+            background-color: #020617; 
             overflow: hidden; 
             touch-action: none; 
             -webkit-user-select: none; user-select: none;
@@ -26,8 +26,7 @@
             position: absolute;
             border-radius: 50%;
             transform: translate(-50%, -50%) scale(0);
-            /* Updated to exactly match the JS easeOutQuint function */
-            animation: bloomFade 4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            animation: bloomFade 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
             pointer-events: none;
             mix-blend-mode: screen;
             filter: blur(4px);
@@ -37,8 +36,7 @@
             position: absolute;
             border-radius: 50%;
             transform: translate(-50%, -50%) scale(0);
-            /* Updated to exactly match the JS easeOutQuint function */
-            animation: bloomOutline 4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            animation: bloomOutline 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
             pointer-events: none;
             mix-blend-mode: screen;
             border: 1px dashed;
@@ -72,8 +70,7 @@
             position: absolute;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.8);
-            /* Consistency match for dud pulse */
-            animation: dudPulse 0.3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            animation: dudPulse 0.3s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
             pointer-events: none;
             mix-blend-mode: screen;
         }
@@ -90,10 +87,10 @@
         const { useState, useEffect, useCallback, useRef } = React;
 
         // 5 Distinct Sonic Experiences (Soundscapes)
-        // All use stacked perfect fifths to guarantee mathematically soothing consonance.
         const SOUNDSCAPES = [
             {
                 name: 'Ethereal',
+                tapInstrument: 0, // Bells
                 colors: ['#48cae4', '#ff99c8', '#fcf6bd'],
                 matrix: [
                     [130.81, 261.63, 523.25], // C
@@ -103,6 +100,7 @@
             },
             {
                 name: 'Midnight',
+                tapInstrument: 4, // Pad
                 colors: ['#7b2cbf', '#3a0ca3', '#4cc9f0'],
                 matrix: [
                     [110.00, 220.00, 440.00], // A
@@ -112,6 +110,7 @@
             },
             {
                 name: 'Sunrise',
+                tapInstrument: 1, // Keys
                 colors: ['#fb8500', '#ffb703', '#ff006e'],
                 matrix: [
                     [146.83, 293.66, 587.33], // D
@@ -121,6 +120,7 @@
             },
             {
                 name: 'Forest',
+                tapInstrument: 3, // Winds
                 colors: ['#2a9d8f', '#e9c46a', '#8ab17d'],
                 matrix: [
                     [174.61, 349.23, 698.46], // F
@@ -129,12 +129,13 @@
                 ]
             },
             {
-                name: 'Ember',
-                colors: ['#e63946', '#f4a261', '#f1faee'],
+                name: 'Cello', // Replaced Ember with Cello
+                tapInstrument: 5, // Cello
+                colors: ['#d4a373', '#faedcd', '#e9edc9'], // Woody, earthy tones
                 matrix: [
-                    [155.56, 311.13, 622.25], // Eb
-                    [233.08, 466.16, 932.33], // Bb
-                    [174.61, 349.23, 698.46]  // F
+                    [65.41, 130.81, 261.63], // C (Pitched an octave lower for resonance)
+                    [98.00, 196.00, 392.00], // G
+                    [73.42, 146.83, 293.66]  // D
                 ]
             }
         ];
@@ -145,11 +146,13 @@
             { id: 1, name: 'Keys', color: '#fcf6bd', glow: 'rgba(252, 246, 189, 0.8)', wave: 'triangle', attack: 0.02, release: 2.5, vol: 0.2 },
             { id: 2, name: 'Strings', color: '#ff99c8', glow: 'rgba(255, 153, 200, 0.8)', wave: 'sine', attack: 0.8, release: 4.0, vol: 0.5 },
             { id: 3, name: 'Winds', color: '#a9def9', glow: 'rgba(169, 222, 249, 0.8)', wave: 'sine', attack: 0.3, release: 2.5, vol: 0.4 },
-            { id: 4, name: 'Pad', color: '#e4c1f9', glow: 'rgba(228, 193, 249, 0.8)', wave: 'triangle', attack: 1.2, release: 4.5, vol: 0.15 }
+            { id: 4, name: 'Pad', color: '#e4c1f9', glow: 'rgba(228, 193, 249, 0.8)', wave: 'triangle', attack: 1.2, release: 4.5, vol: 0.15 },
+            // New Cello Instrument added
+            { id: 5, name: 'Cello', color: '#d4a373', glow: 'rgba(212, 163, 115, 0.8)', wave: 'sawtooth', attack: 0.6, release: 4.5, vol: 0.15 } 
         ];
 
-        // Exponential thresholds for unlocks
-        const UNLOCK_THRESHOLDS = [0, 1000, 3000, 7000, 15000];
+        // Added 30,000 threshold so Cello dots will eventually spawn
+        const UNLOCK_THRESHOLDS = [0, 1000, 3000, 7000, 15000, 30000];
 
         let audioCtx = null;
         const initAudio = () => {
@@ -168,13 +171,19 @@
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter(); // Digital filter added
                 
                 const inst = INSTRUMENTS[instrumentId] || INSTRUMENTS[0];
                 
                 osc.type = inst.wave;
                 osc.frequency.value = freq;
                 
-                osc.connect(gain);
+                // The filter turns a harsh sawtooth into a warm, woody cello body
+                filter.type = 'lowpass';
+                filter.frequency.value = inst.wave === 'sawtooth' ? freq * 4 : 8000;
+                
+                osc.connect(filter);
+                filter.connect(gain);
                 gain.connect(audioCtx.destination);
                 
                 osc.start();
@@ -224,7 +233,7 @@
             const [menuOpen, setMenuOpen] = useState(false);
             const [activeSoundscape, setActiveSoundscape] = useState(0);
             
-            // Layout Scale Engine: S is the size of one square
+            // Layout Scale Engine
             const [boardSize, setBoardSize] = useState(() => Math.min(window.innerWidth, window.innerHeight / 2));
             
             useEffect(() => {
@@ -246,7 +255,7 @@
                 lastSpawnTime: 0,
                 gameStartTime: 0,
                 gameOver: false,
-                lastValidTapTime: 0 // Tracks the last successful note to prevent ghost-click overlap
+                lastValidTapTime: 0
             });
 
             // Event trigger (Spawns ripples and plays tones)
@@ -258,7 +267,7 @@
                 
                 playTone(freq, velocity, instrumentId);
                 
-                // Scale ripple to board size (Baseline 400px = 84px radius)
+                // Scale ripple to board size
                 const currentS = Math.min(window.innerWidth, window.innerHeight / 2);
                 const scaleFactor = currentS / 400; 
                 
@@ -284,7 +293,6 @@
                     const state = gameState.current;
                     const now = performance.now();
                     
-                    // Math constraints based on dual-square scalable layout
                     const S = Math.min(window.innerWidth, window.innerHeight / 2);
                     const width = S;
                     const height = S * 2;
@@ -314,7 +322,7 @@
                             id: Math.random(),
                             x: width / 2,
                             y: height * 0.3,
-                            text: `${newInst.name} Unlocked!`,
+                            text: `${newInst.name} Dots Unlocked!`,
                             createdAt: now,
                             color: newInst.color,
                             isUnlock: true
@@ -346,7 +354,6 @@
                         const star = state.stars[i];
                         star.y += star.speed * star.direction;
                         
-                        // Check if dot crossed into the visible screen to grant a tap
                         if (!star.hasGrantedTap) {
                             if ((star.direction === 1 && star.y >= 0) || 
                                 (star.direction === -1 && star.y <= height)) {
@@ -379,15 +386,10 @@
                             const ripple = state.ripples[j];
                             const age = now - ripple.createdAt;
                             
-                            // The dashed outline is visible for the full 4000ms.
-                            // The ripple remains active as long as it's on screen.
                             if (age >= 4000) continue;
 
                             const progress = Math.min(1, age / 4000);
-                            
-                            // Perfectly matches CSS cubic-bezier(0.23, 1, 0.32, 1) to eliminate sync lag
-                            const easeOut = 1 - Math.pow(1 - progress, 5);
-                            
+                            const easeOut = 1 - Math.pow(1 - progress, 3);
                             const currentRadius = ripple.maxRadius * easeOut;
 
                             const dx = star.x - ripple.x;
@@ -405,10 +407,9 @@
                         if (caught && catchingRipple) {
                             catchingRipple.dotsCaught = (catchingRipple.dotsCaught || 0) + 1;
 
-                            // Calculate score (0 to 50) based on proximity to center line
                             const travelProgress = star.direction === 1 ? (star.y / centerY) : ((height - star.y) / centerY);
                             const normalizedProgress = Math.max(0, Math.min(1, travelProgress));
-                            const baseScore = Math.floor(normalizedProgress * 50); // Now ranges strictly from 0 to 50
+                            const baseScore = Math.floor(normalizedProgress * 50); 
                             
                             const pointsEarned = baseScore * catchingRipple.dotsCaught;
                             state.score += pointsEarned;
@@ -477,7 +478,6 @@
                     return; 
                 }
                 
-                // Calculate pure math coordinates relative to the centered play board
                 const S = Math.min(window.innerWidth, window.innerHeight / 2);
                 const boardLeft = (window.innerWidth - S) / 2;
                 const boardTop = (window.innerHeight - S * 2) / 2;
@@ -494,12 +494,11 @@
                 if (isNaN(state.tapsAvailable) || state.tapsAvailable < 1) {
                     state.tapsAvailable = 0; 
                     
-                    // Prevent ghost clicks or simultaneous multi-touches from triggering a dud immediately after the last note
+                    // Prevent ghost clicks from triggering a dud immediately after the last note
                     if (now - state.lastValidTapTime < 200) return;
                     
                     playFlatBeat(); 
                     
-                    // Quick pulse of a white circle for visual feedback (non-functional)
                     state.duds.push({
                         id: Date.now() + Math.random(),
                         x: x,
@@ -538,7 +537,8 @@
                 const freq = columnPitches[safePitchIndex];
                 const color = activeSoundscape.colors[safeSectionIndex];
                 
-                triggerEvent(x, y, freq, color, 1.0, 0, 0);
+                // Triggers event using the Soundscape's assigned instrument
+                triggerEvent(x, y, freq, color, 1.0, 0, activeSoundscape.tapInstrument);
             };
 
             const handleTouchStart = (e) => {
@@ -568,7 +568,7 @@
                         className="relative overflow-hidden bg-[#0b132b] shadow-[0_0_60px_rgba(0,0,0,0.8)] border-x border-white/5"
                         style={{ width: boardSize, height: boardSize * 2 }}
                     >
-                        {/* Glowing Center Line dividing the top and bottom squares */}
+                        {/* Glowing Center Line */}
                         <div className="absolute top-1/2 left-0 w-full h-px bg-[#48cae4]/50 shadow-[0_0_12px_2px_rgba(72,202,228,0.5)] pointer-events-none z-0"></div>
 
                         {/* HUD */}
@@ -612,7 +612,6 @@
                                 <button 
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        // Preserve the selected soundscape on reset
                                         const currentSoundscape = activeSoundscape; 
                                         
                                         gameState.current = {
@@ -641,7 +640,6 @@
                         {/* Render Ripples */}
                         {ripples.map(r => (
                             <React.Fragment key={r.id}>
-                                {/* Glowing Body */}
                                 <div 
                                     className="ripple"
                                     style={{ 
@@ -653,7 +651,6 @@
                                         boxShadow: `0 0 ${r.maxRadius}px ${r.color}`
                                     }} 
                                 />
-                                {/* Faint Dashed Mechanical Edge */}
                                 <div 
                                     className="ripple-outline"
                                     style={{ 
@@ -742,7 +739,7 @@
                                                 setActiveSoundscape(i);
                                                 gameState.current.soundscapeIdx = i;
                                                 setMenuOpen(false);
-                                                playTone(s.matrix[1][1], 0.5, 0); // Brief preview sound
+                                                playTone(s.matrix[1][1], 0.5, s.tapInstrument); // Brief preview using its assigned instrument!
                                             }}
                                             className={`px-4 py-3 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors text-left flex items-center justify-between ${activeSoundscape === i ? 'bg-white/20 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white/80'}`}
                                         >
