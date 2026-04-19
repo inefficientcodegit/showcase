@@ -114,7 +114,8 @@
   "url": "https://inefficientcodegit.github.io/showcase/RPS%20Vision/index.html",
   "description": "Play Rock, Paper, Scissors against the collective knowledge of all of humanity",
   "iosLink": null,
-  "androidLink": null
+  "androidLink": null,
+"camera": "allow"
  }
 
 ]
