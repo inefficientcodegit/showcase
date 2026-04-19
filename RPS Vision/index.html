@@ -14,6 +14,20 @@
   
   <!-- Babel for parsing JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Custom CSS Animation for the pumping hand */
+    @keyframes pump {
+      0% { transform: translateY(-30px) rotate(5deg); }
+      50% { transform: translateY(40px) rotate(-15deg); }
+      100% { transform: translateY(-30px) rotate(5deg); }
+    }
+    .animate-pump {
+      /* 1s (1000ms) matches exactly with our Javascript interval */
+      animation: pump 1s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+  </style>
 </head>
 <body class="bg-slate-950">
   <div id="root"></div>
@@ -89,6 +103,7 @@
       const [resultMsg, setResultMsg] = useState("");
       const [scores, setScores] = useState({ user: 0, comp: 0 });
       const [flash, setFlash] = useState(false);
+      const [snapshot, setSnapshot] = useState(null);
 
       // --- Audio Synthesizer Functions ---
       const initAudio = () => {
@@ -199,7 +214,7 @@
 
       // --- Local Vision Inference Logic ---
       const analyzeLocalImage = async (videoElement) => {
-        if (!tfModel || !videoElement) return "UNKNOWN";
+        if (!tfModel || !videoElement) return { move: "UNKNOWN", snapshotUrl: null };
 
         try {
           // Draw to an offscreen canvas to standardize orientation and size before inference
@@ -222,39 +237,75 @@
             category = results.gestures[0][0].categoryName;
           }
           
-          if (category === "Closed_Fist") return "ROCK";
-          if (category === "Open_Palm") return "PAPER";
-          if (category === "Victory" || category === "ILoveYou") return "SCISSORS";
+          let move = "UNKNOWN";
+          if (category === "Closed_Fist") move = "ROCK";
+          else if (category === "Open_Palm") move = "PAPER";
+          else if (category === "Victory" || category === "ILoveYou") move = "SCISSORS";
 
-          // FALLBACK: If the AI doesn't recognize a strict category (like two fingers straight up instead of a V-shape)
-          // We manually check the 3D landmarks to count the extended fingers.
+          // FALLBACK & WIREFRAME DRAWING
           if (results.landmarks && results.landmarks.length > 0) {
             const landmarks = results.landmarks[0];
             const wrist = landmarks[0];
             
-            // Calculate 2D distance between two points
-            const dist = (p1, p2) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-            
-            // A finger is extended if its Tip is further from the Wrist than its PIP joint
-            const isEx = (tip, pip) => dist(wrist, landmarks[tip]) > dist(wrist, landmarks[pip]);
-            
-            const indexEx = isEx(8, 6);
-            const middleEx = isEx(12, 10);
-            const ringEx = isEx(16, 14);
-            const pinkyEx = isEx(20, 18);
-            
-            // Scissors: Index and Middle extended, Ring and Pinky closed
-            if (indexEx && middleEx && !ringEx && !pinkyEx) return "SCISSORS";
-            // Rock: All closed
-            if (!indexEx && !middleEx && !ringEx && !pinkyEx) return "ROCK";
-            // Paper: All open
-            if (indexEx && middleEx && ringEx && pinkyEx) return "PAPER";
+            // If the AI didn't recognize a strict named gesture category, we fall back to manual 3D logic
+            if (move === "UNKNOWN") {
+              const dist = (p1, p2) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+              const isEx = (tip, pip) => dist(wrist, landmarks[tip]) > dist(wrist, landmarks[pip]);
+              
+              const indexEx = isEx(8, 6);
+              const middleEx = isEx(12, 10);
+              const ringEx = isEx(16, 14);
+              const pinkyEx = isEx(20, 18);
+              
+              if (indexEx && middleEx && !ringEx && !pinkyEx) move = "SCISSORS";
+              else if (!indexEx && !middleEx && !ringEx && !pinkyEx) move = "ROCK";
+              else if (indexEx && middleEx && ringEx && pinkyEx) move = "PAPER";
+            }
+
+            // --- DRAW WIREFRAME ---
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#10b981'; // Tailwind emerald-500
+            ctx.fillStyle = '#34d399'; // Tailwind emerald-400
+
+            // Connect the 21 joints of the hand based on MediaPipe topology
+            const HAND_CONNECTIONS = [
+              [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+              [0, 5], [5, 6], [6, 7], [7, 8], // Index
+              [5, 9], [9, 10], [10, 11], [11, 12], // Middle
+              [9, 13], [13, 14], [14, 15], [15, 16], // Ring
+              [13, 17], [17, 18], [18, 19], [19, 20], // Pinky
+              [0, 17], [5, 9], [9, 13], [13, 17] // Palm base wrap
+            ];
+
+            // Draw connecting lines
+            HAND_CONNECTIONS.forEach(([i, j]) => {
+                const p1 = landmarks[i];
+                const p2 = landmarks[j];
+                ctx.beginPath();
+                ctx.moveTo(p1.x * w, p1.y * h);
+                ctx.lineTo(p2.x * w, p2.y * h);
+                ctx.stroke();
+            });
+
+            // Draw joints
+            landmarks.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x * w, point.y * h, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            });
           }
+
+          // Extract Data URL containing the image WITH the skeleton drawn on it
+          const snapshotUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+          return { move, snapshotUrl };
 
         } catch (e) {
           console.error("Local inference error:", e);
         }
-        return "UNKNOWN";
+        return { move: "UNKNOWN", snapshotUrl: null };
       };
 
       // --- Game Loop ---
@@ -272,9 +323,10 @@
         const computerSelection = getRandomComputerMove();
         setCompMove(computerSelection);
         
-        // Pass video feed into our local TFJS model
-        const userSelection = await analyzeLocalImage(video);
+        // Pass video feed into our local TFJS model and get results
+        const { move: userSelection, snapshotUrl } = await analyzeLocalImage(video);
         setUserMove(userSelection);
+        setSnapshot(snapshotUrl);
 
         // Result logic
         const winner = getWinner(userSelection, computerSelection);
@@ -300,6 +352,7 @@
         setResultMsg("");
         setUserMove(null);
         setCompMove(null);
+        setSnapshot(null); // Clear previous snapshot
 
         const sequence = ["READY?", "ROCK", "PAPER", "SCISSORS", "GO!"];
         let step = 0;
@@ -334,6 +387,7 @@
         setUserMove(null);
         setCompMove(null);
         setResultMsg("");
+        setSnapshot(null);
       };
 
       const toggleCamera = () => {
@@ -472,8 +526,12 @@
               <div className="flex w-full max-w-sm justify-between items-center bg-slate-900 p-4 rounded-2xl border border-slate-800">
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-xs text-slate-400 font-bold tracking-widest">YOU</span>
-                  <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-3xl shadow-inner border border-slate-700">
-                    {EMOJIS[userMove] || '❓'}
+                  <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner border border-slate-700 relative">
+                    {snapshot ? (
+                      <img src={snapshot} className="absolute inset-0 w-full h-full object-cover" alt="Captured Hand" />
+                    ) : (
+                      <span className="text-4xl">{EMOJIS[userMove] || '❓'}</span>
+                    )}
                   </div>
                   <span className="text-[10px] font-bold text-emerald-400">{userMove}</span>
                 </div>
@@ -482,7 +540,7 @@
                 
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-xs text-slate-400 font-bold tracking-widest">COMP</span>
-                  <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-3xl shadow-inner border border-slate-700">
+                  <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center text-4xl shadow-inner border border-slate-700">
                     {EMOJIS[compMove] || '❓'}
                   </div>
                   <span className="text-[10px] font-bold text-cyan-400">{compMove}</span>
