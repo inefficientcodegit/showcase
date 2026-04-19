@@ -14,20 +14,6 @@
   
   <!-- Babel for parsing JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    /* Custom CSS Animation for the pumping hand */
-    @keyframes pump {
-      0% { transform: translateY(-30px) rotate(5deg); }
-      50% { transform: translateY(40px) rotate(-15deg); }
-      100% { transform: translateY(-30px) rotate(5deg); }
-    }
-    .animate-pump {
-      /* 1s (1000ms) matches exactly with our Javascript interval */
-      animation: pump 1s ease-in-out infinite;
-      transform-origin: bottom center;
-    }
-  </style>
 </head>
 <body class="bg-slate-950">
   <div id="root"></div>
@@ -230,14 +216,41 @@
 
           const results = tfModel.recognize(canvas);
           
+          let category = "UNKNOWN";
           if (results.gestures && results.gestures.length > 0 && results.gestures[0].length > 0) {
             // The model returns categories like "Closed_Fist", "Open_Palm", "Victory" (Peace sign)
-            const category = results.gestures[0][0].categoryName;
-            
-            if (category === "Closed_Fist") return "ROCK";
-            if (category === "Open_Palm") return "PAPER";
-            if (category === "Victory" || category === "ILoveYou") return "SCISSORS";
+            category = results.gestures[0][0].categoryName;
           }
+          
+          if (category === "Closed_Fist") return "ROCK";
+          if (category === "Open_Palm") return "PAPER";
+          if (category === "Victory" || category === "ILoveYou") return "SCISSORS";
+
+          // FALLBACK: If the AI doesn't recognize a strict category (like two fingers straight up instead of a V-shape)
+          // We manually check the 3D landmarks to count the extended fingers.
+          if (results.landmarks && results.landmarks.length > 0) {
+            const landmarks = results.landmarks[0];
+            const wrist = landmarks[0];
+            
+            // Calculate 2D distance between two points
+            const dist = (p1, p2) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+            
+            // A finger is extended if its Tip is further from the Wrist than its PIP joint
+            const isEx = (tip, pip) => dist(wrist, landmarks[tip]) > dist(wrist, landmarks[pip]);
+            
+            const indexEx = isEx(8, 6);
+            const middleEx = isEx(12, 10);
+            const ringEx = isEx(16, 14);
+            const pinkyEx = isEx(20, 18);
+            
+            // Scissors: Index and Middle extended, Ring and Pinky closed
+            if (indexEx && middleEx && !ringEx && !pinkyEx) return "SCISSORS";
+            // Rock: All closed
+            if (!indexEx && !middleEx && !ringEx && !pinkyEx) return "ROCK";
+            // Paper: All open
+            if (indexEx && middleEx && ringEx && pinkyEx) return "PAPER";
+          }
+
         } catch (e) {
           console.error("Local inference error:", e);
         }
@@ -333,8 +346,9 @@
           return (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10 rounded-2xl overflow-hidden">
               {countdown !== "GO!" && (
-                <div className="text-8xl md:text-9xl mb-8 animate-pump drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]">
-                  ✊
+                <div className="mb-10 relative flex justify-center items-center w-24 h-24">
+                  <div className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></div>
+                  <div className="relative inline-flex rounded-full h-10 w-10 bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.8)]"></div>
                 </div>
               )}
               <span className={`font-black text-white drop-shadow-2xl transition-all duration-200 
