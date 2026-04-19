@@ -15,10 +15,6 @@
   <!-- Babel for parsing JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- TensorFlow.js & Handpose Model for Local Inference -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
-
   <style>
     /* Custom CSS Animation for the pumping hand */
     @keyframes pump {
@@ -37,6 +33,16 @@
   <div id="root"></div>
 
   <script type="text/babel">
+    // MediaPipe's underlying C++ WebAssembly module routes its standard "INFO" logs to stderr,
+    // which the browser displays as console.error. This intercepts and hides that harmless message.
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+      if (args.length > 0 && typeof args[0] === 'string' && args[0].includes('XNNPACK delegate')) {
+        return; // Suppress harmless Wasm info log
+      }
+      originalConsoleError(...args);
+    };
+
     const { useState, useRef, useEffect, useCallback } = React;
 
     // --- Inline SVG Icons ---
@@ -140,15 +146,26 @@
       useEffect(() => {
         const loadModel = async () => {
           try {
-            // Wait for TensorFlow to initialize WebGL backend
-            await tf.setBackend('webgl');
-            await tf.ready();
-            // Load the lightweight Handpose model
-            const loadedModel = await handpose.load();
-            setTfModel(loadedModel);
+            // Use new Function to bypass Babel converting the dynamic import into a require() call
+            const vision = await new Function('return import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm")')();
+            const { GestureRecognizer, FilesetResolver } = vision;
+            
+            const visionData = await FilesetResolver.forVisionTasks(
+              "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+            );
+            
+            const recognizer = await GestureRecognizer.createFromOptions(visionData, {
+              baseOptions: {
+                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+                delegate: "GPU"
+              },
+              runningMode: "IMAGE"
+            });
+            
+            setTfModel(recognizer);
             setModelLoading(false);
           } catch (err) {
-            console.error("Error loading TensorFlow Handpose model:", err);
+            console.error("Error loading MediaPipe model:", err);
             setCameraError("Failed to load the local AI vision model.");
             setModelLoading(false);
           }
@@ -199,39 +216,27 @@
         if (!tfModel || !videoElement) return "UNKNOWN";
 
         try {
-          // Send the raw HTMLVideoElement straight to the model
-          const predictions = await tfModel.estimateHands(videoElement);
+          // Draw to an offscreen canvas to standardize orientation and size before inference
+          const canvas = document.createElement('canvas');
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+          const ctx = canvas.getContext('2d');
           
-          if (predictions.length > 0) {
-            // Get 3D landmarks for the 21 points of the hand
-            const landmarks = predictions[0].landmarks;
+          if (facingMode === 'user') {
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+          }
+          ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+          const results = tfModel.recognize(canvas);
+          
+          if (results.gestures && results.gestures.length > 0 && results.gestures[0].length > 0) {
+            // The model returns categories like "Closed_Fist", "Open_Palm", "Victory" (Peace sign)
+            const category = results.gestures[0][0].categoryName;
             
-            // Utility: 2D Distance between two points
-            const dist = (p1, p2) => Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));
-            
-            // Heuristic: A finger is extended if its Tip is further from the Wrist than its Knuckle (MCP) is.
-            // This logic works regardless of hand rotation (upside down, sideways).
-            const wrist = landmarks[0];
-            const isExtended = (tipIndex, mcpIndex) => {
-              return dist(wrist, landmarks[tipIndex]) > dist(wrist, landmarks[mcpIndex]);
-            };
-
-            const indexEx = isExtended(8, 5);
-            const middleEx = isExtended(12, 9);
-            const ringEx = isExtended(16, 13);
-            const pinkyEx = isExtended(20, 17);
-
-            // Count total extended fingers
-            let extendedFingers = 0;
-            if (indexEx) extendedFingers++;
-            if (middleEx) extendedFingers++;
-            if (ringEx) extendedFingers++;
-            if (pinkyEx) extendedFingers++;
-
-            // Strict Gesture Matching
-            if (extendedFingers === 0) return "ROCK";
-            if (extendedFingers >= 3) return "PAPER"; 
-            if (indexEx && middleEx && extendedFingers === 2) return "SCISSORS";
+            if (category === "Closed_Fist") return "ROCK";
+            if (category === "Open_Palm") return "PAPER";
+            if (category === "Victory" || category === "ILoveYou") return "SCISSORS";
           }
         } catch (e) {
           console.error("Local inference error:", e);
