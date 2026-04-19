@@ -89,7 +89,8 @@
       // --- State ---
       const [streamActive, setStreamActive] = useState(false);
       const [cameraError, setCameraError] = useState(null);
-      const [facingMode, setFacingMode] = useState("user"); 
+      // Changed to default to rear camera
+      const [facingMode, setFacingMode] = useState("environment"); 
       
       // TFJS Model States
       const [tfModel, setTfModel] = useState(null);
