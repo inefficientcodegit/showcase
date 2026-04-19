@@ -106,6 +106,15 @@
   "description": "tap for sound, that's it",
   "iosLink": null,
   "androidLink": null
+ },
+{
+  "id": "rps-vision",
+  "title": "RPS Vision",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/RPS%20Vision/index.html",
+  "description": "Play Rock, Paper, Scissors against the collective knowledge of all of humanity",
+  "iosLink": null,
+  "androidLink": null
  }
 
 ]

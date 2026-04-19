@@ -62,15 +62,17 @@
         }
 
         @keyframes dudPulse {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+            0% { transform: translate(-50%, -50%) scale(2.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
         }
 
         .dud-ripple {
             position: absolute;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.8);
-            animation: dudPulse 0.3s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            background: transparent; /* No fill */
+            border: 4px solid #f87171; /* Thick red outline matching Game Over text */
+            /* Using an 'ease-in' curve so it accelerates as it shrinks inwards */
+            animation: dudPulse 0.25s cubic-bezier(0.5, 0, 0.8, 1) forwards; 
             pointer-events: none;
             mix-blend-mode: screen;
         }
@@ -457,7 +459,7 @@
 
                     // 5. Cleanup old objects
                     state.ripples = state.ripples.filter(r => (now - r.createdAt) < 4000);
-                    state.duds = state.duds.filter(d => (now - d.createdAt) < 300);
+                    state.duds = state.duds.filter(d => (now - d.createdAt) < 200); // Shorter lifespan
                     state.floatingTexts = state.floatingTexts.filter(ft => (now - ft.createdAt) < (ft.isUnlock ? 3000 : 1000));
 
                     setTick(t => t + 1);
@@ -674,8 +676,8 @@
                                     style={{
                                         left: d.x,
                                         top: d.y,
-                                        width: 50 * scaleFactor,
-                                        height: 50 * scaleFactor
+                                        width: 25 * scaleFactor, /* Reduced from 50 to 25 to stay very small */
+                                        height: 25 * scaleFactor
                                     }}
                                 />
                             );
