@@ -1,501 +1,803 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>RPS Vision</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- React & ReactDOM -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Babel for parsing JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blossom</title>
+    <!-- React & Babel CDNs -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body, html { 
+            margin: 0; padding: 0; 
+            width: 100%; height: 100%; 
+            background-color: #020617; 
+            overflow: hidden; 
+            touch-action: none; 
+            -webkit-user-select: none; user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        #root { width: 100%; height: 100%; }
+        
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: bloomFade 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            filter: blur(4px);
+        }
 
-  <style>
-    /* Custom CSS Animation for the pumping hand */
-    @keyframes pump {
-      0% { transform: translateY(-30px) rotate(5deg); }
-      50% { transform: translateY(40px) rotate(-15deg); }
-      100% { transform: translateY(-30px) rotate(5deg); }
-    }
-    .animate-pump {
-      /* 1s (1000ms) matches exactly with our Javascript interval */
-      animation: pump 1s ease-in-out infinite;
-      transform-origin: bottom center;
-    }
-  </style>
+        .ripple-outline {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: bloomOutline 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            border: 1px dashed;
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        @keyframes bloomFade {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
+            30% { opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        @keyframes bloomOutline {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
+            95% { opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        @keyframes dudPulse {
+            0% { transform: translate(-50%, -50%) scale(2.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        }
+
+        .dud-ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: transparent; /* No fill */
+            border: 4px solid #f87171; /* Thick red outline matching Game Over text */
+            /* Using an 'ease-in' curve so it accelerates as it shrinks inwards */
+            animation: dudPulse 0.25s cubic-bezier(0.5, 0, 0.8, 1) forwards; 
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .hud-text {
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+    </style>
 </head>
-<body class="bg-slate-950">
-  <div id="root"></div>
+<body>
+    <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useRef, useEffect, useCallback } = React;
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef } = React;
 
-    const apiKey = ""; // API key is injected by the environment
+        // 5 Distinct Sonic Experiences (Soundscapes)
+        const SOUNDSCAPES = [
+            {
+                name: 'Ethereal',
+                tapInstrument: 0, // Bells
+                colors: ['#48cae4', '#ff99c8', '#fcf6bd'],
+                matrix: [
+                    [130.81, 261.63, 523.25], // C
+                    [196.00, 392.00, 783.99], // G
+                    [146.83, 293.66, 587.33]  // D
+                ]
+            },
+            {
+                name: 'Midnight',
+                tapInstrument: 4, // Pad
+                colors: ['#7b2cbf', '#3a0ca3', '#4cc9f0'],
+                matrix: [
+                    [110.00, 220.00, 440.00], // A
+                    [164.81, 329.63, 659.25], // E
+                    [123.47, 246.94, 493.88]  // B
+                ]
+            },
+            {
+                name: 'Sunrise',
+                tapInstrument: 1, // Keys
+                colors: ['#fb8500', '#ffb703', '#ff006e'],
+                matrix: [
+                    [146.83, 293.66, 587.33], // D
+                    [220.00, 440.00, 880.00], // A
+                    [164.81, 329.63, 659.25]  // E
+                ]
+            },
+            {
+                name: 'Forest',
+                tapInstrument: 3, // Winds
+                colors: ['#2a9d8f', '#e9c46a', '#8ab17d'],
+                matrix: [
+                    [174.61, 349.23, 698.46], // F
+                    [261.63, 523.25, 1046.50], // C
+                    [196.00, 392.00, 783.99]  // G
+                ]
+            },
+            {
+                name: 'Cello', // Replaced Ember with Cello
+                tapInstrument: 5, // Cello
+                colors: ['#d4a373', '#faedcd', '#e9edc9'], // Woody, earthy tones
+                matrix: [
+                    [65.41, 130.81, 261.63], // C (Pitched an octave lower for resonance)
+                    [98.00, 196.00, 392.00], // G
+                    [73.42, 146.83, 293.66]  // D
+                ]
+            }
+        ];
 
-    // --- Inline SVG Icons ---
-    const CameraIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>);
-    const PlayIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>);
-    const RefreshIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>);
-    const HandIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v5"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v6"/><path d="M10 10.5V5a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/><path d="M7 15V8a2 2 0 0 1 2-2a2 2 0 0 1 2 2v7"/></svg>);
-    const AlertIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>);
-    const LoaderIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>);
-    const FlipCameraIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 16.2A9 9 0 0 1 12 21a9 9 0 0 1-8-4.8"/><path d="M4 16.2V21h4.8"/><path d="M4 7.8A9 9 0 0 1 12 3a9 9 0 0 1 8 4.8"/><path d="M20 7.8V3h-4.8"/></svg>);
+        // Instrument Definitions
+        const INSTRUMENTS = [
+            { id: 0, name: 'Bells', color: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)', wave: 'sine', attack: 0.05, release: 3.5, vol: 0.4 },
+            { id: 1, name: 'Keys', color: '#fcf6bd', glow: 'rgba(252, 246, 189, 0.8)', wave: 'triangle', attack: 0.02, release: 2.5, vol: 0.2 },
+            { id: 2, name: 'Strings', color: '#ff99c8', glow: 'rgba(255, 153, 200, 0.8)', wave: 'sine', attack: 0.8, release: 4.0, vol: 0.5 },
+            { id: 3, name: 'Winds', color: '#a9def9', glow: 'rgba(169, 222, 249, 0.8)', wave: 'sine', attack: 0.3, release: 2.5, vol: 0.4 },
+            { id: 4, name: 'Pad', color: '#e4c1f9', glow: 'rgba(228, 193, 249, 0.8)', wave: 'triangle', attack: 1.2, release: 4.5, vol: 0.15 },
+            // New Cello Instrument added
+            { id: 5, name: 'Cello', color: '#d4a373', glow: 'rgba(212, 163, 115, 0.8)', wave: 'sawtooth', attack: 0.6, release: 4.5, vol: 0.15 } 
+        ];
 
-    // --- Helper Functions ---
-    const EMOJIS = {
-      ROCK: '✊',
-      PAPER: '✋',
-      SCISSORS: '✌️',
-      UNKNOWN: '❓',
-    };
+        // Added 30,000 threshold so Cello dots will eventually spawn
+        const UNLOCK_THRESHOLDS = [0, 1000, 3000, 7000, 15000, 30000];
 
-    const getRandomComputerMove = () => {
-      const moves = ['ROCK', 'PAPER', 'SCISSORS'];
-      return moves[Math.floor(Math.random() * moves.length)];
-    };
+        let audioCtx = null;
+        const initAudio = () => {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) {
+                console.error("Audio Context initialization failed", e);
+            }
+        };
 
-    const getWinner = (userMove, compMove) => {
-      if (userMove === 'UNKNOWN' || userMove === 'ERROR') return 'INVALID';
-      if (userMove === compMove) return 'TIE';
-      
-      if (
-        (userMove === 'ROCK' && compMove === 'SCISSORS') ||
-        (userMove === 'PAPER' && compMove === 'ROCK') ||
-        (userMove === 'SCISSORS' && compMove === 'PAPER')
-      ) {
-        return 'USER';
-      }
-      return 'COMP';
-    };
+        const playTone = (freq, velocity, instrumentId = 0) => {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter(); // Digital filter added
+                
+                const inst = INSTRUMENTS[instrumentId] || INSTRUMENTS[0];
+                
+                osc.type = inst.wave;
+                osc.frequency.value = freq;
+                
+                // The filter turns a harsh sawtooth into a warm, woody cello body
+                filter.type = 'lowpass';
+                filter.frequency.value = inst.wave === 'sawtooth' ? freq * 4 : 8000;
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                
+                const maxVol = velocity * inst.vol;
+                
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(maxVol, audioCtx.currentTime + inst.attack);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + inst.attack + inst.release);
+                
+                osc.stop(audioCtx.currentTime + inst.attack + inst.release);
+            } catch(e) {
+                console.error("Failed to play tone", e);
+            }
+        };
 
-    function App() {
-      // --- Refs ---
-      const videoRef = useRef(null);
-      const canvasRef = useRef(null);
-      const audioCtxRef = useRef(null);
+        const playFlatBeat = () => {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.value = 100; // Low, flat thud
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                
+                const attackTime = 0.01;
+                const releaseTime = 0.15; // Very short duration
+                
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + attackTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + attackTime + releaseTime);
+                
+                osc.stop(audioCtx.currentTime + attackTime + releaseTime);
+            } catch(e) {
+                console.error("Failed to play flat beat", e);
+            }
+        };
 
-      // --- State ---
-      const [streamActive, setStreamActive] = useState(false);
-      const [cameraError, setCameraError] = useState(null);
-      const [facingMode, setFacingMode] = useState("user"); // "user" (front) or "environment" (back)
-      
-      // Game States: 'idle', 'countdown', 'analyzing', 'result'
-      const [gameState, setGameState] = useState('idle'); 
-      const [countdown, setCountdown] = useState(null);
-      
-      const [userMove, setUserMove] = useState(null);
-      const [compMove, setCompMove] = useState(null);
-      const [resultMsg, setResultMsg] = useState("");
-      const [scores, setScores] = useState({ user: 0, comp: 0 });
-      const [flash, setFlash] = useState(false);
+        const App = () => {
+            const [started, setStarted] = useState(false);
+            const [, setTick] = useState(0); 
+            const [menuOpen, setMenuOpen] = useState(false);
+            const [activeSoundscape, setActiveSoundscape] = useState(0);
+            
+            // Reference to store the camera stream
+            const cameraStreamRef = useRef(null);
 
-      // --- Audio Synthesizer Functions ---
-      const initAudio = () => {
-        if (!audioCtxRef.current) {
-          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtxRef.current.state === 'suspended') {
-          audioCtxRef.current.resume();
-        }
-      };
+            // Layout Scale Engine
+            const [boardSize, setBoardSize] = useState(() => Math.min(window.innerWidth, window.innerHeight / 2));
+            
+            useEffect(() => {
+                const handleResize = () => setBoardSize(Math.min(window.innerWidth, window.innerHeight / 2));
+                window.addEventListener('resize', handleResize);
+                
+                // Cleanup camera on unmount
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    if (cameraStreamRef.current) {
+                        cameraStreamRef.current.getTracks().forEach(track => track.stop());
+                    }
+                };
+            }, []);
+            
+            const requestCameraAccess = async () => {
+                try {
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        cameraStreamRef.current = stream;
+                        console.log("Camera access granted and stream ready.");
+                    } else {
+                        console.warn("Camera API not supported in this environment.");
+                    }
+                } catch (err) {
+                    console.error("Camera access denied or failed:", err);
+                }
+            };
 
-      const playBeep = () => {
-        if (!audioCtxRef.current) return;
-        const osc = audioCtxRef.current.createOscillator();
-        const gain = audioCtxRef.current.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtxRef.current.destination);
-        osc.type = 'sine'; // Smooth tone for regular beat
-        osc.frequency.setValueAtTime(800, audioCtxRef.current.currentTime);
-        gain.gain.setValueAtTime(0.5, audioCtxRef.current.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 0.1);
-        osc.start();
-        osc.stop(audioCtxRef.current.currentTime + 0.1);
-      };
-
-      const playBuzzer = () => {
-        if (!audioCtxRef.current) return;
-        const osc = audioCtxRef.current.createOscillator();
-        const gain = audioCtxRef.current.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtxRef.current.destination);
-        osc.type = 'sawtooth'; // Harsh buzzer tone for "GO!"
-        osc.frequency.setValueAtTime(300, audioCtxRef.current.currentTime);
-        gain.gain.setValueAtTime(0.5, audioCtxRef.current.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 0.3);
-        osc.start();
-        osc.stop(audioCtxRef.current.currentTime + 0.3);
-      };
-
-      // --- Camera Initialization ---
-      useEffect(() => {
-        let currentStream = null;
-
-        const startCamera = async () => {
-          // Stop old stream before starting a new one (important for flipping)
-          if (videoRef.current && videoRef.current.srcObject) {
-            videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-          }
-
-          setStreamActive(false);
-
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: facingMode }, 
-              audio: false
+            // Core Game State
+            const gameState = useRef({
+                ripples: [],
+                duds: [],
+                stars: [],
+                floatingTexts: [],
+                score: 0,
+                tapsAvailable: 0,
+                unlockedStage: 0,
+                soundscapeIdx: 0,
+                lastSpawnTime: 0,
+                gameStartTime: 0,
+                gameOver: false,
+                lastValidTapTime: 0
             });
-            
-            currentStream = stream;
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-              setStreamActive(true);
-              setCameraError(null);
-            }
-          } catch (err) {
-            console.error("Camera error:", err);
-            setCameraError("Camera access denied or unavailable. Please allow permissions.");
-          }
+
+            // Event trigger (Spawns ripples and plays tones)
+            const triggerEvent = useCallback((x, y, freq, color, baseVelocity, depth = 0, instrumentId = 0) => {
+                const attenuation = Math.pow(0.55, depth);
+                const velocity = baseVelocity * attenuation;
+
+                if (velocity < 0.05) return;
+                
+                playTone(freq, velocity, instrumentId);
+                
+                // Scale ripple to board size
+                const currentS = Math.min(window.innerWidth, window.innerHeight / 2);
+                const scaleFactor = currentS / 400; 
+                
+                const id = Date.now() + Math.random();
+                const maxRadius = 84 * velocity * scaleFactor; 
+                
+                gameState.current.ripples.push({ 
+                    id, x, y, color, maxRadius, 
+                    createdAt: performance.now(),
+                    velocity,
+                    depth,
+                    dotsCaught: 0
+                });
+            }, []);
+
+            // Game Loop Engine
+            useEffect(() => {
+                if (!started) return;
+
+                let animationFrameId;
+                
+                const loop = () => {
+                    const state = gameState.current;
+                    const now = performance.now();
+                    
+                    const S = Math.min(window.innerWidth, window.innerHeight / 2);
+                    const width = S;
+                    const height = S * 2;
+                    const centerY = S;
+                    const scaleFactor = S / 400; 
+
+                    if (state.gameStartTime === 0) state.gameStartTime = now;
+                    const elapsed = now - state.gameStartTime;
+                    
+                    const progressiveMultiplier = Math.min(2.0, 1 + (elapsed / 120000));
+                    const spawnDelay = Math.max(500, 800 - (elapsed / 300));
+
+                    // Check Progression/Unlocks
+                    let currentStage = 0;
+                    for (let i = UNLOCK_THRESHOLDS.length - 1; i >= 0; i--) {
+                        if (state.score >= UNLOCK_THRESHOLDS[i]) {
+                            currentStage = i;
+                            break;
+                        }
+                    }
+                    currentStage = Math.min(INSTRUMENTS.length - 1, currentStage);
+                    
+                    if (currentStage > state.unlockedStage) {
+                        state.unlockedStage = currentStage;
+                        const newInst = INSTRUMENTS[currentStage] || INSTRUMENTS[0];
+                        state.floatingTexts.push({
+                            id: Math.random(),
+                            x: width / 2,
+                            y: height * 0.3,
+                            text: `${newInst.name} Dots Unlocked!`,
+                            createdAt: now,
+                            color: newInst.color,
+                            isUnlock: true
+                        });
+                    }
+
+                    // 1. Spawn new stars (Off-screen)
+                    if (now - state.lastSpawnTime > spawnDelay) {
+                        const randomBaseSpeed = 0.6 + (Math.random() * 1.0);
+                        const direction = Math.random() > 0.5 ? 1 : -1;
+                        const dotInstrumentId = Math.floor(Math.random() * (state.unlockedStage + 1));
+                        
+                        state.stars.push({
+                            id: Math.random(),
+                            x: Math.random() * (width - 40 * scaleFactor) + 20 * scaleFactor,
+                            y: direction === 1 ? -20 * scaleFactor : height + 20 * scaleFactor,
+                            speed: randomBaseSpeed * scaleFactor * progressiveMultiplier,
+                            direction: direction,
+                            size: (Math.random() * 4 + 4) * scaleFactor,
+                            instrumentId: dotInstrumentId,
+                            hasGrantedTap: false
+                        });
+                        
+                        state.lastSpawnTime = now;
+                    }
+
+                    // 2. Update Star Positions & Check Bounds
+                    for (let i = state.stars.length - 1; i >= 0; i--) {
+                        const star = state.stars[i];
+                        star.y += star.speed * star.direction;
+                        
+                        if (!star.hasGrantedTap) {
+                            if ((star.direction === 1 && star.y >= 0) || 
+                                (star.direction === -1 && star.y <= height)) {
+                                star.hasGrantedTap = true;
+                                state.tapsAvailable = Math.min(state.tapsAvailable + 1, 3);
+                            }
+                        }
+
+                        // Missed star (Crosses Center Line): Game Over
+                        if ((star.direction === 1 && star.y > centerY) || 
+                            (star.direction === -1 && star.y < centerY)) {
+                            state.gameOver = true;
+                            setStarted(false);
+                            playTone(150, 1.0, 0); // Low thud
+                            break; 
+                        }
+                    }
+
+                    // 3. Collision Detection
+                    for (let i = state.stars.length - 1; i >= 0; i--) {
+                        const star = state.stars[i];
+                        
+                        if ((star.direction === 1 && star.y < 0) || 
+                            (star.direction === -1 && star.y > height)) continue;
+
+                        let caught = false;
+                        let catchingRipple = null;
+
+                        for (let j = 0; j < state.ripples.length; j++) {
+                            const ripple = state.ripples[j];
+                            const age = now - ripple.createdAt;
+                            
+                            if (age >= 4000) continue;
+
+                            const progress = Math.min(1, age / 4000);
+                            const easeOut = 1 - Math.pow(1 - progress, 3);
+                            const currentRadius = ripple.maxRadius * easeOut;
+
+                            const dx = star.x - ripple.x;
+                            const dy = star.y - ripple.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < currentRadius * 1.01) {
+                                caught = true;
+                                catchingRipple = ripple;
+                                break;
+                            }
+                        }
+
+                        // Handle Catch
+                        if (caught && catchingRipple) {
+                            catchingRipple.dotsCaught = (catchingRipple.dotsCaught || 0) + 1;
+
+                            const travelProgress = star.direction === 1 ? (star.y / centerY) : ((height - star.y) / centerY);
+                            const normalizedProgress = Math.max(0, Math.min(1, travelProgress));
+                            const baseScore = Math.floor(normalizedProgress * 50); 
+                            
+                            const pointsEarned = baseScore * catchingRipple.dotsCaught;
+                            state.score += pointsEarned;
+                            
+                            const normalizedX = Math.max(0, Math.min(1, star.x / width));
+                            const sectionIndex = Math.floor(normalizedX * 3); 
+                            const safeSectionIndex = Math.max(0, Math.min(2, sectionIndex));
+                            
+                            const absoluteNormalizedY = Math.max(0, Math.min(1, star.y / height));
+                            const invertedY = 1 - absoluteNormalizedY;
+                            
+                            const activeSoundscape = SOUNDSCAPES[state.soundscapeIdx];
+                            const columnPitches = activeSoundscape.matrix[safeSectionIndex];
+                            
+                            const pitchIndex = Math.floor(invertedY * columnPitches.length);
+                            const safePitchIndex = Math.max(0, Math.min(columnPitches.length - 1, pitchIndex));
+                            
+                            const freq = columnPitches[safePitchIndex];
+                            const instConfig = INSTRUMENTS[star.instrumentId] || INSTRUMENTS[0];
+                            const color = instConfig.color;
+                            
+                            state.floatingTexts.push({
+                                id: Math.random(),
+                                x: star.x,
+                                y: star.y,
+                                text: catchingRipple.dotsCaught > 1 ? `+${pointsEarned} (x${catchingRipple.dotsCaught}!)` : `+${pointsEarned}`,
+                                createdAt: now,
+                                color: color
+                            });
+                            
+                            const newDepth = (catchingRipple.depth || 0) + 1;
+                            triggerEvent(star.x, star.y, freq, color, 1.0, newDepth, star.instrumentId);
+                            
+                            state.stars.splice(i, 1);
+                        }
+                    }
+
+                    // 4. Strict Tap Economy Enforcement
+                    const visibleStarsCount = state.stars.filter(s => s.hasGrantedTap).length;
+                    if (visibleStarsCount === 0) {
+                        state.tapsAvailable = 0;
+                    } else {
+                        state.tapsAvailable = Math.min(state.tapsAvailable, visibleStarsCount, 3);
+                    }
+
+                    // 5. Cleanup old objects
+                    state.ripples = state.ripples.filter(r => (now - r.createdAt) < 4000);
+                    state.duds = state.duds.filter(d => (now - d.createdAt) < 200); // Shorter lifespan
+                    state.floatingTexts = state.floatingTexts.filter(ft => (now - ft.createdAt) < (ft.isUnlock ? 3000 : 1000));
+
+                    setTick(t => t + 1);
+                    animationFrameId = requestAnimationFrame(loop);
+                };
+
+                animationFrameId = requestAnimationFrame(loop);
+                return () => cancelAnimationFrame(animationFrameId);
+            }, [started, triggerEvent]);
+
+            const processTap = (clientX, clientY) => {
+                const state = gameState.current;
+                if (state.gameOver) return;
+
+                // Handle Game Start and initialization routines (including Camera request)
+                if (!started) {
+                    initAudio();
+                    requestCameraAccess();
+                    setStarted(true);
+                    return; 
+                }
+                
+                const S = Math.min(window.innerWidth, window.innerHeight / 2);
+                const boardLeft = (window.innerWidth - S) / 2;
+                const boardTop = (window.innerHeight - S * 2) / 2;
+                
+                const x = clientX - boardLeft;
+                const y = clientY - boardTop;
+                
+                // Ignore taps strictly outside the board boundaries
+                if (x < 0 || x > S || y < 0 || y > S * 2) return;
+
+                const now = performance.now();
+
+                // Tap Guard: If zero taps, play flat beat, pulse HUD, and block ripple
+                if (isNaN(state.tapsAvailable) || state.tapsAvailable < 1) {
+                    state.tapsAvailable = 0; 
+                    
+                    // Prevent ghost clicks from triggering a dud immediately after the last note
+                    if (now - state.lastValidTapTime < 200) return;
+                    
+                    playFlatBeat(); 
+                    
+                    state.duds.push({
+                        id: Date.now() + Math.random(),
+                        x: x,
+                        y: y,
+                        createdAt: now
+                    });
+                    
+                    const hud = document.getElementById('taps-hud');
+                    if (hud) {
+                        hud.style.transform = 'scale(1.5)';
+                        hud.style.color = '#ef4444'; // Red pulse
+                        setTimeout(() => {
+                            if (hud) hud.style.transform = 'scale(1)';
+                        }, 200);
+                    }
+                    return; 
+                }
+                
+                state.tapsAvailable -= 1;
+                state.lastValidTapTime = now;
+                
+                // Map coordinates
+                const normalizedX = Math.max(0, Math.min(1, x / S));
+                const sectionIndex = Math.floor(normalizedX * 3);
+                const safeSectionIndex = Math.max(0, Math.min(2, sectionIndex));
+                
+                const normalizedY = Math.max(0, Math.min(1, y / (S * 2)));
+                const invertedY = 1 - normalizedY;
+                
+                const activeSoundscape = SOUNDSCAPES[state.soundscapeIdx];
+                const columnPitches = activeSoundscape.matrix[safeSectionIndex];
+                
+                const pitchIndex = Math.floor(invertedY * columnPitches.length);
+                const safePitchIndex = Math.max(0, Math.min(columnPitches.length - 1, pitchIndex));
+                
+                const freq = columnPitches[safePitchIndex];
+                const color = activeSoundscape.colors[safeSectionIndex];
+                
+                // Triggers event using the Soundscape's assigned instrument
+                triggerEvent(x, y, freq, color, 1.0, 0, activeSoundscape.tapInstrument);
+            };
+
+            const handleTouchStart = (e) => {
+                if (e.cancelable) e.preventDefault(); 
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    processTap(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                }
+            };
+
+            const handleMouseDown = (e) => {
+                processTap(e.clientX, e.clientY);
+            };
+
+            const { ripples, stars, floatingTexts, score, tapsAvailable } = gameState.current;
+            const maxTapsDisplay = 3;
+
+            return (
+                <div 
+                    className="w-full h-full flex items-center justify-center bg-[#020617]"
+                    onTouchStart={handleTouchStart}
+                    onMouseDown={handleMouseDown}
+                    style={{ touchAction: 'none' }}
+                >
+                    {/* The Scaled Game Board Container */}
+                    <div 
+                        id="game-board"
+                        className="relative overflow-hidden bg-[#0b132b] shadow-[0_0_60px_rgba(0,0,0,0.8)] border-x border-white/5"
+                        style={{ width: boardSize, height: boardSize * 2 }}
+                    >
+                        {/* Glowing Center Line */}
+                        <div className="absolute top-1/2 left-0 w-full h-px bg-[#48cae4]/50 shadow-[0_0_12px_2px_rgba(72,202,228,0.5)] pointer-events-none z-0"></div>
+
+                        {/* HUD */}
+                        <div className="absolute top-6 left-6 text-white/80 pointer-events-none hud-text z-10">
+                            <div className="text-sm font-light uppercase tracking-widest text-white/50">Score</div>
+                            <div className="text-4xl font-bold">{score}</div>
+                        </div>
+                        
+                        {/* Transparent Tap Economy HUD */}
+                        <div className="absolute top-6 right-6 text-white/80 pointer-events-none text-right z-10 flex flex-col items-end">
+                            <div className="text-sm font-light uppercase tracking-widest text-white/50 hud-text mb-1">Notes</div>
+                            <div 
+                                id="taps-hud"
+                                className="flex gap-2 transition-transform duration-200 ease-out"
+                            >
+                                {[...Array(maxTapsDisplay)].map((_, i) => (
+                                    <div 
+                                        key={i}
+                                        className={`w-4 h-4 rounded-full border border-white transition-all duration-200 ${i < tapsAvailable ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] scale-100' : 'bg-transparent opacity-30 scale-75'}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {!started && !gameState.current.gameOver && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-[#0b132b]/80 backdrop-blur-sm">
+                                <h1 className="text-white text-4xl font-light tracking-widest mb-4 text-center">BLOSSOM</h1>
+                                <p className="text-white/60 mb-8 px-8 text-center text-sm leading-relaxed">
+                                    You can hold a maximum of 3 notes. Tap the left, center, or right sections of the screen to create harmonic ripples and catch falling stardust.
+                                </p>
+                                <div className="text-white tracking-widest uppercase text-sm animate-pulse border border-white/30 px-6 py-3 rounded-full">
+                                    Tap to begin
+                                </div>
+                            </div>
+                        )}
+
+                        {gameState.current.gameOver && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto z-30 bg-[#0b132b]/90 backdrop-blur-md">
+                                <h1 className="text-red-400 text-4xl font-light tracking-widest mb-2 text-center">GAME OVER</h1>
+                                <div className="text-white/80 text-xl mb-8">Final Score: {score}</div>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentSoundscape = activeSoundscape; 
+                                        
+                                        gameState.current = {
+                                            ripples: [],
+                                            duds: [],
+                                            stars: [],
+                                            floatingTexts: [],
+                                            score: 0,
+                                            tapsAvailable: 0,
+                                            unlockedStage: 0,
+                                            soundscapeIdx: currentSoundscape,
+                                            lastSpawnTime: performance.now(),
+                                            gameStartTime: performance.now(),
+                                            gameOver: false,
+                                            lastValidTapTime: 0
+                                        };
+                                        setStarted(true);
+                                    }}
+                                    className="text-white tracking-widest uppercase text-sm border border-white/30 px-6 py-3 rounded-full hover:bg-white/10 transition-colors pointer-events-auto cursor-pointer"
+                                >
+                                    Play Again
+                                </button>
+                            </div>
+                        )}
+                        
+                        {/* Render Ripples */}
+                        {ripples.map(r => (
+                            <React.Fragment key={r.id}>
+                                <div 
+                                    className="ripple"
+                                    style={{ 
+                                        left: r.x, 
+                                        top: r.y, 
+                                        backgroundColor: r.color,
+                                        width: r.maxRadius * 2,
+                                        height: r.maxRadius * 2,
+                                        boxShadow: `0 0 ${r.maxRadius}px ${r.color}`
+                                    }} 
+                                />
+                                <div 
+                                    className="ripple-outline"
+                                    style={{ 
+                                        left: r.x, 
+                                        top: r.y, 
+                                        width: r.maxRadius * 2,
+                                        height: r.maxRadius * 2,
+                                        borderColor: r.color
+                                    }} 
+                                />
+                            </React.Fragment>
+                        ))}
+
+                        {/* Render Dud Ripples (Empty Taps) */}
+                        {(gameState.current.duds || []).map(d => {
+                            const scaleFactor = boardSize / 400;
+                            return (
+                                <div 
+                                    key={d.id}
+                                    className="dud-ripple"
+                                    style={{
+                                        left: d.x,
+                                        top: d.y,
+                                        width: 25 * scaleFactor, /* Reduced from 50 to 25 to stay very small */
+                                        height: 25 * scaleFactor
+                                    }}
+                                />
+                            );
+                        })}
+
+                        {/* Render Stars */}
+                        {stars.map(s => {
+                            const instConfig = INSTRUMENTS[s.instrumentId] || INSTRUMENTS[0];
+                            return (
+                                <div
+                                    key={s.id}
+                                    className="star"
+                                    style={{
+                                        left: s.x,
+                                        top: s.y,
+                                        width: s.size,
+                                        height: s.size,
+                                        backgroundColor: instConfig.color,
+                                        boxShadow: `0 0 10px 2px ${instConfig.glow}`
+                                    }}
+                                />
+                            );
+                        })}
+
+                        {/* Render Floating Texts */}
+                        {floatingTexts.map(ft => {
+                            const age = performance.now() - ft.createdAt;
+                            const duration = ft.isUnlock ? 3000 : 1000;
+                            const progress = Math.max(0, Math.min(1, age / duration));
+                            
+                            return (
+                                <div
+                                    key={ft.id}
+                                    className={`absolute font-bold pointer-events-none ${ft.isUnlock ? 'text-2xl tracking-widest uppercase' : 'text-xl'}`}
+                                    style={{
+                                        left: ft.x,
+                                        top: ft.y - (progress * (ft.isUnlock ? 20 : 50)),
+                                        color: ft.color,
+                                        opacity: ft.isUnlock ? (progress < 0.2 ? progress / 0.2 : 1 - progress) : 1 - progress,
+                                        transform: 'translate(-50%, -50%)',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                                    }}
+                                >
+                                    {ft.text}
+                                </div>
+                            );
+                        })}
+
+                        {/* Soundscape Menu Tray */}
+                        <div 
+                            className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center"
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                        >
+                            <div className={`transition-all duration-300 ease-in-out origin-bottom ${menuOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 mb-0 h-0 overflow-hidden'}`}>
+                                <div className="bg-[#0b132b]/90 border border-white/20 backdrop-blur-md rounded-2xl p-2 flex flex-col gap-1 w-48 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                                    {SOUNDSCAPES.map((s, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => {
+                                                setActiveSoundscape(i);
+                                                gameState.current.soundscapeIdx = i;
+                                                setMenuOpen(false);
+                                                playTone(s.matrix[1][1], 0.5, s.tapInstrument); // Brief preview using its assigned instrument!
+                                            }}
+                                            className={`px-4 py-3 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors text-left flex items-center justify-between ${activeSoundscape === i ? 'bg-white/20 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white/80'}`}
+                                        >
+                                            {s.name}
+                                            {activeSoundscape === i && (
+                                                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => setMenuOpen(!menuOpen)}
+                                className={`w-12 h-12 rounded-full border flex items-center justify-center text-white/80 hover:bg-white/20 transition-all backdrop-blur-sm ${menuOpen ? 'bg-white/20 border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-white/10 border-white/20 hover:scale-105'}`}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 18V5l12-2v13"></path>
+                                    <circle cx="6" cy="18" r="3"></circle>
+                                    <circle cx="18" cy="16" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
         };
 
-        startCamera();
-
-        // Cleanup on unmount or facingMode change
-        return () => {
-          if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-          }
-        };
-      }, [facingMode]); // Re-run effect when camera toggle changes
-
-      // --- Vision API Call ---
-      const analyzeImage = async (base64Image) => {
-        const prompt = "Analyze this image of a hand. The user is playing Rock, Paper, Scissors. Is the hand showing Rock (closed fist), Paper (flat open hand), or Scissors (index and middle fingers extended)? Reply with EXACTLY ONE WORD from this list: ROCK, PAPER, or SCISSORS. If no hand is clearly visible or you cannot tell, reply UNKNOWN.";
-        
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-        const payload = {
-          contents: [{
-            role: "user",
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: "image/jpeg", data: base64Image } }
-            ]
-          }],
-          systemInstruction: {
-            parts: [{ text: "You are a strict referee for Rock, Paper, Scissors. You only output a single capitalized word representing the gesture." }]
-          }
-        };
-
-        let delay = 1000;
-        for (let attempt = 1; attempt <= 5; attempt++) {
-          try {
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
-            const data = await response.json();
-            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toUpperCase() || "UNKNOWN";
-
-            if (textResponse.includes("ROCK")) return "ROCK";
-            if (textResponse.includes("PAPER")) return "PAPER";
-            if (textResponse.includes("SCISSOR")) return "SCISSORS";
-            
-            return "UNKNOWN";
-          } catch (error) {
-            if (attempt === 5) {
-              console.error("API Error after retries:", error);
-              return "ERROR";
-            }
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay *= 2;
-          }
-        }
-      };
-
-      // --- Game Loop ---
-      const captureAndAnalyze = async () => {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        
-        if (!video || !canvas) return;
-
-        setFlash(true);
-        setTimeout(() => setFlash(false), 150);
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        
-        // Mirror context if front camera, so image analysis isn't confused by mirrored image
-        if (facingMode === 'user') {
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-        }
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        const base64Image = dataUrl.split(',')[1];
-
-        setGameState('analyzing');
-        
-        const computerSelection = getRandomComputerMove();
-        setCompMove(computerSelection);
-        
-        const userSelection = await analyzeImage(base64Image);
-        setUserMove(userSelection);
-
-        const winner = getWinner(userSelection, computerSelection);
-        
-        if (winner === 'USER') {
-          setResultMsg("You Win! 🎉");
-          setScores(prev => ({ ...prev, user: prev.user + 1 }));
-        } else if (winner === 'COMP') {
-          setResultMsg("Computer Wins! 🤖");
-          setScores(prev => ({ ...prev, comp: prev.comp + 1 }));
-        } else if (winner === 'TIE') {
-          setResultMsg("It's a Tie! 🤝");
-        } else {
-          setResultMsg("Couldn't see hand! Try again.");
-        }
-
-        setGameState('result');
-      };
-
-      const playTurn = () => {
-        // Initialize Audio context on user gesture to avoid browser blocks
-        initAudio();
-
-        setGameState('countdown');
-        setResultMsg("");
-        setUserMove(null);
-        setCompMove(null);
-
-        const sequence = ["READY?", "ROCK", "PAPER", "SCISSORS", "GO!"];
-        let step = 0;
-        
-        setCountdown(sequence[step]);
-        playBeep(); // Beep for the 1st beat immediately
-
-        // Interval set to 1000ms (1 second) apart
-        const interval = setInterval(() => {
-          step++;
-          if (step < sequence.length) {
-            setCountdown(sequence[step]);
-            
-            if (sequence[step] === "GO!") {
-              clearInterval(interval);
-              playBuzzer(); // Play the different buzzer sound on GO!
-              
-              // Wait a fraction of a second (400ms) after showing "GO!" before snapping
-              setTimeout(() => {
-                captureAndAnalyze();
-              }, 400);
-            } else {
-              playBeep(); // Regular beep for PAPER and SCISSORS
-            }
-          } else {
-            clearInterval(interval);
-          }
-        }, 1000);
-      };
-
-      const resetGame = () => {
-        setScores({ user: 0, comp: 0 });
-        setGameState('idle');
-        setUserMove(null);
-        setCompMove(null);
-        setResultMsg("");
-      };
-
-      const toggleCamera = () => {
-        setFacingMode(prev => prev === "user" ? "environment" : "user");
-      };
-
-      // --- UI Rendering Helpers ---
-      const renderOverlayText = () => {
-        if (gameState === 'countdown') {
-          return (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10 rounded-2xl overflow-hidden">
-              
-              {/* Pumping hand animation (hidden when "GO!" happens) */}
-              {countdown !== "GO!" && (
-                <div className="text-8xl md:text-9xl mb-8 animate-pump drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]">
-                  ✊
-                </div>
-              )}
-              
-              <span className={`font-black text-white drop-shadow-2xl transition-all duration-200 
-                ${countdown === 'GO!' ? 'text-7xl md:text-8xl text-emerald-400 scale-125' : 'text-5xl md:text-6xl tracking-widest'}`}>
-                {countdown}
-              </span>
-            </div>
-          );
-        }
-        
-        if (gameState === 'analyzing') {
-          return (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-md z-10 rounded-2xl space-y-4">
-              <LoaderIcon className="w-16 h-16 text-emerald-400 animate-spin" />
-              <span className="text-xl font-bold text-emerald-400 tracking-widest animate-pulse">
-                ANALYZING...
-              </span>
-            </div>
-          );
-        }
-        return null;
-      };
-
-      return (
-        <div className="min-h-[100dvh] w-full bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
-          
-          <header className="px-6 py-6 flex justify-between items-center bg-slate-900 shadow-md z-20">
-            <div>
-              <h1 className="text-xl font-black bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
-                <HandIcon className="w-6 h-6 text-emerald-400" />
-                RPS Vision
-              </h1>
-              <p className="text-xs text-slate-400 font-medium tracking-wider mt-1">VS COMPUTER</p>
-            </div>
-            
-            <div className="flex gap-4 items-center">
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] text-slate-400 font-bold tracking-wider">YOU</span>
-                <span className="text-2xl font-black text-white">{scores.user}</span>
-              </div>
-              <div className="text-slate-600 font-black text-xl">:</div>
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] text-slate-400 font-bold tracking-wider">COMP</span>
-                <span className="text-2xl font-black text-white">{scores.comp}</span>
-              </div>
-            </div>
-          </header>
-
-          <main className="flex-1 p-4 flex flex-col relative">
-            {cameraError ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-red-950/30 border border-red-900 rounded-3xl mt-4">
-                <AlertIcon className="w-12 h-12 text-red-500 mb-4" />
-                <h2 className="text-lg font-bold text-red-400 mb-2">Camera Error</h2>
-                <p className="text-sm text-red-300">{cameraError}</p>
-              </div>
-            ) : (
-              <div className="relative flex-1 w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
-                
-                {/* Camera Toggle Button */}
-                {streamActive && gameState === 'idle' && (
-                  <button 
-                    onClick={toggleCamera}
-                    className="absolute top-4 right-4 z-30 p-3 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-all shadow-lg active:scale-90 border border-white/10"
-                    aria-label="Switch Camera"
-                  >
-                    <FlipCameraIcon className="w-5 h-5" />
-                  </button>
-                )}
-
-                {!streamActive && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 space-y-3 z-0">
-                    <CameraIcon className="w-10 h-10 animate-pulse" />
-                    <span className="text-sm font-semibold tracking-widest">STARTING CAMERA...</span>
-                  </div>
-                )}
-
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 transform ${
-                    facingMode === 'user' ? 'scale-x-[-1]' : '' 
-                  } ${
-                    streamActive ? 'opacity-100' : 'opacity-0'
-                  }`}
-                />
-                
-                <canvas ref={canvasRef} className="hidden" />
-
-                {flash && (
-                  <div className="absolute inset-0 bg-white z-50 animate-ping opacity-75" />
-                )}
-
-                {renderOverlayText()}
-                
-                <div className="absolute inset-8 border-2 border-white/20 border-dashed rounded-2xl pointer-events-none z-0" />
-              </div>
-            )}
-          </main>
-
-          <footer className="px-6 pb-8 pt-4 bg-slate-950 z-20">
-            
-            <div className={`transition-all duration-500 ease-in-out overflow-hidden flex flex-col items-center ${
-              gameState === 'result' ? 'max-h-64 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'
-            }`}>
-              <h2 className="text-2xl font-black text-white mb-4">{resultMsg}</h2>
-              
-              <div className="flex w-full max-w-sm justify-between items-center bg-slate-900 p-4 rounded-2xl border border-slate-800">
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-xs text-slate-400 font-bold tracking-widest">YOU</span>
-                  <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-3xl shadow-inner border border-slate-700">
-                    {EMOJIS[userMove] || '❓'}
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-400">{userMove}</span>
-                </div>
-                
-                <span className="text-xl font-black text-slate-600">VS</span>
-                
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-xs text-slate-400 font-bold tracking-widest">COMP</span>
-                  <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-3xl shadow-inner border border-slate-700">
-                    {EMOJIS[compMove] || '❓'}
-                  </div>
-                  <span className="text-[10px] font-bold text-cyan-400">{compMove}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={playTurn}
-                disabled={!streamActive || gameState === 'countdown' || gameState === 'analyzing'}
-                className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-lg transition-all active:scale-95 ${
-                  !streamActive || gameState === 'countdown' || gameState === 'analyzing'
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-300'
-                }`}
-              >
-                {gameState === 'result' ? 'PLAY AGAIN' : 'START TURN'}
-                <PlayIcon className="w-5 h-5 fill-current" />
-              </button>
-              
-              <button
-                onClick={resetGame}
-                disabled={gameState === 'countdown' || gameState === 'analyzing' || (scores.user === 0 && scores.comp === 0)}
-                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50 active:scale-95"
-                aria-label="Reset Score"
-              >
-                <RefreshIcon className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <p className="text-center text-[10px] text-slate-500 font-medium mt-4">
-              Keep your hand clearly visible inside the frame on "GO!".
-            </p>
-          </footer>
-          
-        </div>
-      );
-    }
-
-    // Render the React app
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
