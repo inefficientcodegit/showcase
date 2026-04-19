@@ -35,9 +35,7 @@
         .star {
             position: absolute;
             border-radius: 50%;
-            background: white;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
             pointer-events: none;
         }
 
@@ -65,105 +63,144 @@
         ];
         const BLOOM_COLORS = ['#3a86ff', '#8338ec', '#ff006e', '#fb5607', '#ffbe0b', '#48cae4'];
 
+        // Instrument Definitions for Web Audio Synth
+        const INSTRUMENTS = [
+            { id: 0, name: 'Bells', color: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)', wave: 'sine', attack: 0.05, release: 3.5, vol: 0.4 },
+            { id: 1, name: 'Keys', color: '#fcf6bd', glow: 'rgba(252, 246, 189, 0.8)', wave: 'triangle', attack: 0.02, release: 2.5, vol: 0.2 },
+            { id: 2, name: 'Strings', color: '#ff99c8', glow: 'rgba(255, 153, 200, 0.8)', wave: 'sine', attack: 0.8, release: 4.0, vol: 0.5 },
+            { id: 3, name: 'Winds', color: '#a9def9', glow: 'rgba(169, 222, 249, 0.8)', wave: 'sine', attack: 0.3, release: 2.5, vol: 0.4 },
+            { id: 4, name: 'Pad', color: '#e4c1f9', glow: 'rgba(228, 193, 249, 0.8)', wave: 'triangle', attack: 1.2, release: 4.5, vol: 0.15 }
+        ];
+
+        // Exponential thresholds for unlocks
+        const UNLOCK_THRESHOLDS = [0, 1000, 3000, 7000, 15000];
+
         let audioCtx = null;
         const initAudio = () => {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) {
+                console.error("Audio Context initialization failed", e);
             }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
         };
 
-        const playTone = (freq, velocity) => {
+        const playTone = (freq, velocity, instrumentId = 0) => {
             if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            osc.start();
-            
-            const attackTime = 0.05;
-            const releaseTime = 3.5;
-            const maxVol = velocity * 0.4;
-            
-            gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(maxVol, audioCtx.currentTime + attackTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + attackTime + releaseTime);
-            
-            osc.stop(audioCtx.currentTime + attackTime + releaseTime);
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                const inst = INSTRUMENTS[instrumentId] || INSTRUMENTS[0];
+                
+                osc.type = inst.wave;
+                osc.frequency.value = freq;
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                
+                const maxVol = velocity * inst.vol;
+                
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(maxVol, audioCtx.currentTime + inst.attack);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + inst.attack + inst.release);
+                
+                osc.stop(audioCtx.currentTime + inst.attack + inst.release);
+            } catch(e) {
+                console.error("Failed to play tone", e);
+            }
         };
 
         const App = () => {
             const [started, setStarted] = useState(false);
             const [, setTick] = useState(0); 
             
-            // Core Game State
+            // Core Game State mapped to refs for high performance and stability
             const gameState = useRef({
                 ripples: [],
                 stars: [],
                 floatingTexts: [],
                 score: 0,
-                combo: 1,
+                tapsAvailable: 0,
+                unlockedStage: 0,
                 lastSpawnTime: 0,
                 gameStartTime: 0,
                 gameOver: false
             });
 
-            // Event trigger (handles taps and immediate chain reactions)
-            const triggerEvent = useCallback((x, y, freq, color, baseVelocity, depth = 0, currentCombo = 1) => {
-                // Diminish reach and volume for chain reactions
+            // Event trigger
+            const triggerEvent = useCallback((x, y, freq, color, baseVelocity, depth = 0, instrumentId = 0) => {
                 const attenuation = Math.pow(0.55, depth);
                 const velocity = baseVelocity * attenuation;
 
                 if (velocity < 0.05) return;
                 
-                playTone(freq, velocity);
+                playTone(freq, velocity, instrumentId);
                 
                 const id = Date.now() + Math.random();
-                
-                // Reduced radius so taps have smaller impact
-                const maxRadius = 90 * velocity; 
+                const maxRadius = 120 * velocity; 
                 
                 gameState.current.ripples.push({ 
                     id, x, y, color, maxRadius, 
                     createdAt: performance.now(),
                     velocity,
                     depth,
-                    combo: currentCombo
+                    dotsCaught: 0
                 });
             }, []);
 
-            // Game Loop
+            // Game Loop Engine
             useEffect(() => {
                 if (!started) return;
 
                 let animationFrameId;
                 
-                const loop = (time) => {
+                const loop = () => {
                     const state = gameState.current;
                     const height = window.innerHeight;
                     const width = window.innerWidth;
                     const centerY = height / 2;
+                    const now = performance.now();
 
-                    // Initialize start time for global progression
-                    if (state.gameStartTime === 0) state.gameStartTime = time;
-                    const elapsed = time - state.gameStartTime;
+                    if (state.gameStartTime === 0) state.gameStartTime = now;
+                    const elapsed = now - state.gameStartTime;
                     
-                    // Global speed multiplier increases slowly over 2 minutes, maxing at 2x
                     const progressiveMultiplier = Math.min(2.0, 1 + (elapsed / 120000));
-                    // Slightly increase spawn rate over time (from 800ms down to 500ms)
                     const spawnDelay = Math.max(500, 800 - (elapsed / 300));
 
-                    // 1. Spawn new stars
-                    if (time - state.lastSpawnTime > spawnDelay) {
-                        // Every dot falls at a different speed (0.6 to 1.6 base)
+                    // Check Progression/Unlocks
+                    let currentStage = 0;
+                    for (let i = UNLOCK_THRESHOLDS.length - 1; i >= 0; i--) {
+                        if (state.score >= UNLOCK_THRESHOLDS[i]) {
+                            currentStage = i;
+                            break;
+                        }
+                    }
+                    currentStage = Math.min(INSTRUMENTS.length - 1, currentStage);
+                    
+                    if (currentStage > state.unlockedStage) {
+                        state.unlockedStage = currentStage;
+                        const newInst = INSTRUMENTS[currentStage] || INSTRUMENTS[0];
+                        state.floatingTexts.push({
+                            id: Math.random(),
+                            x: width / 2,
+                            y: height * 0.3,
+                            text: `${newInst.name} Unlocked!`,
+                            createdAt: now,
+                            color: newInst.color,
+                            isUnlock: true
+                        });
+                    }
+
+                    // 1. Spawn new stars (Off-screen)
+                    if (now - state.lastSpawnTime > spawnDelay) {
                         const randomBaseSpeed = 0.6 + (Math.random() * 1.0);
-                        // 50% chance to go down (1), 50% chance to go up (-1)
                         const direction = Math.random() > 0.5 ? 1 : -1;
+                        const dotInstrumentId = Math.floor(Math.random() * (state.unlockedStage + 1));
                         
                         state.stars.push({
                             id: Math.random(),
@@ -171,9 +208,12 @@
                             y: direction === 1 ? -20 : height + 20,
                             speed: randomBaseSpeed * progressiveMultiplier,
                             direction: direction,
-                            size: Math.random() * 4 + 4
+                            size: Math.random() * 4 + 4,
+                            instrumentId: dotInstrumentId,
+                            hasGrantedTap: false // Start false, grant when entering visible screen
                         });
-                        state.lastSpawnTime = time;
+                        
+                        state.lastSpawnTime = now;
                     }
 
                     // 2. Update Star Positions & Check Bounds
@@ -181,21 +221,30 @@
                         const star = state.stars[i];
                         star.y += star.speed * star.direction;
                         
+                        // Check if dot has crossed into the visible screen to grant a tap exactly once
+                        if (!star.hasGrantedTap) {
+                            if ((star.direction === 1 && star.y >= 0) || 
+                                (star.direction === -1 && star.y <= height)) {
+                                star.hasGrantedTap = true;
+                                state.tapsAvailable += 1; // Pure 1:1 economy
+                            }
+                        }
+
                         // Missed star (Crosses Center Line): Game Over
                         if ((star.direction === 1 && star.y > centerY) || 
                             (star.direction === -1 && star.y < centerY)) {
                             state.gameOver = true;
-                            setStarted(false); // Stop the game loop
-                            playTone(150, 1.0); // Low thud for game over
+                            setStarted(false);
+                            playTone(150, 1.0, 0); // Low thud
                             break; 
                         }
                     }
 
-                    // 3. Collision Detection (Stars vs Ripples)
+                    // 3. Collision Detection
                     for (let i = state.stars.length - 1; i >= 0; i--) {
                         const star = state.stars[i];
                         
-                        // Prevent popping dots that haven't entered the screen yet
+                        // Prevent popping dots that are still off-screen
                         if ((star.direction === 1 && star.y < 0) || 
                             (star.direction === -1 && star.y > height)) continue;
 
@@ -204,11 +253,11 @@
 
                         for (let j = 0; j < state.ripples.length; j++) {
                             const ripple = state.ripples[j];
-                            const age = time - ripple.createdAt;
+                            const age = now - ripple.createdAt;
                             
-                            if (age > 4000) continue;
+                            // Ripple must be within 80% of its 4000ms life to catch anything
+                            if (age > 3200) continue;
 
-                            // Approximate CSS cubic-bezier expansion
                             const progress = Math.min(1, age / 4000);
                             const easeOut = 1 - Math.pow(1 - progress, 3);
                             const currentRadius = ripple.maxRadius * easeOut;
@@ -217,7 +266,8 @@
                             const dy = star.y - ripple.y;
                             const dist = Math.sqrt(dx * dx + dy * dy);
 
-                            if (dist < currentRadius) {
+                            // Strict collision: 1.01 edge
+                            if (dist < currentRadius * 1.01) {
                                 caught = true;
                                 catchingRipple = ripple;
                                 break;
@@ -225,51 +275,44 @@
                         }
 
                         // Handle Catch
-                        if (caught) {
-                            // Calculate score based on distance traveled towards the Center Line
+                        if (caught && catchingRipple) {
+                            catchingRipple.dotsCaught = (catchingRipple.dotsCaught || 0) + 1;
+
                             const travelProgress = star.direction === 1 ? (star.y / centerY) : ((height - star.y) / centerY);
                             const normalizedProgress = Math.max(0, Math.min(1, travelProgress));
-                            const positionScore = 10 + Math.floor(normalizedProgress * 90); // 10 at start, 100 at center line
+                            const baseScore = 10 + Math.floor(normalizedProgress * 90); 
                             
-                            const catchCombo = catchingRipple.combo;
-                            const pointsEarned = positionScore * catchCombo;
-                            
+                            const pointsEarned = baseScore * catchingRipple.dotsCaught;
                             state.score += pointsEarned;
-                            state.combo = catchCombo; // Update HUD combo
                             
-                            // Map absolute Y position to Pitch (Top is high pitch, bottom is low pitch)
                             const absoluteNormalizedY = Math.max(0, Math.min(1, star.y / height));
                             const scaleIndex = Math.floor((1 - absoluteNormalizedY) * PENTATONIC_SCALE.length);
                             const safeIndex = Math.max(0, Math.min(PENTATONIC_SCALE.length - 1, scaleIndex));
                             
                             const freq = PENTATONIC_SCALE[safeIndex];
-                            const color = BLOOM_COLORS[safeIndex % BLOOM_COLORS.length];
+                            const instConfig = INSTRUMENTS[star.instrumentId] || INSTRUMENTS[0];
+                            const color = instConfig.color;
                             
-                            // Add floating text for visual feedback
                             state.floatingTexts.push({
                                 id: Math.random(),
                                 x: star.x,
                                 y: star.y,
-                                text: `+${pointsEarned}`,
-                                createdAt: time,
+                                text: catchingRipple.dotsCaught > 1 ? `+${pointsEarned} (x${catchingRipple.dotsCaught}!)` : `+${pointsEarned}`,
+                                createdAt: now,
                                 color: color
                             });
                             
-                            // Increase depth based on the ripple that caused this catch
                             const newDepth = (catchingRipple.depth || 0) + 1;
+                            triggerEvent(star.x, star.y, freq, color, 1.0, newDepth, star.instrumentId);
                             
-                            triggerEvent(star.x, star.y, freq, color, 1.0, newDepth, catchCombo + 1);
-                            
-                            // Remove star
                             state.stars.splice(i, 1);
                         }
                     }
 
-                    // 4. Cleanup old ripples and floating texts
-                    state.ripples = state.ripples.filter(r => (time - r.createdAt) < 4000);
-                    state.floatingTexts = state.floatingTexts.filter(ft => (time - ft.createdAt) < 1000);
+                    // 4. Cleanup old objects
+                    state.ripples = state.ripples.filter(r => (now - r.createdAt) < 4000);
+                    state.floatingTexts = state.floatingTexts.filter(ft => (now - ft.createdAt) < (ft.isUnlock ? 3000 : 1000));
 
-                    // Force React render for visual update
                     setTick(t => t + 1);
                     animationFrameId = requestAnimationFrame(loop);
                 };
@@ -278,15 +321,35 @@
                 return () => cancelAnimationFrame(animationFrameId);
             }, [started, triggerEvent]);
 
-            const handleInteract = (clientX, clientY) => {
-                if (gameState.current.gameOver) return; // Prevent tapping while game over screen is shown
+            const processTap = (clientX, clientY) => {
+                const state = gameState.current;
+                if (state.gameOver) return;
 
                 if (!started) {
                     initAudio();
                     setStarted(true);
+                    return; 
                 }
                 
-                const height = window.innerHeight;
+                // Bulletproof Tap Guard
+                if (isNaN(state.tapsAvailable) || state.tapsAvailable < 1) {
+                    state.tapsAvailable = 0; // Hard clamp any weird JS math bugs
+                    
+                    const hud = document.getElementById('taps-hud');
+                    if (hud) {
+                        hud.style.transform = 'scale(1.5)';
+                        hud.style.color = '#ef4444'; // Red pulse
+                        setTimeout(() => {
+                            if (hud) hud.style.transform = 'scale(1)';
+                        }, 200);
+                    }
+                    return; // Explicitly block the tap
+                }
+                
+                // Safely consume exactly 1 tap per physical touch
+                state.tapsAvailable -= 1;
+                
+                const height = window.innerHeight || 1; 
                 const normalizedY = 1 - (clientY / height);
                 const scaleIndex = Math.floor(normalizedY * PENTATONIC_SCALE.length);
                 const safeIndex = Math.max(0, Math.min(PENTATONIC_SCALE.length - 1, scaleIndex));
@@ -294,25 +357,30 @@
                 const freq = PENTATONIC_SCALE[safeIndex];
                 const color = BLOOM_COLORS[safeIndex % BLOOM_COLORS.length];
                 
-                // Player taps start at depth 0 and reset the current chain combo to 1
-                gameState.current.combo = 1;
-                triggerEvent(clientX, clientY, freq, color, 1.0, 0, 1);
+                triggerEvent(clientX, clientY, freq, color, 1.0, 0, 0);
             };
 
-            const onTouch = (e) => {
+            // Safely route touch events (Preventing ghost mouse events on mobile)
+            const handleTouchStart = (e) => {
+                if (e.cancelable) e.preventDefault(); // Stop mobile Safari ghost clicks
                 for (let i = 0; i < e.changedTouches.length; i++) {
-                    const touch = e.changedTouches[i];
-                    handleInteract(touch.clientX, touch.clientY);
+                    processTap(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
                 }
             };
 
-            const { ripples, stars, floatingTexts, score, combo } = gameState.current;
+            // Safely route mouse clicks (Ignored natively on mobile due to above preventDefault)
+            const handleMouseDown = (e) => {
+                processTap(e.clientX, e.clientY);
+            };
+
+            const { ripples, stars, floatingTexts, score, tapsAvailable } = gameState.current;
 
             return (
                 <div 
                     className="w-full h-full relative overflow-hidden bg-[#0b132b]"
-                    onMouseDown={(e) => handleInteract(e.clientX, e.clientY)}
-                    onTouchStart={onTouch}
+                    onTouchStart={handleTouchStart}
+                    onMouseDown={handleMouseDown}
+                    style={{ touchAction: 'none' }}
                 >
                     {/* Glowing Center Line */}
                     <div className="absolute top-1/2 left-0 w-full h-px bg-[#48cae4]/50 shadow-[0_0_12px_2px_rgba(72,202,228,0.5)] pointer-events-none z-0"></div>
@@ -323,16 +391,23 @@
                         <div className="text-4xl font-bold">{score}</div>
                     </div>
                     
-                    <div className="absolute top-6 right-6 text-white/80 pointer-events-none text-right hud-text z-10">
-                        <div className="text-sm font-light uppercase tracking-widest text-white/50">Combo</div>
-                        <div className={`text-4xl font-bold transition-colors ${combo > 5 ? 'text-yellow-300' : ''}`}>x{combo}</div>
+                    {/* Transparent Tap Economy HUD */}
+                    <div className="absolute top-6 right-6 text-white/80 pointer-events-none text-right z-10">
+                        <div className="text-sm font-light uppercase tracking-widest text-white/50 hud-text">Taps</div>
+                        <div 
+                            id="taps-hud"
+                            className="text-4xl font-bold transition-all duration-200 ease-out hud-text"
+                            style={{ color: tapsAvailable <= 0 ? '#ef4444' : 'white' }}
+                        >
+                            {tapsAvailable}
+                        </div>
                     </div>
 
                     {!started && !gameState.current.gameOver && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-[#0b132b]/80 backdrop-blur-sm">
-                            <h1 className="text-white text-3xl font-light tracking-widest mb-4 text-center">BLOSSOM</h1>
-                            <p className="text-white/60 mb-8 max-w-xs text-center text-sm">
-                                Tap to create ripples. Catch falling stardust before they cross the center line to build combos. Inspired by Brian Eno's Bloom.
+                            <h1 className="text-white text-4xl font-light tracking-widest mb-4 text-center">BLOSSOM</h1>
+                            <p className="text-white/60 mb-8 max-w-xs text-center text-sm leading-relaxed">
+                                Each new dot grants 1 tap. Tap to create ripples and catch falling stardust before they cross the center line.
                             </p>
                             <div className="text-white tracking-widest uppercase text-sm animate-pulse border border-white/30 px-6 py-3 rounded-full">
                                 Tap to begin
@@ -352,7 +427,8 @@
                                         stars: [],
                                         floatingTexts: [],
                                         score: 0,
-                                        combo: 1,
+                                        tapsAvailable: 0,
+                                        unlockedStage: 0,
                                         lastSpawnTime: performance.now(),
                                         gameStartTime: performance.now(),
                                         gameOver: false
@@ -383,36 +459,41 @@
                     ))}
 
                     {/* Render Stars */}
-                    {stars.map(s => (
-                        <div
-                            key={s.id}
-                            className="star"
-                            style={{
-                                left: s.x,
-                                top: s.y,
-                                width: s.size,
-                                height: s.size,
-                                backgroundColor: 'white',
-                                boxShadow: '0 0 10px 2px rgba(255, 255, 255, 0.8)'
-                            }}
-                        />
-                    ))}
+                    {stars.map(s => {
+                        const instConfig = INSTRUMENTS[s.instrumentId] || INSTRUMENTS[0];
+                        return (
+                            <div
+                                key={s.id}
+                                className="star"
+                                style={{
+                                    left: s.x,
+                                    top: s.y,
+                                    width: s.size,
+                                    height: s.size,
+                                    backgroundColor: instConfig.color,
+                                    boxShadow: `0 0 10px 2px ${instConfig.glow}`
+                                }}
+                            />
+                        );
+                    })}
 
                     {/* Render Floating Texts */}
                     {floatingTexts.map(ft => {
                         const age = performance.now() - ft.createdAt;
-                        const progress = age / 1000;
+                        const duration = ft.isUnlock ? 3000 : 1000;
+                        const progress = Math.max(0, Math.min(1, age / duration));
+                        
                         return (
                             <div
                                 key={ft.id}
-                                className="absolute font-bold pointer-events-none text-xl"
+                                className={`absolute font-bold pointer-events-none ${ft.isUnlock ? 'text-2xl tracking-widest uppercase' : 'text-xl'}`}
                                 style={{
                                     left: ft.x,
-                                    top: ft.y - (progress * 50),
+                                    top: ft.y - (progress * (ft.isUnlock ? 20 : 50)),
                                     color: ft.color,
-                                    opacity: 1 - progress,
+                                    opacity: ft.isUnlock ? (progress < 0.2 ? progress / 0.2 : 1 - progress) : 1 - progress,
                                     transform: 'translate(-50%, -50%)',
-                                    textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.8)'
                                 }}
                             >
                                 {ft.text}
