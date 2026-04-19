@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>RPS Vision</title>
+  <title>RPS Local Vision</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,6 +14,10 @@
   
   <!-- Babel for parsing JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- TensorFlow.js & Handpose Model for Local Inference -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
 
   <style>
     /* Custom CSS Animation for the pumping hand */
@@ -34,8 +38,6 @@
 
   <script type="text/babel">
     const { useState, useRef, useEffect, useCallback } = React;
-
-    const apiKey = ""; // API key is injected by the environment
 
     // --- Inline SVG Icons ---
     const CameraIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>);
@@ -76,18 +78,20 @@
     function App() {
       // --- Refs ---
       const videoRef = useRef(null);
-      const canvasRef = useRef(null);
       const audioCtxRef = useRef(null);
 
       // --- State ---
       const [streamActive, setStreamActive] = useState(false);
       const [cameraError, setCameraError] = useState(null);
-      const [facingMode, setFacingMode] = useState("user"); // "user" (front) or "environment" (back)
+      const [facingMode, setFacingMode] = useState("user"); 
       
-      // Game States: 'idle', 'countdown', 'analyzing', 'result'
+      // TFJS Model States
+      const [tfModel, setTfModel] = useState(null);
+      const [modelLoading, setModelLoading] = useState(true);
+
+      // Game States
       const [gameState, setGameState] = useState('idle'); 
       const [countdown, setCountdown] = useState(null);
-      
       const [userMove, setUserMove] = useState(null);
       const [compMove, setCompMove] = useState(null);
       const [resultMsg, setResultMsg] = useState("");
@@ -110,7 +114,7 @@
         const gain = audioCtxRef.current.createGain();
         osc.connect(gain);
         gain.connect(audioCtxRef.current.destination);
-        osc.type = 'sine'; // Smooth tone for regular beat
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(800, audioCtxRef.current.currentTime);
         gain.gain.setValueAtTime(0.5, audioCtxRef.current.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 0.1);
@@ -124,7 +128,7 @@
         const gain = audioCtxRef.current.createGain();
         osc.connect(gain);
         gain.connect(audioCtxRef.current.destination);
-        osc.type = 'sawtooth'; // Harsh buzzer tone for "GO!"
+        osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(300, audioCtxRef.current.currentTime);
         gain.gain.setValueAtTime(0.5, audioCtxRef.current.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtxRef.current.currentTime + 0.3);
@@ -132,12 +136,31 @@
         osc.stop(audioCtxRef.current.currentTime + 0.3);
       };
 
+      // --- Initialize Local TensorFlow Model ---
+      useEffect(() => {
+        const loadModel = async () => {
+          try {
+            // Wait for TensorFlow to initialize WebGL backend
+            await tf.setBackend('webgl');
+            await tf.ready();
+            // Load the lightweight Handpose model
+            const loadedModel = await handpose.load();
+            setTfModel(loadedModel);
+            setModelLoading(false);
+          } catch (err) {
+            console.error("Error loading TensorFlow Handpose model:", err);
+            setCameraError("Failed to load the local AI vision model.");
+            setModelLoading(false);
+          }
+        };
+        loadModel();
+      }, []);
+
       // --- Camera Initialization ---
       useEffect(() => {
         let currentStream = null;
 
         const startCamera = async () => {
-          // Stop old stream before starting a new one (important for flipping)
           if (videoRef.current && videoRef.current.srcObject) {
             videoRef.current.srcObject.getTracks().forEach(track => track.stop());
           }
@@ -164,97 +187,79 @@
 
         startCamera();
 
-        // Cleanup on unmount or facingMode change
         return () => {
           if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
           }
         };
-      }, [facingMode]); // Re-run effect when camera toggle changes
+      }, [facingMode]);
 
-      // --- Vision API Call ---
-      const analyzeImage = async (base64Image) => {
-        const prompt = "Analyze this image of a hand. The user is playing Rock, Paper, Scissors. Is the hand showing Rock (closed fist), Paper (flat open hand), or Scissors (index and middle fingers extended)? Reply with EXACTLY ONE WORD from this list: ROCK, PAPER, or SCISSORS. If no hand is clearly visible or you cannot tell, reply UNKNOWN.";
-        
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      // --- Local Vision Inference Logic ---
+      const analyzeLocalImage = async (videoElement) => {
+        if (!tfModel || !videoElement) return "UNKNOWN";
 
-        const payload = {
-          contents: [{
-            role: "user",
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: "image/jpeg", data: base64Image } }
-            ]
-          }],
-          systemInstruction: {
-            parts: [{ text: "You are a strict referee for Rock, Paper, Scissors. You only output a single capitalized word representing the gesture." }]
-          }
-        };
-
-        let delay = 1000;
-        for (let attempt = 1; attempt <= 5; attempt++) {
-          try {
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        try {
+          // Send the raw HTMLVideoElement straight to the model
+          const predictions = await tfModel.estimateHands(videoElement);
+          
+          if (predictions.length > 0) {
+            // Get 3D landmarks for the 21 points of the hand
+            const landmarks = predictions[0].landmarks;
             
-            const data = await response.json();
-            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toUpperCase() || "UNKNOWN";
-
-            if (textResponse.includes("ROCK")) return "ROCK";
-            if (textResponse.includes("PAPER")) return "PAPER";
-            if (textResponse.includes("SCISSOR")) return "SCISSORS";
+            // Utility: 2D Distance between two points
+            const dist = (p1, p2) => Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));
             
-            return "UNKNOWN";
-          } catch (error) {
-            if (attempt === 5) {
-              console.error("API Error after retries:", error);
-              return "ERROR";
-            }
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay *= 2;
+            // Heuristic: A finger is extended if its Tip is further from the Wrist than its Knuckle (MCP) is.
+            // This logic works regardless of hand rotation (upside down, sideways).
+            const wrist = landmarks[0];
+            const isExtended = (tipIndex, mcpIndex) => {
+              return dist(wrist, landmarks[tipIndex]) > dist(wrist, landmarks[mcpIndex]);
+            };
+
+            const indexEx = isExtended(8, 5);
+            const middleEx = isExtended(12, 9);
+            const ringEx = isExtended(16, 13);
+            const pinkyEx = isExtended(20, 17);
+
+            // Count total extended fingers
+            let extendedFingers = 0;
+            if (indexEx) extendedFingers++;
+            if (middleEx) extendedFingers++;
+            if (ringEx) extendedFingers++;
+            if (pinkyEx) extendedFingers++;
+
+            // Strict Gesture Matching
+            if (extendedFingers === 0) return "ROCK";
+            if (extendedFingers >= 3) return "PAPER"; 
+            if (indexEx && middleEx && extendedFingers === 2) return "SCISSORS";
           }
+        } catch (e) {
+          console.error("Local inference error:", e);
         }
+        return "UNKNOWN";
       };
 
       // --- Game Loop ---
       const captureAndAnalyze = async () => {
         const video = videoRef.current;
-        const canvas = canvasRef.current;
-        
-        if (!video || !canvas) return;
+        if (!video) return;
 
+        // Visual flash
         setFlash(true);
         setTimeout(() => setFlash(false), 150);
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        
-        // Mirror context if front camera, so image analysis isn't confused by mirrored image
-        if (facingMode === 'user') {
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-        }
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        const base64Image = dataUrl.split(',')[1];
-
         setGameState('analyzing');
         
+        // Let computer pick randomly
         const computerSelection = getRandomComputerMove();
         setCompMove(computerSelection);
         
-        const userSelection = await analyzeImage(base64Image);
+        // Pass video feed into our local TFJS model
+        const userSelection = await analyzeLocalImage(video);
         setUserMove(userSelection);
 
+        // Result logic
         const winner = getWinner(userSelection, computerSelection);
-        
         if (winner === 'USER') {
           setResultMsg("You Win! 🎉");
           setScores(prev => ({ ...prev, user: prev.user + 1 }));
@@ -271,7 +276,6 @@
       };
 
       const playTurn = () => {
-        // Initialize Audio context on user gesture to avoid browser blocks
         initAudio();
 
         setGameState('countdown');
@@ -283,9 +287,8 @@
         let step = 0;
         
         setCountdown(sequence[step]);
-        playBeep(); // Beep for the 1st beat immediately
+        playBeep(); 
 
-        // Interval set to 1000ms (1 second) apart
         const interval = setInterval(() => {
           step++;
           if (step < sequence.length) {
@@ -293,14 +296,13 @@
             
             if (sequence[step] === "GO!") {
               clearInterval(interval);
-              playBuzzer(); // Play the different buzzer sound on GO!
+              playBuzzer(); 
               
-              // Wait a fraction of a second (400ms) after showing "GO!" before snapping
               setTimeout(() => {
                 captureAndAnalyze();
               }, 400);
             } else {
-              playBeep(); // Regular beep for PAPER and SCISSORS
+              playBeep(); 
             }
           } else {
             clearInterval(interval);
@@ -325,14 +327,11 @@
         if (gameState === 'countdown') {
           return (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10 rounded-2xl overflow-hidden">
-              
-              {/* Pumping hand animation (hidden when "GO!" happens) */}
               {countdown !== "GO!" && (
                 <div className="text-8xl md:text-9xl mb-8 animate-pump drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]">
                   ✊
                 </div>
               )}
-              
               <span className={`font-black text-white drop-shadow-2xl transition-all duration-200 
                 ${countdown === 'GO!' ? 'text-7xl md:text-8xl text-emerald-400 scale-125' : 'text-5xl md:text-6xl tracking-widest'}`}>
                 {countdown}
@@ -363,7 +362,10 @@
                 <HandIcon className="w-6 h-6 text-emerald-400" />
                 RPS Vision
               </h1>
-              <p className="text-xs text-slate-400 font-medium tracking-wider mt-1">VS COMPUTER</p>
+              <p className="text-xs text-slate-400 font-medium tracking-wider mt-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                LOCAL AI MODE
+              </p>
             </div>
             
             <div className="flex gap-4 items-center">
@@ -390,7 +392,7 @@
               <div className="relative flex-1 w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
                 
                 {/* Camera Toggle Button */}
-                {streamActive && gameState === 'idle' && (
+                {streamActive && !modelLoading && gameState === 'idle' && (
                   <button 
                     onClick={toggleCamera}
                     className="absolute top-4 right-4 z-30 p-3 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-all shadow-lg active:scale-90 border border-white/10"
@@ -400,10 +402,21 @@
                   </button>
                 )}
 
+                {/* Loading States */}
                 {!streamActive && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 space-y-3 z-0">
                     <CameraIcon className="w-10 h-10 animate-pulse" />
                     <span className="text-sm font-semibold tracking-widest">STARTING CAMERA...</span>
+                  </div>
+                )}
+                
+                {streamActive && modelLoading && (
+                  <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-emerald-400 space-y-3 z-10">
+                    <LoaderIcon className="w-10 h-10 animate-spin" />
+                    <span className="text-sm font-semibold tracking-widest text-center px-4">
+                      LOADING LOCAL AI MODEL...<br/>
+                      <span className="text-[10px] text-emerald-600">This happens once and runs offline</span>
+                    </span>
                   </div>
                 )}
 
@@ -418,8 +431,6 @@
                     streamActive ? 'opacity-100' : 'opacity-0'
                   }`}
                 />
-                
-                <canvas ref={canvasRef} className="hidden" />
 
                 {flash && (
                   <div className="absolute inset-0 bg-white z-50 animate-ping opacity-75" />
@@ -463,9 +474,9 @@
             <div className="flex gap-4">
               <button
                 onClick={playTurn}
-                disabled={!streamActive || gameState === 'countdown' || gameState === 'analyzing'}
+                disabled={!streamActive || modelLoading || gameState === 'countdown' || gameState === 'analyzing'}
                 className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-lg transition-all active:scale-95 ${
-                  !streamActive || gameState === 'countdown' || gameState === 'analyzing'
+                  !streamActive || modelLoading || gameState === 'countdown' || gameState === 'analyzing'
                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-300'
                 }`}
@@ -493,7 +504,6 @@
       );
     }
 
-    // Render the React app
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
