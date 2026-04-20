@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Hex Recall</title>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Base resets for Capacitor/Mobile WebApp optimization */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overscroll-behavior-y: none; /* Prevents pull-to-refresh bounce */
+            -webkit-user-select: none; /* Prevents text highlighting on tap */
+            user-select: none;
+            background-color: #ffffff;
+            touch-action: manipulation; /* Optimizes touch responsiveness */
+        }
+        
+        /* Hide scrollbars for a cleaner app look */
+        ::-webkit-scrollbar { display: none; }
+
+        /* Custom Brutalist Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        
+        /* Webkit (Chrome/Safari/iOS) */
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 40px; /* Large touch target area */
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 32px;
+            width: 16px;
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+            margin-top: 4px; /* Centers in the 40px invisible track */
+            border-radius: 0; /* Strict sharp edges */
+        }
+        
+        /* Firefox */
+        input[type=range]::-moz-range-track {
+            height: 40px;
+            background: transparent;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 32px;
+            width: 16px;
+            background-color: #ffffff;
+            border: 2px solid #000000;
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+            border-radius: 0;
+        }
+
+        /* Tactile Brutalist Button active state utility */
+        .btn-brutal {
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+            transition: transform 0.05s ease, box-shadow 0.05s ease;
+        }
+        .btn-brutal:active {
+            box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
+            transform: translate(4px, 4px);
+        }
+    </style>
+</head>
+<body class="font-mono text-black selection:bg-black selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Utility: Convert HSL to RGB for accurate distance calculation
+        const hslToRgb = (h, s, l) => {
+            s /= 100;
+            l /= 100;
+            const k = n => (n + h / 30) % 12;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+            return [255 * f(0), 255 * f(8), 255 * f(4)].map(Math.round);
+        };
+
+        // Component: Custom Stylized Range Slider
+        const ColorSlider = ({ label, value, min, max, onChange, backgroundStyle }) => {
+            return (
+                <div className="flex flex-col gap-1 w-full">
+                    <div className="flex justify-between uppercase font-bold text-xs tracking-widest border-b-2 border-black pb-1 mb-1">
+                        <span>{label}</span>
+                        <span>{value}</span>
+                    </div>
+                    {/* 40px height container for touch optimization */}
+                    <div className="relative w-full h-10 flex items-center">
+                        {/* Visual Track (Decorative) */}
+                        <div 
+                            className="absolute left-0 right-0 h-4 border-2 border-black pointer-events-none" 
+                            style={backgroundStyle}
+                        ></div>
+                        {/* Invisible Native Input (Interactive) */}
+                        <input
+                            type="range"
+                            min={min}
+                            max={max}
+                            value={value}
+                            onChange={(e) => onChange(Number(e.target.value))}
+                            className="absolute z-10 w-full h-full m-0 bg-transparent"
+                        />
+                    </div>
+                </div>
+            );
+        };
+
+        // Screen: Initial Start View
+        const StartScreen = ({ onStart }) => (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+                {/* Background texture */}
+                <div className="absolute inset-0 -z-10 bg-[radial-gradient(#e5e7eb_2px,transparent_2px)] [background-size:24px_24px] opacity-50"></div>
+                
+                <div className="bg-white border-8 border-black p-8 shadow-[8px_8px_0_0_rgba(0,0,0,1)] w-full max-w-sm flex flex-col items-center">
+                    <div className="w-16 h-16 bg-black mb-6"></div>
+                    <h1 className="text-5xl font-black uppercase mb-4 text-center tracking-tighter leading-none">Hex<br/>Recall</h1>
+                    <p className="text-center text-xs font-bold uppercase tracking-widest mb-10 leading-loose border-y-2 border-black py-4 w-full">
+                        Memorize Target.<br/>Reconstruct It.<br/>No Margins.
+                    </p>
+                    <button
+                        onClick={onStart}
+                        className="btn-brutal w-full bg-black text-white text-xl font-black py-5 uppercase border-4 border-black hover:bg-white hover:text-black"
+                    >
+                        Initiate
+                    </button>
+                </div>
+            </div>
+        );
+
+        // Screen: Memorization Phase
+        const MemorizeScreen = ({ color, time }) => {
+            const widthPct = (time / 3) * 100;
+
+            return (
+                <div className="flex-1 flex flex-col h-full relative" style={{ backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)` }}>
+                    {/* Shrinking Time Bar */}
+                    <div 
+                        className="absolute top-0 left-0 h-4 bg-black transition-all duration-1000 ease-linear" 
+                        style={{ width: `${widthPct}%` }}
+                    ></div>
+
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="bg-white border-4 border-black text-black text-9xl font-black p-8 shadow-[8px_8px_0_0_rgba(0,0,0,1)] flex items-center justify-center min-w-[160px]">
+                            {time}
+                        </div>
+                    </div>
+                    <div className="absolute bottom-12 w-full text-center px-6">
+                        <div className="bg-white text-black p-4 border-4 border-black font-bold uppercase tracking-widest text-sm shadow-[4px_4px_0_0_rgba(0,0,0,1)] mx-auto max-w-xs">
+                            Observe & Memorize
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Screen: Input/Reconstruction Phase
+        const RecallScreen = ({ guess, setGuess, onSubmit }) => {
+            return (
+                <div className="flex-1 flex flex-col h-full bg-zinc-50">
+                    {/* Live Preview Area */}
+                    <div className="flex-[0.45] w-full border-b-8 border-black relative" style={{ backgroundColor: `hsl(${guess.h}, ${guess.s}%, ${guess.l}%)` }}>
+                         <div className="absolute top-4 left-4 bg-white text-black px-3 py-1 border-2 border-black font-bold uppercase text-xs shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+                            Current Output
+                        </div>
+                    </div>
+
+                    {/* Control Panel */}
+                    <div className="flex-[0.55] p-6 flex flex-col justify-center relative">
+                        <div className="absolute inset-0 -z-10 bg-[radial-gradient(#d4d4d8_2px,transparent_2px)] [background-size:16px_16px]"></div>
+                        
+                        <div className="bg-white border-4 border-black p-6 shadow-[8px_8px_0_0_rgba(0,0,0,1)] flex flex-col gap-6 relative w-full max-w-sm mx-auto">
+                            <div className="absolute -top-4 left-4 bg-black text-white px-3 py-1 font-bold uppercase text-xs">
+                                Calibration
+                            </div>
+                            
+                            <div className="flex flex-col gap-5 mt-2">
+                                <ColorSlider
+                                    label="Hue" value={guess.h} min={0} max={360}
+                                    onChange={(v) => setGuess({...guess, h: v})}
+                                    backgroundStyle={{ background: `linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)` }}
+                                />
+                                <ColorSlider
+                                    label="Saturation" value={guess.s} min={0} max={100}
+                                    onChange={(v) => setGuess({...guess, s: v})}
+                                    backgroundStyle={{ background: `linear-gradient(to right, hsl(${guess.h}, 0%, ${guess.l}%), hsl(${guess.h}, 100%, ${guess.l}%))` }}
+                                />
+                                <ColorSlider
+                                    label="Lightness" value={guess.l} min={0} max={100}
+                                    onChange={(v) => setGuess({...guess, l: v})}
+                                    backgroundStyle={{ background: `linear-gradient(to right, hsl(${guess.h}, ${guess.s}%, 0%), hsl(${guess.h}, ${guess.s}%, 50%), hsl(${guess.h}, ${guess.s}%, 100%))` }}
+                                />
+                            </div>
+
+                            <button
+                                onClick={onSubmit}
+                                className="btn-brutal w-full bg-black text-white text-lg font-black py-4 mt-2 uppercase border-4 border-black hover:bg-zinc-800"
+                            >
+                                Lock In
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Screen: Final Results
+        const ResultScreen = ({ target, guess, score, onRestart, history }) => {
+            let rank = "POOR";
+            if (score > 97) rank = "FLAWLESS";
+            else if (score > 90) rank = "EXCELLENT";
+            else if (score > 80) rank = "ACCEPTABLE";
+
+            return (
+                <div className="flex-1 flex flex-col h-full relative">
+                    {/* Split View Container */}
+                    <div className="flex-1 flex flex-col relative">
+                        <div className="flex-1 w-full relative" style={{ backgroundColor: `hsl(${target.h}, ${target.s}%, ${target.l}%)` }}>
+                            <div className="absolute top-4 left-4 bg-white text-black px-3 py-1 border-2 border-black font-bold uppercase text-xs shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+                                Target
+                            </div>
+                        </div>
+                        <div className="flex-1 w-full border-t-8 border-black relative" style={{ backgroundColor: `hsl(${guess.h}, ${guess.s}%, ${guess.l}%)` }}>
+                            <div className="absolute bottom-4 right-4 bg-white text-black px-3 py-1 border-2 border-black font-bold uppercase text-xs shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+                                Input
+                            </div>
+                        </div>
+
+                        {/* Score Overlay */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border-8 border-black p-6 flex flex-col items-center w-[90%] max-w-sm shadow-[12px_12px_0_0_rgba(0,0,0,1)] z-20">
+                            <span className="text-xs font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-4 w-full text-center">
+                                Evaluation: {rank}
+                            </span>
+                            
+                            <div className="text-8xl font-black tracking-tighter mb-0">{score.toFixed(1)}</div>
+                            <div className="text-xs font-bold uppercase tracking-widest mb-6 mt-1">Accuracy Score</div>
+
+                            <div className="w-full flex flex-col gap-2 mb-6 text-[10px] font-bold bg-zinc-100 p-3 border-2 border-black uppercase">
+                                <div className="flex justify-between border-b border-zinc-300 pb-1">
+                                    <span>Target (H,S,L):</span>
+                                    <span>{target.h}°, {target.s}%, {target.l}%</span>
+                                </div>
+                                <div className="flex justify-between pt-1">
+                                    <span>Input (H,S,L):</span>
+                                    <span>{guess.h}°, {guess.s}%, {guess.l}%</span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={onRestart}
+                                className="btn-brutal w-full bg-black text-white text-lg font-black py-4 uppercase border-4 border-black hover:bg-zinc-800"
+                            >
+                                Restart Sequence
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* History Bar */}
+                    <div className="h-28 w-full border-t-8 border-black bg-zinc-100 flex flex-col relative z-30">
+                        <div className="absolute -top-4 left-4 bg-white text-black px-3 py-1 border-2 border-black font-bold uppercase text-[10px] shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+                            Past 5 Efforts
+                        </div>
+                        <div className="flex-1 flex items-center justify-center gap-3 p-4 pt-6 overflow-x-auto">
+                            {history.map((item, i) => (
+                                <div key={i} className="w-14 h-[60px] border-2 border-black flex flex-col shadow-[2px_2px_0_0_rgba(0,0,0,1)] relative bg-white flex-shrink-0">
+                                    <div className="flex-1" style={{ backgroundColor: `hsl(${item.target.h}, ${item.target.s}%, ${item.target.l}%)` }}></div>
+                                    <div className="flex-1 border-t-2 border-black" style={{ backgroundColor: `hsl(${item.guess.h}, ${item.guess.s}%, ${item.guess.l}%)` }}></div>
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white text-black text-[9px] font-black border-2 border-black px-1 w-[120%] text-center">
+                                        {item.score.toFixed(0)}
+                                    </div>
+                                </div>
+                            ))}
+                            {/* Empty placeholders to consistently show 5 slots */}
+                            {Array.from({ length: 5 - history.length }).map((_, i) => (
+                                <div key={`empty-${i}`} className="w-14 h-[60px] border-2 border-black border-dashed flex flex-col relative bg-transparent opacity-30 flex-shrink-0"></div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main Application
+        const App = () => {
+            const [gameState, setGameState] = useState('start'); 
+            const [targetColor, setTargetColor] = useState({h: 0, s: 0, l: 0});
+            const [guessColor, setGuessColor] = useState({h: 180, s: 50, l: 50});
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(3);
+            const [history, setHistory] = useState([]);
+
+            const startRound = () => {
+                // Generate a vibrant color (avoiding pure grays/blacks/whites for gameplay)
+                setTargetColor({
+                    h: Math.floor(Math.random() * 360),
+                    s: Math.floor(Math.random() * 80) + 20,
+                    l: Math.floor(Math.random() * 60) + 20
+                });
+                // Reset user guess to a neutral middle ground
+                setGuessColor({h: 180, s: 50, l: 50});
+                setTimeLeft(3);
+                setGameState('memorize');
+            };
+
+            // Timer Effect
+            useEffect(() => {
+                let timer;
+                if (gameState === 'memorize' && timeLeft > 0) {
+                    timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                } else if (gameState === 'memorize' && timeLeft === 0) {
+                    setGameState('recall');
+                }
+                return () => clearTimeout(timer);
+            }, [gameState, timeLeft]);
+
+            const submitEvaluation = () => {
+                // Calculate Euclidean distance in RGB space for score
+                const [r1, g1, b1] = hslToRgb(targetColor.h, targetColor.s, targetColor.l);
+                const [r2, g2, b2] = hslToRgb(guessColor.h, guessColor.s, guessColor.l);
+                
+                const distance = Math.sqrt(Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2));
+                const maxDistance = 441.67; // Max possible distance between RGB(0,0,0) and RGB(255,255,255)
+                
+                // Map distance to a 0-100 score format
+                const rawScore = 100 - ((distance / maxDistance) * 100);
+                const finalScore = Math.max(0, rawScore);
+                
+                setScore(finalScore);
+                setHistory(prev => {
+                    const newHistory = [...prev, { target: targetColor, guess: guessColor, score: finalScore }];
+                    return newHistory.slice(-5); // Keep max 5 items
+                });
+                setGameState('result');
+            };
+
+            return (
+                <div className="flex flex-col h-[100dvh] w-screen overflow-hidden bg-white text-black font-mono">
+                    {gameState === 'start' && <StartScreen onStart={startRound} />}
+                    {gameState === 'memorize' && <MemorizeScreen color={targetColor} time={timeLeft} />}
+                    {gameState === 'recall' && <RecallScreen guess={guessColor} setGuess={setGuessColor} onSubmit={submitEvaluation} />}
+                    {gameState === 'result' && <ResultScreen target={targetColor} guess={guessColor} score={score} onRestart={startRound} history={history} />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

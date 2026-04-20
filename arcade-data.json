@@ -115,6 +115,15 @@
   "description": "Play Rock, Paper, Scissors against the collective knowledge of all of humanity",
   "iosLink": null,
   "androidLink": null
+ },
+{
+  "id": "hex-recall",
+  "title": "Hex Recall",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Hex%20Recall/index.html",
+  "description": "Memorize the colour and match it best you can",
+  "iosLink": null,
+  "androidLink": null
  }
 
 ]
