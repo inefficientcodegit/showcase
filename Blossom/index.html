@@ -1,777 +1,1441 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Blossom</title>
-    <!-- React & Babel CDNs -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <style>
-        body, html { 
-            margin: 0; padding: 0; 
-            width: 100%; height: 100%; 
-            background-color: #020617; 
-            overflow: hidden; 
-            touch-action: none; 
-            -webkit-user-select: none; user-select: none;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        #root { width: 100%; height: 100%; }
-        
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            animation: bloomFade 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
-            pointer-events: none;
-            mix-blend-mode: screen;
-            filter: blur(4px);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Senescence</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#020617;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
+#app{width:100%;height:100%;position:relative}
+.screen{position:absolute;inset:0;display:none}
+.screen.active{display:flex}
 
-        .ripple-outline {
-            position: absolute;
-            border-radius: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            animation: bloomOutline 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
-            pointer-events: none;
-            mix-blend-mode: screen;
-            border: 1px dashed;
-        }
+/* ── Seedling ripple ── */
+.seedling-ripple{
+  position:absolute;border-radius:50%;width:480px;height:480px;
+  transform:translate(-50%,-50%) scale(0);pointer-events:none;
+  mix-blend-mode:screen;
+  animation:expandFade 4.5s cubic-bezier(0.05,0.7,0.2,1) forwards}
+@keyframes expandFade{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:1}
+  15%{opacity:0.9}
+  100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
 
-        .star {
-            position: absolute;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
+/* ── Game ripples (canvas overlay fallback) ── */
+.game-ripple{
+  position:absolute;border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  animation:bloomFade 4s cubic-bezier(0.1,0.8,0.3,1) forwards;
+  pointer-events:none;mix-blend-mode:screen;filter:blur(4px)}
+.game-ripple-outline{
+  position:absolute;border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  animation:bloomOutline 4s cubic-bezier(0.1,0.8,0.3,1) forwards;
+  pointer-events:none;mix-blend-mode:screen;border:1px dashed}
+@keyframes bloomFade{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:0.6}
+  30%{opacity:0.4}
+  100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+@keyframes bloomOutline{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:0.4}
+  95%{opacity:0.4}
+  100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+.dud-ripple{
+  position:absolute;border-radius:50%;background:transparent;
+  border:4px solid #f87171;
+  animation:dudPulse 0.25s cubic-bezier(0.5,0,0.8,1) forwards;
+  pointer-events:none;mix-blend-mode:screen}
+@keyframes dudPulse{
+  0%{transform:translate(-50%,-50%) scale(2.5);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(0);opacity:0}}
 
-        @keyframes bloomFade {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
-            30% { opacity: 0.4; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
+/* ── Nav button shared style ── */
+.nav-btn{
+  width:48px;height:48px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.20);
+  background:rgba(255,255,255,0.10);
+  backdrop-filter:blur(8px);color:rgba(255,255,255,0.80);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .2s,color .2s;font-family:inherit;pointer-events:auto}
+.nav-btn:hover{background:rgba(255,255,255,0.20);color:#fff}
+button{border:none;outline:none;padding:0}
 
-        @keyframes bloomOutline {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
-            95% { opacity: 0.4; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
+/* ── AppShell overlay chrome ── */
+.shell-title{
+  position:absolute;top:0;left:0;right:0;z-index:50;pointer-events:none;
+  padding-top:calc(env(safe-area-inset-top,0px) + 14px);
+  display:flex;justify-content:center;
+  background:linear-gradient(to bottom,rgba(2,6,23,.55) 0%,rgba(2,6,23,0) 100%);
+  padding-bottom:28px}
+.shell-bottom-fade{
+  position:absolute;bottom:0;left:0;right:0;height:120px;
+  background:linear-gradient(to top,rgba(2,6,23,.55) 0%,rgba(2,6,23,0) 100%);
+  pointer-events:none;z-index:49}
+.shell-nav{
+  position:absolute;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  left:0;right:0;height:48px;z-index:50;pointer-events:none;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px}
 
-        @keyframes dudPulse {
-            0% { transform: translate(-50%, -50%) scale(2.5); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-        }
+/* ── Soundscape picker ── */
+#blossom-picker,#sprout-picker,#seedling-picker{
+  position:absolute;left:50%;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  transform:translateX(-50%);z-index:50;width:48px;height:48px}
+.picker-dropdown{
+  position:absolute;bottom:56px;left:50%;
+  transform:translateX(-50%) scale(0.94);
+  opacity:0;pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;min-width:200px}
+.picker-dropdown.open{transform:translateX(-50%) scale(1);opacity:1;pointer-events:auto}
+.picker-menu{
+  background:rgba(11,19,43,.92);border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(14px);border-radius:16px;padding:8px;
+  display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.picker-item{
+  padding:10px 14px;border-radius:10px;font-size:10px;font-weight:300;
+  letter-spacing:3px;text-transform:uppercase;text-align:left;
+  display:flex;align-items:center;justify-content:space-between;
+  background:transparent;color:rgba(255,255,255,.5);cursor:pointer;
+  font-family:inherit;transition:background .15s,color .15s;width:100%}
+.picker-item.active{background:rgba(255,255,255,.18);color:#fff}
+.picker-item:not(.active):hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}
+.picker-dot{width:6px;height:6px;border-radius:50%;background:#fff}
 
-        .dud-ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: transparent; /* No fill */
-            border: 4px solid #f87171; /* Thick red outline matching Game Over text */
-            /* Using an 'ease-in' curve so it accelerates as it shrinks inwards */
-            animation: dudPulse 0.25s cubic-bezier(0.5, 0, 0.8, 1) forwards; 
-            pointer-events: none;
-            mix-blend-mode: screen;
-        }
+/* ── Info modal ── */
+.modal-backdrop{
+  position:absolute;inset:0;z-index:100;
+  background:rgba(2,6,23,.85);backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:center;pointer-events:auto}
+.modal-box{
+  background:rgba(11,19,43,.97);border:1px solid rgba(72,202,228,.25);
+  border-radius:20px;padding:36px 32px;max-width:340px;width:85%;
+  color:#fff;box-shadow:0 0 60px rgba(72,202,228,.1)}
+.modal-close{
+  margin-top:28px;width:100%;
+  background:rgba(72,202,228,.12);border:1px solid rgba(72,202,228,.3);
+  color:rgba(72,202,228,.9);padding:12px;border-radius:10px;
+  font-size:11px;font-weight:300;letter-spacing:3px;cursor:pointer;font-family:inherit}
 
-        .hud-text {
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-    </style>
+/* ── Pulse for picker dot ── */
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* ── Blossom / Sprout board (canvas) ── */
+#blossom-screen,#sprout-screen{
+  align-items:center;justify-content:center;background:#020617;flex-direction:column}
+#blossom-canvas,#sprout-canvas{display:block}
+.board-wrap{position:relative}
+
+/* ── Seedling screen ── */
+#seedling-screen{background:#020617;cursor:crosshair}
+
+/* ── Home screen ── */
+#home-screen{flex-direction:column;align-items:center;background:#020617;cursor:crosshair}
+#home-seedling-layer{position:absolute;inset:0;z-index:0}
+#home-menu{
+  position:absolute;inset:0;z-index:10;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 28px)}
+.home-title{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;width:100%}
+.home-title span{
+  color:rgba(255,255,255,.82);font-weight:100;letter-spacing:12px;
+  font-size:22px;text-transform:uppercase;
+  text-shadow:0 0 60px rgba(72,202,228,.4);text-align:center}
+.game-cards{display:flex;gap:8px;width:calc(100% - 32px);margin-bottom:10px}
+.game-card{
+  flex:1;min-width:0;pointer-events:auto;
+  background:rgba(11,19,43,.55);border:1px solid rgba(255,255,255,.10);
+  color:#fff;padding:14px 8px;border-radius:14px;cursor:pointer;
+  backdrop-filter:blur(12px);font-family:inherit;
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  transition:all .25s}
+.game-card:hover{background:rgba(11,19,43,.85)}
+.game-card .label{font-size:13px;font-weight:300;letter-spacing:3px;color:rgba(255,255,255,.85);text-transform:uppercase}
+.game-card .sub{font-size:10px;font-weight:200;letter-spacing:.5px;color:rgba(255,255,255,.35)}
+.cultivate-btn{
+  pointer-events:auto;width:calc(100% - 32px);
+  background:rgba(11,19,43,.55);border:1px solid rgba(168,230,207,.18);
+  color:#fff;padding:14px 20px;border-radius:14px;cursor:pointer;
+  backdrop-filter:blur(12px);font-family:inherit;
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:20px;transition:all .25s}
+.cultivate-btn:hover{background:rgba(11,19,43,.85);border-color:rgba(168,230,207,.4)}
+.icon-row{display:flex;gap:20px;pointer-events:auto}
+.icon-btn{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:50%;color:rgba(255,255,255,.6);
+  width:40px;height:40px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;
+  font-family:inherit;gap:2px;transition:all .2s;font-size:16px}
+.icon-btn:hover{background:rgba(255,255,255,.18);color:#fff}
+
+/* intro overlay */
+#intro-overlay{
+  position:absolute;inset:0;z-index:200;background:#020617;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:48px 36px;
+  padding-top:calc(env(safe-area-inset-top,0px) + 48px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 48px);
+  transition:opacity .7s ease;pointer-events:auto}
+.intro-wordmark{
+  font-size:13px;font-weight:200;letter-spacing:8px;
+  color:rgba(255,255,255,.25);text-transform:uppercase;margin-bottom:64px}
+.intro-lines{display:flex;flex-direction:column;gap:32px;max-width:280px;margin-bottom:72px}
+.intro-line{display:flex;align-items:flex-start;gap:16px}
+.intro-line span:first-child{font-size:18px;line-height:1.4;flex-shrink:0;opacity:.7}
+.intro-line span:last-child{font-size:15px;font-weight:200;line-height:1.7;color:rgba(255,255,255,.65);letter-spacing:.3px}
+.intro-enter{
+  background:transparent;border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.55);padding:14px 40px;border-radius:40px;
+  cursor:pointer;font-size:11px;font-weight:300;letter-spacing:5px;
+  font-family:inherit;text-transform:uppercase;transition:all .25s}
+.intro-enter:hover{border-color:rgba(255,255,255,.4);color:rgba(255,255,255,.85)}
+
+/* About modal (home) */
+#about-modal{display:none}
+#about-modal.open{display:flex}
+
+/* game over overlay */
+.gameover{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:30;
+  background:rgba(2,6,23,.92);backdrop-filter:blur(12px)}
+.gameover h1{color:#f87171;font-size:36px;font-weight:300;letter-spacing:6px;margin:0 0 8px}
+.gameover .score-text{color:rgba(255,255,255,.75);font-size:20px;margin-bottom:32px;font-weight:200}
+.gameover .play-again{
+  color:#fff;letter-spacing:4px;text-transform:uppercase;font-size:12px;
+  border:1px solid rgba(255,255,255,.3);padding:12px 24px;border-radius:999px;
+  cursor:pointer;font-family:inherit;background:transparent;transition:background .2s}
+.gameover .play-again:hover{background:rgba(255,255,255,.1)}
+.gameover .or-try{color:rgba(255,255,255,.3);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-top:24px}
+.gameover .mode-btns{display:flex;gap:12px;margin-top:12px}
+.gameover .mode-btn{
+  color:rgba(255,255,255,.6);letter-spacing:3px;text-transform:uppercase;font-size:11px;
+  border:1px solid rgba(255,255,255,.15);padding:8px 20px;border-radius:999px;
+  cursor:pointer;font-family:inherit;background:transparent;transition:all .2s}
+.gameover .mode-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+
+/* HUD */
+.hud-score-label{font-size:11px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.hud-score-val{font-size:24px;font-weight:300;color:#fff}
+.hud-taps{display:flex;gap:8px}
+.hud-tap-dot{
+  width:16px;height:16px;border-radius:50%;border:1px solid rgba(255,255,255,.8);
+  transition:all .2s}
+</style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="app">
 
-    <script type="text/babel">
-        const { useState, useEffect, useCallback, useRef } = React;
+<!-- ══════════════════ HOME ══════════════════ -->
+<div id="home-screen" class="screen active">
+  <div id="home-seedling-layer"></div>
+  <div id="home-menu">
+    <div class="home-title"><span>Senescence</span></div>
+    <div class="game-cards">
+      <button class="game-card" id="btn-blossom" style="--accent:#48cae4">
+        <span class="label">Blossom</span>
+        <span class="sub">catch the stars</span>
+      </button>
+      <button class="game-card" id="btn-seedling" style="--accent:#90e0ef">
+        <span class="label">Seedling</span>
+        <span class="sub">grow the loop</span>
+      </button>
+      <button class="game-card" id="btn-sprout" style="--accent:#a8e6cf">
+        <span class="label">Sprout</span>
+        <span class="sub">draw your notes</span>
+      </button>
+    </div>
+    <div class="icon-row">
+      <button class="icon-btn" id="btn-share" title="Share">↑</button>
+      <button class="icon-btn" id="btn-about" title="About">i</button>
+    </div>
+  </div>
 
-        // 5 Distinct Sonic Experiences (Soundscapes)
-        const SOUNDSCAPES = [
-            {
-                name: 'Ethereal',
-                tapInstrument: 0, // Bells
-                colors: ['#48cae4', '#ff99c8', '#fcf6bd'],
-                matrix: [
-                    [130.81, 261.63, 523.25], // C
-                    [196.00, 392.00, 783.99], // G
-                    [146.83, 293.66, 587.33]  // D
-                ]
-            },
-            {
-                name: 'Midnight',
-                tapInstrument: 4, // Pad
-                colors: ['#7b2cbf', '#3a0ca3', '#4cc9f0'],
-                matrix: [
-                    [110.00, 220.00, 440.00], // A
-                    [164.81, 329.63, 659.25], // E
-                    [123.47, 246.94, 493.88]  // B
-                ]
-            },
-            {
-                name: 'Sunrise',
-                tapInstrument: 1, // Keys
-                colors: ['#fb8500', '#ffb703', '#ff006e'],
-                matrix: [
-                    [146.83, 293.66, 587.33], // D
-                    [220.00, 440.00, 880.00], // A
-                    [164.81, 329.63, 659.25]  // E
-                ]
-            },
-            {
-                name: 'Forest',
-                tapInstrument: 3, // Winds
-                colors: ['#2a9d8f', '#e9c46a', '#8ab17d'],
-                matrix: [
-                    [174.61, 349.23, 698.46], // F
-                    [261.63, 523.25, 1046.50], // C
-                    [196.00, 392.00, 783.99]  // G
-                ]
-            },
-            {
-                name: 'Cello', // Replaced Ember with Cello
-                tapInstrument: 5, // Cello
-                colors: ['#d4a373', '#faedcd', '#e9edc9'], // Woody, earthy tones
-                matrix: [
-                    [65.41, 130.81, 261.63], // C (Pitched an octave lower for resonance)
-                    [98.00, 196.00, 392.00], // G
-                    [73.42, 146.83, 293.66]  // D
-                ]
-            }
-        ];
+  <!-- About modal -->
+  <div id="about-modal" class="modal-backdrop">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div style="font-size:10px;letter-spacing:5px;color:rgba(72,202,228,.7);margin-bottom:16px;font-weight:300">SENESCENCE</div>
+      <div style="font-size:13px;font-weight:200;line-height:1.9;color:rgba(255,255,255,.7)">
+        Three generative music games — catch, loop, and draw your way through evolving soundscapes.<br><br>
+        Blossom · Seedling · Sprout
+      </div>
+      <button class="modal-close" id="about-close">CLOSE</button>
+    </div>
+  </div>
 
-        // Instrument Definitions
-        const INSTRUMENTS = [
-            { id: 0, name: 'Bells', color: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)', wave: 'sine', attack: 0.05, release: 3.5, vol: 0.4 },
-            { id: 1, name: 'Keys', color: '#fcf6bd', glow: 'rgba(252, 246, 189, 0.8)', wave: 'triangle', attack: 0.02, release: 2.5, vol: 0.2 },
-            { id: 2, name: 'Strings', color: '#ff99c8', glow: 'rgba(255, 153, 200, 0.8)', wave: 'sine', attack: 0.8, release: 4.0, vol: 0.5 },
-            { id: 3, name: 'Winds', color: '#a9def9', glow: 'rgba(169, 222, 249, 0.8)', wave: 'sine', attack: 0.3, release: 2.5, vol: 0.4 },
-            { id: 4, name: 'Pad', color: '#e4c1f9', glow: 'rgba(228, 193, 249, 0.8)', wave: 'triangle', attack: 1.2, release: 4.5, vol: 0.15 },
-            // New Cello Instrument added
-            { id: 5, name: 'Cello', color: '#d4a373', glow: 'rgba(212, 163, 115, 0.8)', wave: 'sawtooth', attack: 0.6, release: 4.5, vol: 0.15 } 
-        ];
+  <!-- First-open intro -->
+  <div id="intro-overlay">
+    <div class="intro-wordmark">Senescence</div>
+    <div class="intro-lines">
+      <div class="intro-line"><span>🎧</span><span>Senescence is built for sound.</span></div>
+      <div class="intro-line"><span>✦</span><span>For the best experience, wear headphones.</span></div>
+      <div class="intro-line"><span>🌱</span><span>Take it slow in here.</span></div>
+    </div>
+    <button class="intro-enter" id="intro-enter">Enter</button>
+  </div>
+</div>
 
-        // Added 30,000 threshold so Cello dots will eventually spawn
-        const UNLOCK_THRESHOLDS = [0, 1000, 3000, 7000, 15000, 30000];
+<!-- ══════════════════ BLOSSOM ══════════════════ -->
+<div id="blossom-screen" class="screen">
+  <div class="board-wrap" id="blossom-wrap" style="position:relative">
+    <canvas id="blossom-canvas"></canvas>
+    <!-- DOM ripple layer -->
+    <div id="blossom-ripples" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+    <!-- HUD -->
+    <div style="position:absolute;top:24px;left:24px;pointer-events:none;z-index:10">
+      <div class="hud-score-label">Score</div>
+      <div class="hud-score-val" id="blossom-score">0</div>
+    </div>
+    <div style="position:absolute;top:24px;right:24px;pointer-events:none;z-index:10;text-align:right">
+      <div class="hud-score-label" style="margin-bottom:4px">Notes</div>
+      <div class="hud-taps" id="blossom-taps-hud"></div>
+    </div>
+    <!-- tap to begin -->
+    <div id="blossom-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20">
+      <span style="color:rgba(255,255,255,.4);letter-spacing:4px;text-transform:uppercase;font-size:11px">tap to begin</span>
+    </div>
+    <!-- game over -->
+    <div id="blossom-gameover" class="gameover" style="display:none">
+      <h1>GAME OVER</h1>
+      <div class="score-text" id="blossom-final-score"></div>
+      <button class="play-again" id="blossom-restart">Play Again</button>
+      <div class="or-try">or try</div>
+      <div class="mode-btns">
+        <button class="mode-btn" onclick="goTo('seedling')">Seedling</button>
+        <button class="mode-btn" onclick="goTo('sprout')">Sprout</button>
+      </div>
+    </div>
+  </div>
+  <!-- soundscape picker -->
+  <div id="blossom-picker">
+    <div class="picker-dropdown" id="blossom-picker-dropdown">
+      <div class="picker-menu" id="blossom-picker-menu"></div>
+    </div>
+    <button class="nav-btn" id="blossom-picker-btn" style="width:48px;height:48px" aria-label="Sound">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+      </svg>
+    </button>
+  </div>
+  <!-- back -->
+  <div style="position:absolute;bottom:calc(env(safe-area-inset-bottom,0px)+24px);left:24px;z-index:50">
+    <button class="nav-btn" onclick="goTo('home')" aria-label="Back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </div>
+</div>
 
-        let audioCtx = null;
-        const initAudio = () => {
-            try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-            } catch(e) {
-                console.error("Audio Context initialization failed", e);
-            }
-        };
+<!-- ══════════════════ SEEDLING ══════════════════ -->
+<div id="seedling-screen" class="screen" style="flex-direction:column">
+  <div id="seedling-layer" style="position:absolute;inset:0"></div>
+  <div class="shell-title">
+    <span style="color:rgba(255,255,255,.35);font-size:10px;font-weight:300;letter-spacing:6px;text-transform:uppercase">Seedling</span>
+  </div>
+  <div class="shell-bottom-fade"></div>
+  <div class="shell-nav" style="pointer-events:none">
+    <button class="nav-btn" onclick="goTo('home')" style="pointer-events:auto" aria-label="Back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="nav-btn" id="seedling-info-btn" style="pointer-events:auto" aria-label="Info">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </button>
+  </div>
+  <div id="seedling-hint" style="position:absolute;bottom:96px;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:5">
+    <span style="color:rgba(255,255,255,.3);font-size:11px;letter-spacing:4px;text-transform:uppercase">tap to begin</span>
+  </div>
+  <!-- info modal -->
+  <div id="seedling-info-modal" class="modal-backdrop" style="display:none">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div style="font-size:10px;letter-spacing:4px;color:rgba(72,202,228,.8);margin-bottom:20px;font-weight:300">SEEDLING</div>
+      <div style="font-size:14px;font-weight:200;line-height:1.8;color:rgba(255,255,255,.75)">
+        Tap anywhere to place a looping ripple. Each one fires in rhythm and adds a new layer to the soundscape.<br><br>
+        Pitch follows your vertical position — high taps play high notes.<br><br>
+        The music builds as you play.
+      </div>
+      <button class="modal-close" onclick="document.getElementById('seedling-info-modal').style.display='none'">CLOSE</button>
+    </div>
+  </div>
+</div>
 
-        const playTone = (freq, velocity, instrumentId = 0) => {
-            if (!audioCtx) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                const filter = audioCtx.createBiquadFilter(); // Digital filter added
-                
-                const inst = INSTRUMENTS[instrumentId] || INSTRUMENTS[0];
-                
-                osc.type = inst.wave;
-                osc.frequency.value = freq;
-                
-                // The filter turns a harsh sawtooth into a warm, woody cello body
-                filter.type = 'lowpass';
-                filter.frequency.value = inst.wave === 'sawtooth' ? freq * 4 : 8000;
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start();
-                
-                const maxVol = velocity * inst.vol;
-                
-                gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(maxVol, audioCtx.currentTime + inst.attack);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + inst.attack + inst.release);
-                
-                osc.stop(audioCtx.currentTime + inst.attack + inst.release);
-            } catch(e) {
-                console.error("Failed to play tone", e);
-            }
-        };
+<!-- ══════════════════ SPROUT ══════════════════ -->
+<div id="sprout-screen" class="screen">
+  <div class="board-wrap" id="sprout-wrap" style="position:relative">
+    <canvas id="sprout-canvas"></canvas>
+    <div id="sprout-ripples" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+    <!-- HUD -->
+    <div style="position:absolute;top:24px;left:24px;pointer-events:none;z-index:10">
+      <div class="hud-score-label">Score</div>
+      <div class="hud-score-val" id="sprout-score">0</div>
+    </div>
+    <div style="position:absolute;top:24px;right:24px;pointer-events:none;z-index:10;text-align:right">
+      <div class="hud-score-label" style="margin-bottom:4px">Draws</div>
+      <div class="hud-taps" id="sprout-taps-hud"></div>
+    </div>
+    <div id="sprout-hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:20">
+      <span style="color:rgba(255,255,255,.4);letter-spacing:4px;text-transform:uppercase;font-size:11px">draw to begin</span>
+    </div>
+    <div id="sprout-gameover" class="gameover" style="display:none">
+      <h1>GAME OVER</h1>
+      <div class="score-text" id="sprout-final-score"></div>
+      <button class="play-again" id="sprout-restart">Play Again</button>
+      <div class="or-try">or try</div>
+      <div class="mode-btns">
+        <button class="mode-btn" onclick="goTo('blossom')">Blossom</button>
+        <button class="mode-btn" onclick="goTo('seedling')">Seedling</button>
+      </div>
+    </div>
+  </div>
+  <div id="sprout-picker">
+    <div class="picker-dropdown" id="sprout-picker-dropdown">
+      <div class="picker-menu" id="sprout-picker-menu"></div>
+    </div>
+    <button class="nav-btn" id="sprout-picker-btn" style="width:48px;height:48px" aria-label="Sound">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+      </svg>
+    </button>
+  </div>
+  <div style="position:absolute;bottom:calc(env(safe-area-inset-bottom,0px)+24px);left:24px;z-index:50">
+    <button class="nav-btn" onclick="goTo('home')" aria-label="Back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </div>
+  <div style="position:absolute;bottom:calc(env(safe-area-inset-bottom,0px)+24px);right:24px;z-index:50">
+    <button class="nav-btn" id="sprout-info-btn" aria-label="Info">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </button>
+  </div>
+  <div id="sprout-info-modal" class="modal-backdrop" style="display:none">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div style="font-size:10px;letter-spacing:4px;color:rgba(72,202,228,.8);margin-bottom:20px;font-weight:300">SPROUT</div>
+      <div style="font-size:14px;font-weight:200;line-height:1.8;color:rgba(255,255,255,.75)">
+        Draw short lines to place glowing barriers. Seeds that drift through an active band are caught.<br><br>
+        <strong style="color:rgba(144,224,239,.9)">Length</strong> controls volume — longer lines ring louder.<br><br>
+        <strong style="color:rgba(144,224,239,.9)">Direction</strong> shapes the tone — horizontal draws are warm and deep, vertical draws are bright and airy.<br><br>
+        A seed crossing the centre ends the game.
+      </div>
+      <button class="modal-close" onclick="document.getElementById('sprout-info-modal').style.display='none'">CLOSE</button>
+    </div>
+  </div>
+</div>
 
-        const playFlatBeat = () => {
-            if (!audioCtx) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                osc.type = 'triangle';
-                osc.frequency.value = 100; // Low, flat thud
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start();
-                
-                const attackTime = 0.01;
-                const releaseTime = 0.15; // Very short duration
-                
-                gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + attackTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + attackTime + releaseTime);
-                
-                osc.stop(audioCtx.currentTime + attackTime + releaseTime);
-            } catch(e) {
-                console.error("Failed to play flat beat", e);
-            }
-        };
+</div><!-- #app -->
 
-        const App = () => {
-            const [started, setStarted] = useState(false);
-            const [, setTick] = useState(0); 
-            const [menuOpen, setMenuOpen] = useState(false);
-            const [activeSoundscape, setActiveSoundscape] = useState(0);
-            
-            // Layout Scale Engine
-            const [boardSize, setBoardSize] = useState(() => Math.min(window.innerWidth, window.innerHeight / 2));
-            
-            useEffect(() => {
-                const handleResize = () => setBoardSize(Math.min(window.innerWidth, window.innerHeight / 2));
-                window.addEventListener('resize', handleResize);
-                return () => window.removeEventListener('resize', handleResize);
-            }, []);
-            
-            // Core Game State
-            const gameState = useRef({
-                ripples: [],
-                duds: [],
-                stars: [],
-                floatingTexts: [],
-                score: 0,
-                tapsAvailable: 0,
-                unlockedStage: 0,
-                soundscapeIdx: 0,
-                lastSpawnTime: 0,
-                gameStartTime: 0,
-                gameOver: false,
-                lastValidTapTime: 0
-            });
+<script>
+'use strict';
 
-            // Event trigger (Spawns ripples and plays tones)
-            const triggerEvent = useCallback((x, y, freq, color, baseVelocity, depth = 0, instrumentId = 0) => {
-                const attenuation = Math.pow(0.55, depth);
-                const velocity = baseVelocity * attenuation;
+// ══════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════
 
-                if (velocity < 0.05) return;
-                
-                playTone(freq, velocity, instrumentId);
-                
-                // Scale ripple to board size
-                const currentS = Math.min(window.innerWidth, window.innerHeight / 2);
-                const scaleFactor = currentS / 400; 
-                
-                const id = Date.now() + Math.random();
-                const maxRadius = 84 * velocity * scaleFactor; 
-                
-                gameState.current.ripples.push({ 
-                    id, x, y, color, maxRadius, 
-                    createdAt: performance.now(),
-                    velocity,
-                    depth,
-                    dotsCaught: 0
-                });
-            }, []);
+const SOUNDSCAPES = [
+  { name:'Ethereal', tapInstrument:0,
+    colors:['#48cae4','#56b4e2','#72a5da','#9496cf','#b488c4','#d07cb9','#e872ae','#f66da3','#f98e98','#fcf6bd'],
+    matrix:[[130.81,261.63,523.25],[146.83,293.66,587.33],[164.81,329.63,659.25],[196,392,783.99],[220,440,880],[261.63,523.25,1046.5],[293.66,587.33,1174.66],[329.63,659.25,1318.51],[392,783.99,1567.98],[440,880,1760]] },
+  { name:'Midnight', tapInstrument:4,
+    colors:['#7b2cbf','#6925c4','#571ec9','#441ecb','#3530c4','#2652bd','#1e78b5','#1a97bf','#1ab4ca','#4cc9f0'],
+    matrix:[[110,220,440],[130.81,261.63,523.25],[146.83,293.66,587.33],[164.81,329.63,659.25],[196,392,783.99],[220,440,880],[261.63,523.25,1046.5],[293.66,587.33,1174.66],[329.63,659.25,1318.51],[392,783.99,1567.98]] },
+  { name:'Sunrise', tapInstrument:1,
+    colors:['#fb8500','#ffa100','#ffb600','#ffc400','#ffaa00','#ff8040','#ff5570','#ff2d78','#ff1060','#ff006e'],
+    matrix:[[146.83,293.66,587.33],[164.81,329.63,659.25],[196,392,783.99],[220,440,880],[246.94,493.88,987.77],[293.66,587.33,1174.66],[329.63,659.25,1318.51],[392,783.99,1567.98],[440,880,1760],[493.88,987.77,1975.53]] },
+  { name:'Forest', tapInstrument:3,
+    colors:['#2a9d8f','#40a87a','#5ab265','#78b851','#9abb40','#b9bd38','#d4b83a','#e9b040','#f4a847','#e9c46a'],
+    matrix:[[98,196,392],[110,220,440],[123.47,246.94,493.88],[146.83,293.66,587.33],[164.81,329.63,659.25],[196,392,783.99],[220,440,880],[246.94,493.88,987.77],[293.66,587.33,1174.66],[329.63,659.25,1318.51]] },
+  { name:'Cello', tapInstrument:5,
+    colors:['#c8956a','#cda070','#d2ab77','#d7b67f','#dcc187','#e1cc90','#e6d49a','#ebdba5','#f0e2b0','#faedcd'],
+    matrix:[[65.41,130.81,261.63],[73.42,146.83,293.66],[82.41,164.81,329.63],[98,196,392],[110,220,440],[130.81,261.63,523.25],[146.83,293.66,587.33],[164.81,329.63,659.25],[196,392,783.99],[220,440,880]] },
+];
 
-            // Game Loop Engine
-            useEffect(() => {
-                if (!started) return;
+const INSTRUMENTS = [
+  {id:0,name:'Bells',  color:'#ffffff',glow:'rgba(255,255,255,0.8)',  wave:'sine',    attack:0.05,release:3.5,vol:0.4},
+  {id:1,name:'Keys',   color:'#fcf6bd',glow:'rgba(252,246,189,0.8)',  wave:'triangle',attack:0.02,release:2.5,vol:0.2},
+  {id:2,name:'Strings',color:'#ff99c8',glow:'rgba(255,153,200,0.8)',  wave:'sine',    attack:0.8, release:4.0,vol:0.5},
+  {id:3,name:'Winds',  color:'#a9def9',glow:'rgba(169,222,249,0.8)',  wave:'sine',    attack:0.3, release:2.5,vol:0.4},
+  {id:4,name:'Pad',    color:'#e4c1f9',glow:'rgba(228,193,249,0.8)',  wave:'triangle',attack:1.2, release:4.5,vol:0.15},
+  {id:5,name:'Cello',  color:'#d4a373',glow:'rgba(212,163,115,0.8)',  wave:'sawtooth',attack:0.6, release:4.5,vol:0.15},
+];
+const UNLOCK_THRESHOLDS = [0,1000,3000,7000,15000,30000];
 
-                let animationFrameId;
-                
-                const loop = () => {
-                    const state = gameState.current;
-                    const now = performance.now();
-                    
-                    const S = Math.min(window.innerWidth, window.innerHeight / 2);
-                    const width = S;
-                    const height = S * 2;
-                    const centerY = S;
-                    const scaleFactor = S / 400; 
+const PENTATONIC = [130.81,146.83,164.81,196,220,261.63,293.66,329.63,392,440,523.25,587.33,659.25,783.99,880].reverse();
+const BPM = 120;
+const BEAT_DURATION = 60/BPM;
+const LOOP_DURATION_SEC = BEAT_DURATION*8;
+const QUANTIZE_STEP = BEAT_DURATION/4;
+const MAX_LOOPS = 12;
 
-                    if (state.gameStartTime === 0) state.gameStartTime = now;
-                    const elapsed = now - state.gameStartTime;
-                    
-                    const progressiveMultiplier = Math.min(2.0, 1 + (elapsed / 120000));
-                    const spawnDelay = Math.max(500, 800 - (elapsed / 300));
+// ══════════════════════════════════════════════
+// AUDIO HELPERS
+// ══════════════════════════════════════════════
 
-                    // Check Progression/Unlocks
-                    let currentStage = 0;
-                    for (let i = UNLOCK_THRESHOLDS.length - 1; i >= 0; i--) {
-                        if (state.score >= UNLOCK_THRESHOLDS[i]) {
-                            currentStage = i;
-                            break;
-                        }
-                    }
-                    currentStage = Math.min(INSTRUMENTS.length - 1, currentStage);
-                    
-                    if (currentStage > state.unlockedStage) {
-                        state.unlockedStage = currentStage;
-                        const newInst = INSTRUMENTS[currentStage] || INSTRUMENTS[0];
-                        state.floatingTexts.push({
-                            id: Math.random(),
-                            x: width / 2,
-                            y: height * 0.3,
-                            text: `${newInst.name} Dots Unlocked!`,
-                            createdAt: now,
-                            color: newInst.color,
-                            isUnlock: true
-                        });
-                    }
+function playChord(rootFreq, velocity, instrumentId=0, ctx, dest) {
+  if (!ctx) return;
+  dest = dest || ctx.destination;
+  const inst = INSTRUMENTS[instrumentId] || INSTRUMENTS[0];
+  [1,1.5,2].forEach((ratio,i) => {
+    try {
+      const freq = rootFreq * ratio;
+      const osc = ctx.createOscillator(), gain = ctx.createGain(), filter = ctx.createBiquadFilter();
+      osc.type = inst.wave; osc.frequency.value = freq;
+      filter.type = 'lowpass'; filter.frequency.value = inst.wave==='sawtooth' ? freq*4 : 8000;
+      osc.connect(filter); filter.connect(gain); gain.connect(dest);
+      const t0 = ctx.currentTime + [0,0.07,0.14][i];
+      const maxVol = (velocity*inst.vol)/2.5;
+      gain.gain.setValueAtTime(0,t0);
+      gain.gain.linearRampToValueAtTime(maxVol, t0+inst.attack);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+inst.attack+inst.release*1.4);
+      osc.start(t0); osc.stop(t0+inst.attack+inst.release*1.4);
+    } catch(e){}
+  });
+}
 
-                    // 1. Spawn new stars (Off-screen)
-                    if (now - state.lastSpawnTime > spawnDelay) {
-                        const randomBaseSpeed = 0.6 + (Math.random() * 1.0);
-                        const direction = Math.random() > 0.5 ? 1 : -1;
-                        const dotInstrumentId = Math.floor(Math.random() * (state.unlockedStage + 1));
-                        
-                        state.stars.push({
-                            id: Math.random(),
-                            x: Math.random() * (width - 40 * scaleFactor) + 20 * scaleFactor,
-                            y: direction === 1 ? -20 * scaleFactor : height + 20 * scaleFactor,
-                            speed: randomBaseSpeed * scaleFactor * progressiveMultiplier,
-                            direction: direction,
-                            size: (Math.random() * 4 + 4) * scaleFactor,
-                            instrumentId: dotInstrumentId,
-                            hasGrantedTap: false
-                        });
-                        
-                        state.lastSpawnTime = now;
-                    }
+function playTone(freq, velocity, instrumentId=0, ctx, dest) {
+  if (!ctx) return;
+  dest = dest || ctx.destination;
+  try {
+    const osc = ctx.createOscillator(), gain = ctx.createGain(), filter = ctx.createBiquadFilter();
+    const inst = INSTRUMENTS[instrumentId] || INSTRUMENTS[0];
+    osc.type = inst.wave; osc.frequency.value = freq;
+    filter.type = 'lowpass'; filter.frequency.value = inst.wave==='sawtooth' ? freq*4 : 8000;
+    osc.connect(filter); filter.connect(gain); gain.connect(dest);
+    osc.start();
+    const maxVol = velocity*inst.vol;
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(maxVol, ctx.currentTime+inst.attack);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+inst.attack+inst.release);
+    osc.stop(ctx.currentTime+inst.attack+inst.release);
+  } catch(e){}
+}
 
-                    // 2. Update Star Positions & Check Bounds
-                    for (let i = state.stars.length - 1; i >= 0; i--) {
-                        const star = state.stars[i];
-                        star.y += star.speed * star.direction;
-                        
-                        if (!star.hasGrantedTap) {
-                            if ((star.direction === 1 && star.y >= 0) || 
-                                (star.direction === -1 && star.y <= height)) {
-                                star.hasGrantedTap = true;
-                                state.tapsAvailable = Math.min(state.tapsAvailable + 1, 3);
-                            }
-                        }
+function playFlatBeat(ctx, dest) {
+  if (!ctx) return;
+  dest = dest || ctx.destination;
+  try {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = 'triangle'; osc.frequency.value = 100;
+    osc.connect(gain); gain.connect(dest); osc.start();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.16);
+    osc.stop(ctx.currentTime+0.16);
+  } catch(e){}
+}
 
-                        // Missed star (Crosses Center Line): Game Over
-                        if ((star.direction === 1 && star.y > centerY) || 
-                            (star.direction === -1 && star.y < centerY)) {
-                            state.gameOver = true;
-                            setStarted(false);
-                            playTone(150, 1.0, 0); // Low thud
-                            break; 
-                        }
-                    }
+function fadeOutAndClose(ctx, masterGain) {
+  if (!ctx || ctx.state==='closed') return;
+  try {
+    if (masterGain) {
+      masterGain.gain.setValueAtTime(masterGain.gain.value, ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime+0.4);
+    }
+    setTimeout(()=>{ try{ctx.close()}catch(e){} }, 450);
+  } catch(e){}
+}
 
-                    // 3. Collision Detection
-                    for (let i = state.stars.length - 1; i >= 0; i--) {
-                        const star = state.stars[i];
-                        
-                        if ((star.direction === 1 && star.y < 0) || 
-                            (star.direction === -1 && star.y > height)) continue;
+function createKick(ctx, dest) {
+  dest = dest || ctx.destination;
+  return { start(time,vel){ const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(dest);
+    o.frequency.setValueAtTime(150,time); o.frequency.exponentialRampToValueAtTime(30,time+0.1);
+    g.gain.setValueAtTime(0,time); g.gain.linearRampToValueAtTime(0.8*vel,time+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001,time+0.5); o.start(time); o.stop(time+0.6); }, release(){} };
+}
 
-                        let caught = false;
-                        let catchingRipple = null;
+function createStrings(ctx, baseFreq, dest) {
+  dest = dest || ctx.destination;
+  const mg=ctx.createGain(), filter=ctx.createBiquadFilter();
+  mg.connect(dest); filter.connect(mg); filter.type='lowpass';
+  const oscs=[]; let released=false;
+  return {
+    start(time,vel){
+      filter.frequency.setValueAtTime(600,time); filter.frequency.linearRampToValueAtTime(1200,time+2);
+      mg.gain.setValueAtTime(0,time); mg.gain.setTargetAtTime(0.15*vel,time,0.5);
+      [baseFreq/2,baseFreq,baseFreq*1.5].forEach(f=>{ const o=ctx.createOscillator(); o.type='sawtooth';
+        o.frequency.setValueAtTime(f+(Math.random()*2-1),time); o.connect(filter); o.start(time); oscs.push(o); });
+    },
+    release(time){ if(released)return; released=true; mg.gain.setTargetAtTime(0,time,1.5); oscs.forEach(o=>o.stop(time+6)); }
+  };
+}
 
-                        for (let j = 0; j < state.ripples.length; j++) {
-                            const ripple = state.ripples[j];
-                            const age = now - ripple.createdAt;
-                            
-                            if (age >= 4000) continue;
+function createChime(ctx, freq, dest) {
+  dest = dest || ctx.destination;
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.connect(g); g.connect(dest); let released=false;
+  return {
+    start(time,vel){ o.type='sine'; o.frequency.setValueAtTime(freq,time);
+      g.gain.setValueAtTime(0,time); g.gain.setTargetAtTime(0.3*vel,time,0.05); o.start(time); },
+    release(time){ if(released)return; released=true; g.gain.setTargetAtTime(0,time,1); o.stop(time+4); }
+  };
+}
 
-                            const progress = Math.min(1, age / 4000);
-                            const easeOut = 1 - Math.pow(1 - progress, 3);
-                            const currentRadius = ripple.maxRadius * easeOut;
+function createPad(ctx, baseFreq, dest) {
+  dest = dest || ctx.destination;
+  const master=ctx.createGain(), filter=ctx.createBiquadFilter();
+  filter.type='lowpass'; filter.Q.value=1.2; filter.connect(master); master.connect(dest);
+  const oscs=[{ratio:1,vol:.5,type:'sine'},{ratio:1.5,vol:.22,type:'sine'},{ratio:2,vol:.08,type:'triangle'}].map(s=>{
+    const o=ctx.createOscillator(), g=ctx.createGain(); o.type=s.type; o.frequency.value=baseFreq*s.ratio;
+    g.gain.value=s.vol; o.connect(g); g.connect(filter); return o; });
+  let released=false;
+  return {
+    start(time,vel,filterFreq=1200){ filter.frequency.setValueAtTime(filterFreq*0.4,time);
+      filter.frequency.linearRampToValueAtTime(filterFreq,time+1.8);
+      master.gain.setValueAtTime(0,time); master.gain.linearRampToValueAtTime(0.14*vel,time+0.9);
+      oscs.forEach(o=>o.start(time)); },
+    release(time){ if(released)return; released=true; master.gain.setTargetAtTime(0,time,1.6); oscs.forEach(o=>o.stop(time+8)); }
+  };
+}
 
-                            const dx = star.x - ripple.x;
-                            const dy = star.y - ripple.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
 
-                            if (dist < currentRadius * 1.01) {
-                                caught = true;
-                                catchingRipple = ripple;
-                                break;
-                            }
-                        }
+let currentScreen = 'home';
+const cleanupFns = {};
 
-                        // Handle Catch
-                        if (caught && catchingRipple) {
-                            catchingRipple.dotsCaught = (catchingRipple.dotsCaught || 0) + 1;
+function goTo(screen) {
+  if (cleanupFns[currentScreen]) { cleanupFns[currentScreen](); delete cleanupFns[currentScreen]; }
+  document.getElementById(currentScreen+'-screen').classList.remove('active');
+  currentScreen = screen;
+  document.getElementById(screen+'-screen').classList.add('active');
+  if (screen==='blossom') startBlossom();
+  if (screen==='seedling') startSeedling();
+  if (screen==='sprout') startSprout();
+  if (screen==='home') startHomeSeedling();
+}
 
-                            const travelProgress = star.direction === 1 ? (star.y / centerY) : ((height - star.y) / centerY);
-                            const normalizedProgress = Math.max(0, Math.min(1, travelProgress));
-                            const baseScore = Math.floor(normalizedProgress * 50); 
-                            
-                            const pointsEarned = baseScore * catchingRipple.dotsCaught;
-                            state.score += pointsEarned;
-                            
-                            const normalizedX = Math.max(0, Math.min(1, star.x / width));
-                            const sectionIndex = Math.floor(normalizedX * 3); 
-                            const safeSectionIndex = Math.max(0, Math.min(2, sectionIndex));
-                            
-                            const absoluteNormalizedY = Math.max(0, Math.min(1, star.y / height));
-                            const invertedY = 1 - absoluteNormalizedY;
-                            
-                            const activeSoundscape = SOUNDSCAPES[state.soundscapeIdx];
-                            const columnPitches = activeSoundscape.matrix[safeSectionIndex];
-                            
-                            const pitchIndex = Math.floor(invertedY * columnPitches.length);
-                            const safePitchIndex = Math.max(0, Math.min(columnPitches.length - 1, pitchIndex));
-                            
-                            const freq = columnPitches[safePitchIndex];
-                            const instConfig = INSTRUMENTS[star.instrumentId] || INSTRUMENTS[0];
-                            const color = instConfig.color;
-                            
-                            state.floatingTexts.push({
-                                id: Math.random(),
-                                x: star.x,
-                                y: star.y,
-                                text: catchingRipple.dotsCaught > 1 ? `+${pointsEarned} (x${catchingRipple.dotsCaught}!)` : `+${pointsEarned}`,
-                                createdAt: now,
-                                color: color
-                            });
-                            
-                            const newDepth = (catchingRipple.depth || 0) + 1;
-                            triggerEvent(star.x, star.y, freq, color, 1.0, newDepth, star.instrumentId);
-                            
-                            state.stars.splice(i, 1);
-                        }
-                    }
+// ══════════════════════════════════════════════
+// SOUNDSCAPE PICKER (shared factory)
+// ══════════════════════════════════════════════
 
-                    // 4. Strict Tap Economy Enforcement
-                    const visibleStarsCount = state.stars.filter(s => s.hasGrantedTap).length;
-                    if (visibleStarsCount === 0) {
-                        state.tapsAvailable = 0;
-                    } else {
-                        state.tapsAvailable = Math.min(state.tapsAvailable, visibleStarsCount, 3);
-                    }
+function buildPicker(prefix, defaultIdx, onSelect) {
+  let active = defaultIdx, open = false;
+  const dropdown = document.getElementById(prefix+'-picker-dropdown');
+  const menu = document.getElementById(prefix+'-picker-menu');
+  const btn = document.getElementById(prefix+'-picker-btn');
 
-                    // 5. Cleanup old objects
-                    state.ripples = state.ripples.filter(r => (now - r.createdAt) < 4000);
-                    state.duds = state.duds.filter(d => (now - d.createdAt) < 200); // Shorter lifespan
-                    state.floatingTexts = state.floatingTexts.filter(ft => (now - ft.createdAt) < (ft.isUnlock ? 3000 : 1000));
+  function render() {
+    menu.innerHTML = '';
+    SOUNDSCAPES.forEach((s,i) => {
+      const el = document.createElement('button');
+      el.className = 'picker-item'+(i===active?' active':'');
+      el.textContent = s.name;
+      if (i===active) { const dot=document.createElement('div'); dot.className='picker-dot'; el.appendChild(dot); }
+      el.addEventListener('click', ()=>{ active=i; open=false; dropdown.classList.remove('open'); render(); onSelect(i,s); });
+      menu.appendChild(el);
+    });
+  }
+  render();
 
-                    setTick(t => t + 1);
-                    animationFrameId = requestAnimationFrame(loop);
-                };
+  btn.addEventListener('click', e=>{ e.stopPropagation(); open=!open; dropdown.classList.toggle('open',open); });
+  document.getElementById(prefix+'-screen').addEventListener('pointerdown', e=>{
+    if (open && !dropdown.contains(e.target) && e.target!==btn) { open=false; dropdown.classList.remove('open'); }
+  });
+  return { getActive: ()=>active };
+}
 
-                animationFrameId = requestAnimationFrame(loop);
-                return () => cancelAnimationFrame(animationFrameId);
-            }, [started, triggerEvent]);
+// ══════════════════════════════════════════════
+// HOME SEEDLING BACKDROP
+// ══════════════════════════════════════════════
 
-            const processTap = (clientX, clientY) => {
-                const state = gameState.current;
-                if (state.gameOver) return;
+let homeSeedlingCleanup = null;
 
-                if (!started) {
-                    initAudio();
-                    setStarted(true);
-                    return; 
-                }
-                
-                const S = Math.min(window.innerWidth, window.innerHeight / 2);
-                const boardLeft = (window.innerWidth - S) / 2;
-                const boardTop = (window.innerHeight - S * 2) / 2;
-                
-                const x = clientX - boardLeft;
-                const y = clientY - boardTop;
-                
-                // Ignore taps strictly outside the board boundaries
-                if (x < 0 || x > S || y < 0 || y > S * 2) return;
+function startHomeSeedling() {
+  const layer = document.getElementById('home-seedling-layer');
+  layer.innerHTML = '';
+  let ctx = null, mgain = null, rippleId=0, activeEvents=[], activeTouches={}, rafId=null;
+  let started = false;
 
-                const now = performance.now();
+  function initAudio() {
+    if (ctx?.state==='closed') ctx=null;
+    if (!ctx) {
+      const AC = window.AudioContext||window.webkitAudioContext;
+      ctx = new AC(); mgain = ctx.createGain(); mgain.gain.value=1; mgain.connect(ctx.destination);
+    }
+    if (ctx.state==='suspended') ctx.resume();
+    started = true;
+  }
 
-                // Tap Guard: If zero taps, play flat beat, pulse HUD, and block ripple
-                if (isNaN(state.tapsAvailable) || state.tapsAvailable < 1) {
-                    state.tapsAvailable = 0; 
-                    
-                    // Prevent ghost clicks from triggering a dud immediately after the last note
-                    if (now - state.lastValidTapTime < 200) return;
-                    
-                    playFlatBeat(); 
-                    
-                    state.duds.push({
-                        id: Date.now() + Math.random(),
-                        x: x,
-                        y: y,
-                        createdAt: now
-                    });
-                    
-                    const hud = document.getElementById('taps-hud');
-                    if (hud) {
-                        hud.style.transform = 'scale(1.5)';
-                        hud.style.color = '#ef4444'; // Red pulse
-                        setTimeout(() => {
-                            if (hud) hud.style.transform = 'scale(1)';
-                        }, 200);
-                    }
-                    return; 
-                }
-                
-                state.tapsAvailable -= 1;
-                state.lastValidTapTime = now;
-                
-                // Map coordinates
-                const normalizedX = Math.max(0, Math.min(1, x / S));
-                const sectionIndex = Math.floor(normalizedX * 3);
-                const safeSectionIndex = Math.max(0, Math.min(2, sectionIndex));
-                
-                const normalizedY = Math.max(0, Math.min(1, y / (S * 2)));
-                const invertedY = 1 - normalizedY;
-                
-                const activeSoundscape = SOUNDSCAPES[state.soundscapeIdx];
-                const columnPitches = activeSoundscape.matrix[safeSectionIndex];
-                
-                const pitchIndex = Math.floor(invertedY * columnPitches.length);
-                const safePitchIndex = Math.max(0, Math.min(columnPitches.length - 1, pitchIndex));
-                
-                const freq = columnPitches[safePitchIndex];
-                const color = activeSoundscape.colors[safeSectionIndex];
-                
-                // Triggers event using the Soundscape's assigned instrument
-                triggerEvent(x, y, freq, color, 1.0, 0, activeSoundscape.tapInstrument);
-            };
+  function scheduleAudio() {
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    activeEvents = activeEvents.filter(ev=>ev.velocity>0.05);
+    activeEvents.forEach(ev=>{
+      if (ev.nextPlayTime < now+0.15) {
+        const pt=ev.nextPlayTime;
+        const dest=mgain||ctx.destination;
+        const kick=createKick(ctx,dest), strings=createStrings(ctx,ev.freq,dest), chime=createChime(ctx,ev.freq,dest);
+        const voices=[];
+        if (ev.isBeat) { kick.start(pt,ev.velocity); voices.push(kick); }
+        else { strings.start(pt,ev.velocity); chime.start(pt,ev.velocity); voices.push(strings,chime); }
+        if (ev.sustainTime!==null) { const rt=pt+Math.max(0.05,ev.sustainTime); voices.forEach(v=>v.release(rt)); }
+        else { if(ev.voices&&ev.voices.length) ev.voices.forEach(v=>v.release(pt)); ev.voices=voices; }
+        const delay=Math.max(0,(pt-now)*1000);
+        setTimeout(()=>{
+          const id=rippleId++;
+          const el=document.createElement('div'); el.className='seedling-ripple';
+          el.style.left=ev.x+'px'; el.style.top=ev.y+'px';
+          el.style.backgroundColor=ev.isBeat?`rgba(255,255,255,${0.2*ev.velocity})`:`hsla(${ev.hue},70%,60%,${0.4*ev.velocity})`;
+          el.style.boxShadow=ev.isBeat?`0 0 40px rgba(255,255,255,${0.4*ev.velocity})`:`0 0 40px hsla(${ev.hue},80%,70%,${0.6*ev.velocity})`;
+          layer.appendChild(el);
+          setTimeout(()=>el.remove(),4500);
+        },delay);
+        ev.velocity *= ev.isBeat?0.92:0.85;
+        ev.nextPlayTime += ev.isBeat?BEAT_DURATION:LOOP_DURATION_SEC;
+      }
+    });
+    rafId=requestAnimationFrame(scheduleAudio);
+  }
 
-            const handleTouchStart = (e) => {
-                if (e.cancelable) e.preventDefault(); 
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    processTap(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
-                }
-            };
+  function onPointerDown(e) {
+    if (!ctx) { initAudio(); rafId=requestAnimationFrame(scheduleAudio); }
+    const isBeat=!e.isPrimary;
+    const yRatio=e.clientY/window.innerHeight;
+    const noteIndex=Math.floor(yRatio*PENTATONIC.length);
+    const freq=PENTATONIC[Math.max(0,Math.min(noteIndex,PENTATONIC.length-1))];
+    const hue=Math.floor((e.clientX/window.innerWidth)*360);
+    const now=ctx.currentTime;
+    const rem=now%QUANTIZE_STEP;
+    const qpt=now+(QUANTIZE_STEP-rem);
+    if(isBeat) activeEvents=activeEvents.filter(ev=>!ev.isBeat);
+    const id=Math.random().toString();
+    activeEvents.push({id,x:e.clientX,y:e.clientY,freq,hue,isBeat,nextPlayTime:qpt,sustainTime:null,velocity:1,voices:[]});
+    activeTouches[e.pointerId]={id,startTime:qpt};
+    const mel=activeEvents.filter(ev=>!ev.isBeat).length;
+    if(mel>MAX_LOOPS) { const idx=activeEvents.findIndex(ev=>!ev.isBeat); if(idx!==-1) activeEvents.splice(idx,1); }
+  }
 
-            const handleMouseDown = (e) => {
-                processTap(e.clientX, e.clientY);
-            };
+  function onPointerRelease(e) {
+    const t=activeTouches[e.pointerId]; if(!t) return;
+    const ev=activeEvents.find(ev=>ev.id===t.id);
+    if(ev&&ctx) { const now=ctx.currentTime; ev.sustainTime=Math.max(0.05,now-t.startTime); if(ev.voices?.length){ev.voices.forEach(v=>v.release(now));ev.voices=[];} }
+    delete activeTouches[e.pointerId];
+  }
 
-            const { ripples, stars, floatingTexts, score, tapsAvailable } = gameState.current;
-            const maxTapsDisplay = 3;
+  layer.addEventListener('pointerdown', onPointerDown);
+  layer.addEventListener('pointerup', onPointerRelease);
+  layer.addEventListener('pointercancel', onPointerRelease);
 
-            return (
-                <div 
-                    className="w-full h-full flex items-center justify-center bg-[#020617]"
-                    onTouchStart={handleTouchStart}
-                    onMouseDown={handleMouseDown}
-                    style={{ touchAction: 'none' }}
-                >
-                    {/* The Scaled Game Board Container */}
-                    <div 
-                        id="game-board"
-                        className="relative overflow-hidden bg-[#0b132b] shadow-[0_0_60px_rgba(0,0,0,0.8)] border-x border-white/5"
-                        style={{ width: boardSize, height: boardSize * 2 }}
-                    >
-                        {/* Glowing Center Line */}
-                        <div className="absolute top-1/2 left-0 w-full h-px bg-[#48cae4]/50 shadow-[0_0_12px_2px_rgba(72,202,228,0.5)] pointer-events-none z-0"></div>
+  homeSeedlingCleanup = () => {
+    cancelAnimationFrame(rafId);
+    if(ctx&&mgain) { fadeOutAndClose(ctx,mgain); ctx=null; }
+    layer.removeEventListener('pointerdown', onPointerDown);
+    layer.removeEventListener('pointerup', onPointerRelease);
+    layer.removeEventListener('pointercancel', onPointerRelease);
+    layer.innerHTML='';
+  };
+  cleanupFns['home'] = homeSeedlingCleanup;
+}
 
-                        {/* HUD */}
-                        <div className="absolute top-6 left-6 text-white/80 pointer-events-none hud-text z-10">
-                            <div className="text-sm font-light uppercase tracking-widest text-white/50">Score</div>
-                            <div className="text-4xl font-bold">{score}</div>
-                        </div>
-                        
-                        {/* Transparent Tap Economy HUD */}
-                        <div className="absolute top-6 right-6 text-white/80 pointer-events-none text-right z-10 flex flex-col items-end">
-                            <div className="text-sm font-light uppercase tracking-widest text-white/50 hud-text mb-1">Notes</div>
-                            <div 
-                                id="taps-hud"
-                                className="flex gap-2 transition-transform duration-200 ease-out"
-                            >
-                                {[...Array(maxTapsDisplay)].map((_, i) => (
-                                    <div 
-                                        key={i}
-                                        className={`w-4 h-4 rounded-full border border-white transition-all duration-200 ${i < tapsAvailable ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] scale-100' : 'bg-transparent opacity-30 scale-75'}`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+// ══════════════════════════════════════════════
+// BLOSSOM
+// ══════════════════════════════════════════════
 
-                        {!started && !gameState.current.gameOver && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-[#0b132b]/80 backdrop-blur-sm">
-                                <h1 className="text-white text-4xl font-light tracking-widest mb-4 text-center">BLOSSOM</h1>
-                                <p className="text-white/60 mb-8 px-8 text-center text-sm leading-relaxed">
-                                    You can hold a maximum of 3 notes. Tap the left, center, or right sections of the screen to create harmonic ripples and catch falling stardust.
-                                </p>
-                                <div className="text-white tracking-widest uppercase text-sm animate-pulse border border-white/30 px-6 py-3 rounded-full">
-                                    Tap to begin
-                                </div>
-                            </div>
-                        )}
+function startBlossom() {
+  const canvas = document.getElementById('blossom-canvas');
+  const ctx2d = canvas.getContext('2d');
+  const rippleLayer = document.getElementById('blossom-ripples');
+  const scoreEl = document.getElementById('blossom-score');
+  const tapsHudEl = document.getElementById('blossom-taps-hud');
+  const hintEl = document.getElementById('blossom-hint');
+  const gameoverEl = document.getElementById('blossom-gameover');
+  const finalScoreEl = document.getElementById('blossom-final-score');
 
-                        {gameState.current.gameOver && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto z-30 bg-[#0b132b]/90 backdrop-blur-md">
-                                <h1 className="text-red-400 text-4xl font-light tracking-widest mb-2 text-center">GAME OVER</h1>
-                                <div className="text-white/80 text-xl mb-8">Final Score: {score}</div>
-                                <button 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const currentSoundscape = activeSoundscape; 
-                                        
-                                        gameState.current = {
-                                            ripples: [],
-                                            duds: [],
-                                            stars: [],
-                                            floatingTexts: [],
-                                            score: 0,
-                                            tapsAvailable: 0,
-                                            unlockedStage: 0,
-                                            soundscapeIdx: currentSoundscape,
-                                            lastSpawnTime: performance.now(),
-                                            gameStartTime: performance.now(),
-                                            gameOver: false,
-                                            lastValidTapTime: 0
-                                        };
-                                        setStarted(true);
-                                    }}
-                                    className="text-white tracking-widest uppercase text-sm border border-white/30 px-6 py-3 rounded-full hover:bg-white/10 transition-colors pointer-events-auto cursor-pointer"
-                                >
-                                    Play Again
-                                </button>
-                            </div>
-                        )}
-                        
-                        {/* Render Ripples */}
-                        {ripples.map(r => (
-                            <React.Fragment key={r.id}>
-                                <div 
-                                    className="ripple"
-                                    style={{ 
-                                        left: r.x, 
-                                        top: r.y, 
-                                        backgroundColor: r.color,
-                                        width: r.maxRadius * 2,
-                                        height: r.maxRadius * 2,
-                                        boxShadow: `0 0 ${r.maxRadius}px ${r.color}`
-                                    }} 
-                                />
-                                <div 
-                                    className="ripple-outline"
-                                    style={{ 
-                                        left: r.x, 
-                                        top: r.y, 
-                                        width: r.maxRadius * 2,
-                                        height: r.maxRadius * 2,
-                                        borderColor: r.color
-                                    }} 
-                                />
-                            </React.Fragment>
-                        ))}
+  let audioCtx=null, masterGain=null;
+  let rafId=null;
+  let started=false;
+  let activeSoundscape=4;
 
-                        {/* Render Dud Ripples (Empty Taps) */}
-                        {(gameState.current.duds || []).map(d => {
-                            const scaleFactor = boardSize / 400;
-                            return (
-                                <div 
-                                    key={d.id}
-                                    className="dud-ripple"
-                                    style={{
-                                        left: d.x,
-                                        top: d.y,
-                                        width: 25 * scaleFactor, /* Reduced from 50 to 25 to stay very small */
-                                        height: 25 * scaleFactor
-                                    }}
-                                />
-                            );
-                        })}
+  const picker = buildPicker('blossom', 4, (i,s)=>{
+    activeSoundscape=i; gs.soundscapeIdx=i;
+    if(audioCtx) playTone(s.matrix[1][1], 0.5, s.tapInstrument, audioCtx, masterGain);
+  });
 
-                        {/* Render Stars */}
-                        {stars.map(s => {
-                            const instConfig = INSTRUMENTS[s.instrumentId] || INSTRUMENTS[0];
-                            return (
-                                <div
-                                    key={s.id}
-                                    className="star"
-                                    style={{
-                                        left: s.x,
-                                        top: s.y,
-                                        width: s.size,
-                                        height: s.size,
-                                        backgroundColor: instConfig.color,
-                                        boxShadow: `0 0 10px 2px ${instConfig.glow}`
-                                    }}
-                                />
-                            );
-                        })}
+  function resize() {
+    const S = Math.min(window.innerWidth, window.innerHeight/2);
+    canvas.width=S; canvas.height=S*2;
+    const wrap = document.getElementById('blossom-wrap');
+    wrap.style.width=S+'px'; wrap.style.height=(S*2)+'px';
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
-                        {/* Render Floating Texts */}
-                        {floatingTexts.map(ft => {
-                            const age = performance.now() - ft.createdAt;
-                            const duration = ft.isUnlock ? 3000 : 1000;
-                            const progress = Math.max(0, Math.min(1, age / duration));
-                            
-                            return (
-                                <div
-                                    key={ft.id}
-                                    className={`absolute font-bold pointer-events-none ${ft.isUnlock ? 'text-2xl tracking-widest uppercase' : 'text-xl'}`}
-                                    style={{
-                                        left: ft.x,
-                                        top: ft.y - (progress * (ft.isUnlock ? 20 : 50)),
-                                        color: ft.color,
-                                        opacity: ft.isUnlock ? (progress < 0.2 ? progress / 0.2 : 1 - progress) : 1 - progress,
-                                        transform: 'translate(-50%, -50%)',
-                                        textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                                    }}
-                                >
-                                    {ft.text}
-                                </div>
-                            );
-                        })}
+  let gs = makeBlossomState(activeSoundscape);
 
-                        {/* Soundscape Menu Tray */}
-                        <div 
-                            className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center"
-                            onTouchStart={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}
-                        >
-                            <div className={`transition-all duration-300 ease-in-out origin-bottom ${menuOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 mb-0 h-0 overflow-hidden'}`}>
-                                <div className="bg-[#0b132b]/90 border border-white/20 backdrop-blur-md rounded-2xl p-2 flex flex-col gap-1 w-48 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                                    {SOUNDSCAPES.map((s, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => {
-                                                setActiveSoundscape(i);
-                                                gameState.current.soundscapeIdx = i;
-                                                setMenuOpen(false);
-                                                playTone(s.matrix[1][1], 0.5, s.tapInstrument); // Brief preview using its assigned instrument!
-                                            }}
-                                            className={`px-4 py-3 rounded-xl text-xs font-bold tracking-widest uppercase transition-colors text-left flex items-center justify-between ${activeSoundscape === i ? 'bg-white/20 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white/80'}`}
-                                        >
-                                            {s.name}
-                                            {activeSoundscape === i && (
-                                                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+  function makeBlossomState(scapeIdx) {
+    return { ripples:[],duds:[],stars:[],floatingTexts:[],
+      score:0,tapsAvailable:0,unlockedStage:0,soundscapeIdx:scapeIdx,
+      lastSpawnTime:0,gameStartTime:0,gameOver:false,lastValidTapTime:0 };
+  }
 
-                            <button 
-                                onClick={() => setMenuOpen(!menuOpen)}
-                                className={`w-12 h-12 rounded-full border flex items-center justify-center text-white/80 hover:bg-white/20 transition-all backdrop-blur-sm ${menuOpen ? 'bg-white/20 border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-white/10 border-white/20 hover:scale-105'}`}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M9 18V5l12-2v13"></path>
-                                    <circle cx="6" cy="18" r="3"></circle>
-                                    <circle cx="18" cy="16" r="3"></circle>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+  function initAudio() {
+    if(audioCtx?.state==='closed') audioCtx=null;
+    if(!audioCtx) {
+      const AC=window.AudioContext||window.webkitAudioContext; audioCtx=new AC();
+      masterGain=audioCtx.createGain(); masterGain.gain.value=1; masterGain.connect(audioCtx.destination);
+    }
+    if(audioCtx.state==='suspended') audioCtx.resume();
+  }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+  function triggerEvent(x,y,freq,color,baseVelocity,depth=0,instrumentId=0,chord=false) {
+    const att=Math.pow(0.7,depth), vel=baseVelocity*att;
+    if(vel<0.05) return;
+    if(chord) playChord(freq,vel,instrumentId,audioCtx,masterGain);
+    else playTone(freq,vel,instrumentId,audioCtx,masterGain);
+    const S=canvas.width, sf=S/400;
+    const id=performance.now()+Math.random();
+    gs.ripples.push({id,x,y,color,maxRadius:100*vel*sf,createdAt:performance.now(),vel,depth,dotsCaught:0});
+    // DOM ripple for bloom effect
+    const el=document.createElement('div'); el.className='game-ripple';
+    const sz=100*vel*sf*2;
+    el.style.cssText=`left:${x}px;top:${y}px;width:${sz}px;height:${sz}px;background-color:${color};box-shadow:0 0 ${sz/2}px ${color}`;
+    rippleLayer.appendChild(el);
+    const ol=document.createElement('div'); ol.className='game-ripple-outline';
+    ol.style.cssText=`left:${x}px;top:${y}px;width:${sz}px;height:${sz}px;border-color:${color}`;
+    rippleLayer.appendChild(ol);
+    setTimeout(()=>{el.remove();ol.remove();},4100);
+  }
+
+  function updateTapsHud() {
+    tapsHudEl.innerHTML='';
+    for(let i=0;i<3;i++){
+      const d=document.createElement('div'); d.className='hud-tap-dot';
+      if(i<gs.tapsAvailable){ d.style.backgroundColor='white'; d.style.boxShadow='0 0 8px rgba(255,255,255,.8)'; }
+      else{ d.style.backgroundColor='transparent'; d.style.opacity='.3'; }
+      tapsHudEl.appendChild(d);
+    }
+  }
+
+  function loop() {
+    const now=performance.now();
+    const S=canvas.width, height=S*2, centerY=S, sf=S/400;
+
+    if(!started||gs.gameOver){ rafId=requestAnimationFrame(loop); return; }
+    if(gs.gameStartTime===0) gs.gameStartTime=now;
+    const elapsed=now-gs.gameStartTime;
+    const pm=Math.min(2,1+elapsed/120000);
+    const spawnDelay=Math.max(500,800-elapsed/300);
+
+    // Unlock
+    let stage=0;
+    for(let i=UNLOCK_THRESHOLDS.length-1;i>=0;i--){ if(gs.score>=UNLOCK_THRESHOLDS[i]){stage=i;break;} }
+    stage=Math.min(INSTRUMENTS.length-1,stage);
+    if(stage>gs.unlockedStage){
+      gs.unlockedStage=stage;
+      const inst=INSTRUMENTS[stage];
+      gs.floatingTexts.push({id:Math.random(),x:S/2,y:height*0.3,text:`${inst.name} Unlocked!`,createdAt:now,color:inst.color,isUnlock:true});
+    }
+
+    // Spawn
+    if(now-gs.lastSpawnTime>spawnDelay){
+      const dir=Math.random()>.5?1:-1;
+      const instId=Math.floor(Math.random()*(gs.unlockedStage+1));
+      const raw=0.6+Math.random()*1.0, norm=(raw-0.6)/1.0;
+      const scape=SOUNDSCAPES[gs.soundscapeIdx];
+      const zi=Math.min(9,Math.floor(norm*10));
+      gs.stars.push({id:Math.random(),x:Math.random()*(S-40*sf)+20*sf,y:dir===1?-20*sf:height+20*sf,
+        speed:raw*sf*pm,dir,size:(Math.random()*4+4)*sf,instrumentId:instId,
+        freq:scape.matrix[zi][1],color:scape.colors[zi],hasGrantedTap:false});
+      gs.lastSpawnTime=now;
+    }
+
+    // Move stars
+    for(let i=gs.stars.length-1;i>=0;i--){
+      const s=gs.stars[i]; s.y+=s.speed*s.dir;
+      if(!s.hasGrantedTap){
+        if((s.dir===1&&s.y>=0)||(s.dir===-1&&s.y<=height)){ s.hasGrantedTap=true; gs.tapsAvailable=Math.min(gs.tapsAvailable+1,3); }
+      }
+      if((s.dir===1&&s.y>centerY)||(s.dir===-1&&s.y<centerY)){
+        gs.gameOver=true; endBlossom(); break;
+      }
+    }
+
+    // Collision
+    for(let i=gs.stars.length-1;i>=0;i--){
+      const s=gs.stars[i];
+      if((s.dir===1&&s.y<0)||(s.dir===-1&&s.y>height)) continue;
+      let caught=null;
+      for(let j=0;j<gs.ripples.length;j++){
+        const r=gs.ripples[j], age=now-r.createdAt;
+        if(age>=4000) continue;
+        const prog=Math.min(1,age/4000), ease=1-Math.pow(1-prog,3);
+        const cr=r.maxRadius*ease, dx=s.x-r.x, dy=s.y-r.y;
+        if(Math.sqrt(dx*dx+dy*dy)<cr*1.01){caught=r;break;}
+      }
+      if(caught){
+        caught.dotsCaught=(caught.dotsCaught||0)+1;
+        const tp=s.dir===1?s.y/centerY:(height-s.y)/centerY;
+        const pts=Math.floor(Math.max(0,Math.min(1,tp))*50)*caught.dotsCaught;
+        gs.score+=pts;
+        scoreEl.textContent=gs.score;
+        gs.floatingTexts.push({id:Math.random(),x:s.x,y:s.y,text:`+${pts}`,
+          multiplier:caught.dotsCaught>1?`×${caught.dotsCaught}`:null,createdAt:now,color:s.color});
+        triggerEvent(s.x,s.y,s.freq,s.color,1.5,(caught.depth||0)+1,s.instrumentId,true);
+        gs.stars.splice(i,1);
+      }
+    }
+
+    // Tap economy
+    const vis=gs.stars.filter(s=>s.hasGrantedTap).length;
+    gs.tapsAvailable=vis===0?0:Math.min(gs.tapsAvailable,vis,3);
+    updateTapsHud();
+
+    // Cleanup
+    gs.ripples=gs.ripples.filter(r=>now-r.createdAt<4000);
+    gs.duds=gs.duds.filter(d=>now-d.createdAt<200);
+    gs.floatingTexts=gs.floatingTexts.filter(ft=>now-ft.createdAt<(ft.isUnlock?3000:1000));
+
+    // Draw canvas
+    ctx2d.clearRect(0,0,S,height);
+    ctx2d.fillStyle='#0b132b'; ctx2d.fillRect(0,0,S,height);
+    // center line
+    ctx2d.save(); ctx2d.strokeStyle='rgba(72,202,228,0.5)'; ctx2d.lineWidth=1;
+    ctx2d.shadowColor='rgba(72,202,228,0.5)'; ctx2d.shadowBlur=12;
+    ctx2d.beginPath(); ctx2d.moveTo(0,centerY); ctx2d.lineTo(S,centerY); ctx2d.stroke();
+    ctx2d.restore();
+    // stars
+    gs.stars.forEach(s=>{
+      const inst=INSTRUMENTS[s.instrumentId]||INSTRUMENTS[0];
+      ctx2d.save(); ctx2d.fillStyle=inst.color;
+      ctx2d.shadowColor=inst.glow; ctx2d.shadowBlur=10;
+      ctx2d.beginPath(); ctx2d.arc(s.x,s.y,s.size/2,0,Math.PI*2); ctx2d.fill(); ctx2d.restore();
+    });
+    // floating texts
+    gs.floatingTexts.forEach(ft=>{
+      const age=now-ft.createdAt, dur=ft.isUnlock?3000:1000, prog=Math.max(0,Math.min(1,age/dur));
+      ctx2d.save(); ctx2d.globalAlpha=ft.isUnlock?(prog<0.2?prog/0.2:1-prog):1-prog;
+      ctx2d.fillStyle=ft.color; ctx2d.font=`300 ${ft.isUnlock?13:18}px inherit`;
+      ctx2d.textAlign='center'; ctx2d.shadowColor=ft.color; ctx2d.shadowBlur=4;
+      ctx2d.fillText(ft.text, ft.x, ft.y-prog*(ft.isUnlock?20:50));
+      if(ft.multiplier){ ctx2d.font='300 11px inherit'; ctx2d.globalAlpha*=0.7;
+        ctx2d.fillText(ft.multiplier, ft.x, ft.y-prog*(ft.isUnlock?20:50)+14); }
+      ctx2d.restore();
+    });
+    // duds
+    gs.duds.forEach(d=>{
+      const el=rippleLayer.querySelector(`[data-dud="${d.id}"]`);
+      if(!el){ const e2=document.createElement('div'); e2.className='dud-ripple';
+        e2.setAttribute('data-dud',d.id); e2.style.cssText=`left:${d.x}px;top:${d.y}px;width:25px;height:25px`;
+        rippleLayer.appendChild(e2); setTimeout(()=>e2.remove(),260); }
+    });
+
+    rafId=requestAnimationFrame(loop);
+  }
+
+  function endBlossom() {
+    playTone(150,1,0,audioCtx,masterGain);
+    hintEl.style.display='none';
+    finalScoreEl.textContent='Final Score: '+gs.score;
+    gameoverEl.style.display='flex';
+  }
+
+  const screen = document.getElementById('blossom-screen');
+  screen.addEventListener('pointerdown', onPointerDown);
+
+  function onPointerDown(e) {
+    if(gs.gameOver) return;
+    if(!started){
+      initAudio(); started=true;
+      hintEl.style.display='none';
+      return;
+    }
+    const rect=canvas.getBoundingClientRect();
+    const x=e.clientX-rect.left, y=e.clientY-rect.top;
+    if(x<0||x>canvas.width||y<0||y>canvas.height) return;
+    const now=performance.now();
+    if(isNaN(gs.tapsAvailable)||gs.tapsAvailable<1){
+      gs.tapsAvailable=0;
+      if(now-gs.lastValidTapTime<200) return;
+      playFlatBeat(audioCtx,masterGain);
+      gs.duds.push({id:Date.now()+Math.random(),x,y,createdAt:now});
+      tapsHudEl.style.transform='scale(1.5)'; tapsHudEl.style.color='#ef4444';
+      setTimeout(()=>{tapsHudEl.style.transform='scale(1)'; tapsHudEl.style.color='';},200);
+      return;
+    }
+    gs.tapsAvailable-=1; gs.lastValidTapTime=now;
+    const nx=Math.max(0,Math.min(1,x/canvas.width));
+    const si=Math.max(0,Math.min(9,Math.floor(nx*10)));
+    const ny=Math.max(0,Math.min(1,y/(canvas.height)));
+    const inv=1-ny;
+    const scape=SOUNDSCAPES[gs.soundscapeIdx];
+    const pitches=scape.matrix[si];
+    const pi=Math.max(0,Math.min(pitches.length-1,Math.floor(inv*pitches.length)));
+    triggerEvent(x,y,pitches[pi],scape.colors[si],1,0,scape.tapInstrument,false);
+  }
+
+  document.getElementById('blossom-restart').addEventListener('click', e=>{
+    e.stopPropagation(); rippleLayer.innerHTML=''; scoreEl.textContent='0';
+    gs=makeBlossomState(activeSoundscape); gs.lastSpawnTime=performance.now(); gs.gameStartTime=performance.now();
+    gameoverEl.style.display='none'; started=true;
+  });
+
+  rafId=requestAnimationFrame(loop);
+
+  cleanupFns['blossom'] = () => {
+    cancelAnimationFrame(rafId);
+    fadeOutAndClose(audioCtx,masterGain); audioCtx=null;
+    screen.removeEventListener('pointerdown', onPointerDown);
+    window.removeEventListener('resize', resize);
+    rippleLayer.innerHTML='';
+    gameoverEl.style.display='none'; hintEl.style.display='flex';
+    scoreEl.textContent='0'; gs=makeBlossomState(4); started=false;
+  };
+}
+
+// ══════════════════════════════════════════════
+// SEEDLING
+// ══════════════════════════════════════════════
+
+function startSeedling() {
+  const layer = document.getElementById('seedling-layer');
+  const hintEl = document.getElementById('seedling-hint');
+  layer.innerHTML='';
+  let ctx=null, mgain=null, rippleId=0, activeEvents=[], activeTouches={}, rafId=null;
+  let started=false;
+
+  function initAudio() {
+    if(ctx?.state==='closed') ctx=null;
+    if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; ctx=new AC();
+      mgain=ctx.createGain(); mgain.gain.value=1; mgain.connect(ctx.destination); }
+    if(ctx.state==='suspended') ctx.resume();
+    started=true; hintEl.style.display='none';
+  }
+
+  function scheduleAudio() {
+    if(!ctx) return;
+    const now=ctx.currentTime;
+    activeEvents=activeEvents.filter(ev=>ev.velocity>0.05);
+    activeEvents.forEach(ev=>{
+      if(ev.nextPlayTime<now+0.15){
+        const pt=ev.nextPlayTime, dest=mgain||ctx.destination;
+        const kick=createKick(ctx,dest), strings=createStrings(ctx,ev.freq,dest), chime=createChime(ctx,ev.freq,dest);
+        const voices=[];
+        if(ev.isBeat){kick.start(pt,ev.velocity);voices.push(kick);}
+        else{strings.start(pt,ev.velocity);chime.start(pt,ev.velocity);voices.push(strings,chime);}
+        if(ev.sustainTime!==null){const rt=pt+Math.max(0.05,ev.sustainTime);voices.forEach(v=>v.release(rt));}
+        else{if(ev.voices?.length)ev.voices.forEach(v=>v.release(pt));ev.voices=voices;}
+        const delay=Math.max(0,(pt-now)*1000);
+        setTimeout(()=>{
+          const el=document.createElement('div'); el.className='seedling-ripple';
+          el.style.left=ev.x+'px'; el.style.top=ev.y+'px';
+          el.style.backgroundColor=ev.isBeat?`rgba(255,255,255,${0.2*ev.velocity})`:`hsla(${ev.hue},70%,60%,${0.4*ev.velocity})`;
+          el.style.boxShadow=ev.isBeat?`0 0 40px rgba(255,255,255,${0.4*ev.velocity})`:`0 0 40px hsla(${ev.hue},80%,70%,${0.6*ev.velocity})`;
+          layer.appendChild(el); setTimeout(()=>el.remove(),4600);
+        },delay);
+        ev.velocity*=ev.isBeat?0.92:0.85;
+        ev.nextPlayTime+=ev.isBeat?BEAT_DURATION:LOOP_DURATION_SEC;
+      }
+    });
+    rafId=requestAnimationFrame(scheduleAudio);
+  }
+
+  function onPointerDown(e) {
+    if(!ctx){initAudio();rafId=requestAnimationFrame(scheduleAudio);}
+    const isBeat=!e.isPrimary;
+    const yr=e.clientY/window.innerHeight;
+    const freq=PENTATONIC[Math.max(0,Math.min(Math.floor(yr*PENTATONIC.length),PENTATONIC.length-1))];
+    const hue=Math.floor((e.clientX/window.innerWidth)*360);
+    const now=ctx.currentTime, rem=now%QUANTIZE_STEP, qpt=now+(QUANTIZE_STEP-rem);
+    if(isBeat) activeEvents=activeEvents.filter(ev=>!ev.isBeat);
+    const id=Math.random().toString();
+    activeEvents.push({id,x:e.clientX,y:e.clientY,freq,hue,isBeat,nextPlayTime:qpt,sustainTime:null,velocity:1,voices:[]});
+    activeTouches[e.pointerId]={id,startTime:qpt};
+    const mel=activeEvents.filter(ev=>!ev.isBeat).length;
+    if(mel>MAX_LOOPS){const idx=activeEvents.findIndex(ev=>!ev.isBeat);if(idx!==-1)activeEvents.splice(idx,1);}
+  }
+
+  function onPointerRelease(e) {
+    const t=activeTouches[e.pointerId]; if(!t) return;
+    const ev=activeEvents.find(ev=>ev.id===t.id);
+    if(ev&&ctx){const now=ctx.currentTime;ev.sustainTime=Math.max(0.05,now-t.startTime);if(ev.voices?.length){ev.voices.forEach(v=>v.release(now));ev.voices=[];}}
+    delete activeTouches[e.pointerId];
+  }
+
+  layer.addEventListener('pointerdown',onPointerDown);
+  layer.addEventListener('pointerup',onPointerRelease);
+  layer.addEventListener('pointercancel',onPointerRelease);
+  layer.addEventListener('pointerleave',onPointerRelease);
+
+  document.getElementById('seedling-info-btn').addEventListener('click', ()=>{
+    document.getElementById('seedling-info-modal').style.display='flex';
+  });
+
+  cleanupFns['seedling'] = () => {
+    cancelAnimationFrame(rafId);
+    if(ctx&&mgain){fadeOutAndClose(ctx,mgain);ctx=null;}
+    layer.removeEventListener('pointerdown',onPointerDown);
+    layer.removeEventListener('pointerup',onPointerRelease);
+    layer.removeEventListener('pointercancel',onPointerRelease);
+    layer.removeEventListener('pointerleave',onPointerRelease);
+    layer.innerHTML=''; hintEl.style.display='flex'; started=false;
+  };
+}
+
+// ══════════════════════════════════════════════
+// SPROUT
+// ══════════════════════════════════════════════
+
+const MIN_LINE=24, MAX_LINE=280, BAND_LIFE=5000;
+
+function startSprout() {
+  const canvas=document.getElementById('sprout-canvas');
+  const ctx2d=canvas.getContext('2d');
+  const rippleLayer=document.getElementById('sprout-ripples');
+  const scoreEl=document.getElementById('sprout-score');
+  const tapsHudEl=document.getElementById('sprout-taps-hud');
+  const hintEl=document.getElementById('sprout-hint');
+  const gameoverEl=document.getElementById('sprout-gameover');
+  const finalScoreEl=document.getElementById('sprout-final-score');
+
+  let audioCtx=null, masterGain=null, rafId=null, started=false;
+  let activeSoundscape=0;
+
+  const picker=buildPicker('sprout', 0, (i,s)=>{
+    activeSoundscape=i; gs2.soundscapeIdx=i;
+    if(audioCtx) playTone(s.matrix[1][1],0.5,s.tapInstrument,audioCtx,masterGain);
+  });
+
+  function resize(){
+    const S=Math.min(window.innerWidth,window.innerHeight/2);
+    canvas.width=S; canvas.height=S*2;
+    const wrap=document.getElementById('sprout-wrap');
+    wrap.style.width=S+'px'; wrap.style.height=(S*2)+'px';
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  let gs2=makeSproutState(0);
+  function makeSproutState(sci){
+    return{seeds:[],bands:[],flashes:[],duds:[],floatingTexts:[],currentLine:null,
+      score:0,tapsAvailable:0,unlockedStage:0,soundscapeIdx:sci,
+      gameOver:false,lastSpawnTime:0,gameStartTime:0,lastValidTapTime:0};
+  }
+
+  function initAudio(){
+    if(audioCtx?.state==='closed') audioCtx=null;
+    if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext; audioCtx=new AC();
+      masterGain=audioCtx.createGain();masterGain.gain.value=1;masterGain.connect(audioCtx.destination);}
+    if(audioCtx.state==='suspended') audioCtx.resume();
+  }
+
+  function freqFromY(y,height){
+    const inv=1-Math.max(0,Math.min(1,y/height));
+    return PENTATONIC[Math.max(0,Math.min(PENTATONIC.length-1,Math.floor(inv*PENTATONIC.length)))];
+  }
+  function filterFromAngle(deg){const n=Math.min(1,Math.abs(deg)/90);return 500+n*2500;}
+
+  function updateTapsHud(){
+    tapsHudEl.innerHTML='';
+    for(let i=0;i<3;i++){
+      const d=document.createElement('div');d.className='hud-tap-dot';
+      if(i<gs2.tapsAvailable){d.style.backgroundColor='white';d.style.boxShadow='0 0 8px rgba(255,255,255,.8)';}
+      else{d.style.backgroundColor='transparent';d.style.opacity='.3';}
+      tapsHudEl.appendChild(d);
+    }
+  }
+
+  function loop(){
+    const now=performance.now();
+    const S=canvas.width,height=S*2,centerY=S,sf=S/400;
+    if(!started||gs2.gameOver){rafId=requestAnimationFrame(loop);return;}
+    if(gs2.gameStartTime===0) gs2.gameStartTime=now;
+    const elapsed=now-gs2.gameStartTime;
+    const pm=Math.min(2,1+elapsed/120000);
+    const spawnDelay=Math.max(500,800-elapsed/300);
+
+    // Unlock
+    let stage=0;
+    for(let i=UNLOCK_THRESHOLDS.length-1;i>=0;i--){if(gs2.score>=UNLOCK_THRESHOLDS[i]){stage=i;break;}}
+    stage=Math.min(INSTRUMENTS.length-1,stage);
+    if(stage>gs2.unlockedStage){
+      gs2.unlockedStage=stage;
+      gs2.floatingTexts.push({id:Math.random(),x:S/2,y:height*0.3,text:`${INSTRUMENTS[stage].name} unlocked!`,createdAt:now,color:INSTRUMENTS[stage].color,isUnlock:true});
+    }
+
+    // Spawn seeds
+    if(now-gs2.lastSpawnTime>spawnDelay){
+      const dir=Math.random()>.5?1:-1;
+      const instId=Math.floor(Math.random()*(gs2.unlockedStage+1));
+      const raw=0.6+Math.random()*1,norm=(raw-0.6)/1;
+      const scape=SOUNDSCAPES[gs2.soundscapeIdx];
+      const zi=Math.min(9,Math.floor(norm*10));
+      gs2.seeds.push({id:Math.random(),x:Math.random()*(S-40*sf)+20*sf,y:dir===1?-20*sf:height+20*sf,
+        speed:raw*sf*pm,dir,size:(Math.random()*4+4)*sf,instrumentId:instId,
+        freq:scape.matrix[zi][1],color:scape.colors[zi],hue:Math.floor(norm*280+40),hasGrantedTap:false});
+      gs2.lastSpawnTime=now;
+    }
+
+    // Move seeds
+    for(let i=gs2.seeds.length-1;i>=0;i--){
+      const s=gs2.seeds[i];s.y+=s.speed*s.dir;
+      if(!s.hasGrantedTap){
+        if((s.dir===1&&s.y>=0)||(s.dir===-1&&s.y<=height)){s.hasGrantedTap=true;gs2.tapsAvailable=Math.min(gs2.tapsAvailable+1,3);}
+      }
+      if((s.dir===1&&s.y>centerY)||(s.dir===-1&&s.y<centerY)){
+        gs2.gameOver=true;endSprout();break;
+      }
+    }
+
+    // Collision: seeds vs bands
+    for(let i=gs2.seeds.length-1;i>=0;i--){
+      const s=gs2.seeds[i];
+      if((s.dir===1&&s.y<0)||(s.dir===-1&&s.y>height)) continue;
+      let catchingBand=null;
+      for(let j=0;j<gs2.bands.length;j++){
+        const b=gs2.bands[j],age=now-b.createdAt;
+        if(age>=BAND_LIFE) continue;
+        const prog=Math.min(1,age/BAND_LIFE),easeOut=1-Math.pow(1-prog,2);
+        const catchH=38*easeOut;
+        const expandEase=1-Math.pow(1-prog,2.5);
+        const curHW=b.drawnHW+(b.targetHW-b.drawnHW)*expandEase;
+        const th=b.angleDeg*Math.PI/180,cosT=Math.cos(th),sinT=Math.sin(th);
+        const ddx=s.x-b.x,ddy=s.y-b.y;
+        const lx=ddx*cosT+ddy*sinT,ly=-ddx*sinT+ddy*cosT;
+        if(Math.abs(lx)<curHW&&Math.abs(ly)<catchH){catchingBand=b;break;}
+      }
+      if(catchingBand){
+        catchingBand.dotsCaught=(catchingBand.dotsCaught||0)+1;
+        const tp=s.dir===1?s.y/centerY:(height-s.y)/centerY;
+        const pts=Math.floor(Math.max(0,Math.min(1,tp))*50)*catchingBand.dotsCaught;
+        gs2.score+=pts; scoreEl.textContent=gs2.score;
+        gs2.floatingTexts.push({id:Math.random(),x:s.x,y:s.y,text:`+${pts}`,
+          multiplier:catchingBand.dotsCaught>1?`×${catchingBand.dotsCaught}`:null,createdAt:now,color:s.color});
+        gs2.flashes.push({id:Math.random(),x:s.x,y:s.y,hue:s.hue,createdAt:now});
+        playChord(s.freq,1.2,s.instrumentId,audioCtx,masterGain);
+        gs2.seeds.splice(i,1);
+      }
+    }
+
+    // Tap economy
+    const vis=gs2.seeds.filter(s=>s.hasGrantedTap).length;
+    gs2.tapsAvailable=vis===0?0:Math.min(gs2.tapsAvailable,vis,3);
+    updateTapsHud();
+
+    // Cleanup
+    gs2.bands=gs2.bands.filter(b=>now-b.createdAt<BAND_LIFE);
+    gs2.flashes=gs2.flashes.filter(f=>now-f.createdAt<350);
+    gs2.duds=gs2.duds.filter(d=>now-d.createdAt<220);
+    gs2.floatingTexts=gs2.floatingTexts.filter(ft=>now-ft.createdAt<(ft.isUnlock?3000:1000));
+
+    // Draw
+    ctx2d.clearRect(0,0,S,height);
+    ctx2d.fillStyle='#060d18'; ctx2d.fillRect(0,0,S,height);
+    // center line
+    ctx2d.save(); ctx2d.strokeStyle='rgba(144,224,239,0.3)'; ctx2d.lineWidth=1;
+    ctx2d.shadowColor='rgba(144,224,239,0.3)'; ctx2d.shadowBlur=12;
+    ctx2d.beginPath(); ctx2d.moveTo(0,centerY); ctx2d.lineTo(S,centerY); ctx2d.stroke(); ctx2d.restore();
+
+    // Bands (aurora strips)
+    ctx2d.save(); ctx2d.globalCompositeOperation='screen';
+    gs2.bands.forEach(b=>{
+      const age=now-b.createdAt, prog=Math.min(1,age/BAND_LIFE);
+      const easeOut=1-Math.pow(1-prog,2), opacity=Math.max(0,1-prog);
+      const pulse=0.82+0.18*Math.sin((now/1200)*Math.PI*2+b.id*2.3);
+      const expandEase=1-Math.pow(1-prog,2.5);
+      const curHW=b.drawnHW+(b.targetHW-b.drawnHW)*expandEase;
+      const h=76*easeOut;
+      ctx2d.save();
+      ctx2d.translate(b.x,b.y);
+      ctx2d.rotate(b.angleDeg*Math.PI/180);
+      const grad=ctx2d.createLinearGradient(-curHW,0,curHW,0);
+      grad.addColorStop(0,'transparent');
+      grad.addColorStop(0.5,`hsla(${b.hue},80%,68%,${opacity*0.75*pulse})`);
+      grad.addColorStop(1,'transparent');
+      ctx2d.fillStyle=grad;
+      ctx2d.shadowColor=`hsla(${b.hue},85%,72%,${opacity*0.35*pulse})`; ctx2d.shadowBlur=22*pulse;
+      ctx2d.fillRect(-curHW,-h/2,curHW*2,h);
+      ctx2d.restore();
+    });
+    ctx2d.restore();
+
+    // Preview line
+    if(gs2.currentLine){
+      const cl=gs2.currentLine, dx=cl.x2-cl.x1, dy=cl.y2-cl.y1, len=Math.sqrt(dx*dx+dy*dy);
+      if(len>2){
+        const angle=Math.atan2(dy,dx), cx2=(cl.x1+cl.x2)/2, cy2=(cl.y1+cl.y2)/2;
+        const hue=Math.floor((cy2/(S*2))*320+20);
+        ctx2d.save(); ctx2d.translate(cx2,cy2); ctx2d.rotate(angle);
+        const grad=ctx2d.createLinearGradient(-len/2,0,len/2,0);
+        grad.addColorStop(0,'transparent');
+        grad.addColorStop(0.5,`hsla(${hue},75%,65%,0.9)`);
+        grad.addColorStop(1,'transparent');
+        ctx2d.fillStyle=grad;
+        ctx2d.shadowColor=`hsla(${hue},80%,70%,0.6)`; ctx2d.shadowBlur=10;
+        ctx2d.fillRect(-len/2,-1.5,len,3); ctx2d.restore();
+      }
+    }
+
+    // Seeds
+    gs2.seeds.forEach(s=>{
+      ctx2d.save(); ctx2d.fillStyle=s.color; ctx2d.shadowColor=s.color+'99'; ctx2d.shadowBlur=10;
+      ctx2d.beginPath(); ctx2d.arc(s.x,s.y,s.size/2,0,Math.PI*2); ctx2d.fill(); ctx2d.restore();
+    });
+
+    // Flashes
+    gs2.flashes.forEach(f=>{
+      const prog=Math.min(1,(now-f.createdAt)/350);
+      ctx2d.save(); ctx2d.globalCompositeOperation='screen';
+      ctx2d.fillStyle=`hsla(${f.hue},80%,72%,${Math.max(0,1-prog)*0.8})`;
+      ctx2d.beginPath(); ctx2d.arc(f.x,f.y,22*prog,0,Math.PI*2); ctx2d.fill(); ctx2d.restore();
+    });
+
+    // Floating texts
+    gs2.floatingTexts.forEach(ft=>{
+      const age=now-ft.createdAt, dur=ft.isUnlock?3000:1000, prog=Math.max(0,Math.min(1,age/dur));
+      ctx2d.save(); ctx2d.globalAlpha=1-prog; ctx2d.fillStyle=ft.color;
+      ctx2d.font=`300 ${ft.isUnlock?13:17}px inherit`; ctx2d.textAlign='center';
+      ctx2d.shadowColor=ft.color; ctx2d.shadowBlur=4;
+      ctx2d.fillText(ft.text,ft.x,ft.y-prog*50);
+      if(ft.multiplier){ctx2d.font='300 11px inherit';ctx2d.globalAlpha*=0.7;ctx2d.fillText(ft.multiplier,ft.x,ft.y-prog*50+14);}
+      ctx2d.restore();
+    });
+
+    // Duds (DOM)
+    gs2.duds.forEach(d=>{
+      if(!rippleLayer.querySelector(`[data-dud="${d.id}"]`)){
+        const e2=document.createElement('div'); e2.className='dud-ripple';
+        e2.setAttribute('data-dud',d.id); e2.style.cssText=`left:${d.x}px;top:${d.y}px;width:60px;height:60px`;
+        rippleLayer.appendChild(e2); setTimeout(()=>e2.remove(),230);
+      }
+    });
+
+    rafId=requestAnimationFrame(loop);
+  }
+
+  function endSprout(){
+    playFlatBeat(audioCtx,masterGain);
+    hintEl.style.display='none';
+    finalScoreEl.textContent='Score: '+gs2.score;
+    gameoverEl.style.display='flex';
+  }
+
+  const board=document.getElementById('sprout-wrap');
+
+  function getXY(clientX,clientY){
+    const rect=canvas.getBoundingClientRect();
+    return{x:clientX-rect.left,y:clientY-rect.top};
+  }
+
+  function onPointerDown(e){
+    if(gs2.gameOver) return;
+    if(!started){initAudio();started=true;hintEl.style.display='none';}
+    const{x,y}=getXY(e.clientX,e.clientY);
+    gs2.currentLine={x1:x,y1:y,x2:x,y2:y,pointerId:e.pointerId};
+  }
+  function onPointerMove(e){
+    if(!gs2.currentLine||gs2.currentLine.pointerId!==e.pointerId) return;
+    const{x,y}=getXY(e.clientX,e.clientY);
+    gs2.currentLine.x2=x; gs2.currentLine.y2=y;
+  }
+  function onPointerUp(e){
+    if(!gs2.currentLine||gs2.currentLine.pointerId!==e.pointerId){gs2.currentLine=null;return;}
+    const{x1,y1,x2,y2}=gs2.currentLine; gs2.currentLine=null;
+    if(!started) return;
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    if(len<MIN_LINE) return;
+    const now=performance.now(), cx=(x1+x2)/2, cy=(y1+y2)/2, S=canvas.width;
+    if(!gs2.tapsAvailable||gs2.tapsAvailable<1){
+      if(now-gs2.lastValidTapTime<200) return;
+      gs2.lastValidTapTime=now;
+      playFlatBeat(audioCtx,masterGain);
+      gs2.duds.push({id:now+Math.random(),x:cx,y:cy,createdAt:now});
+      tapsHudEl.style.transform='scale(1.5)'; tapsHudEl.style.color='#ef4444';
+      setTimeout(()=>{tapsHudEl.style.transform='scale(1)'; tapsHudEl.style.color='';},200);
+      return;
+    }
+    gs2.tapsAvailable-=1; gs2.lastValidTapTime=now;
+    const clampedLen=Math.min(len,MAX_LINE), velocity=Math.max(0.3,clampedLen/MAX_LINE);
+    const angleDeg=Math.atan2(dy,dx)*180/Math.PI;
+    const filterFreq=filterFromAngle(angleDeg);
+    const freq=freqFromY(cy,S*2);
+    const hue=Math.floor((cy/(S*2))*320+20);
+    const drawnHW=clampedLen/2, targetHW=Math.hypot(S,S*2)+80;
+    gs2.bands.push({id:now+Math.random(),x:cx,y:cy,drawnHW,targetHW,angleDeg,hue,freq,velocity,createdAt:now,dotsCaught:0});
+    if(audioCtx){const t=audioCtx.currentTime,pad=createPad(audioCtx,freq,masterGain);pad.start(t,velocity,filterFreq);pad.release(t+3.5);}
+  }
+
+  board.addEventListener('pointerdown',onPointerDown);
+  board.addEventListener('pointermove',onPointerMove);
+  board.addEventListener('pointerup',onPointerUp);
+  board.addEventListener('pointercancel',onPointerUp);
+  board.addEventListener('pointerleave',onPointerUp);
+
+  document.getElementById('sprout-restart').addEventListener('click', e=>{
+    e.stopPropagation(); rippleLayer.innerHTML=''; scoreEl.textContent='0';
+    gs2=makeSproutState(activeSoundscape); gs2.lastSpawnTime=performance.now(); gs2.gameStartTime=performance.now();
+    gameoverEl.style.display='none'; started=true;
+  });
+  document.getElementById('sprout-info-btn').addEventListener('click', ()=>{
+    document.getElementById('sprout-info-modal').style.display='flex';
+  });
+
+  rafId=requestAnimationFrame(loop);
+
+  cleanupFns['sprout']=()=>{
+    cancelAnimationFrame(rafId);
+    fadeOutAndClose(audioCtx,masterGain); audioCtx=null;
+    board.removeEventListener('pointerdown',onPointerDown);
+    board.removeEventListener('pointermove',onPointerMove);
+    board.removeEventListener('pointerup',onPointerUp);
+    board.removeEventListener('pointercancel',onPointerUp);
+    board.removeEventListener('pointerleave',onPointerUp);
+    window.removeEventListener('resize',resize);
+    rippleLayer.innerHTML=''; gameoverEl.style.display='none';
+    hintEl.style.display='flex'; scoreEl.textContent='0';
+    gs2=makeSproutState(0); started=false;
+  };
+}
+
+// ══════════════════════════════════════════════
+// HOME WIRING
+// ══════════════════════════════════════════════
+
+document.getElementById('btn-blossom').addEventListener('click', ()=>goTo('blossom'));
+document.getElementById('btn-seedling').addEventListener('click', ()=>goTo('seedling'));
+document.getElementById('btn-sprout').addEventListener('click', ()=>goTo('sprout'));
+
+document.getElementById('btn-about').addEventListener('click', e=>{
+  e.stopPropagation(); document.getElementById('about-modal').classList.add('open');
+});
+document.getElementById('about-modal').addEventListener('click', ()=>document.getElementById('about-modal').classList.remove('open'));
+document.getElementById('about-close').addEventListener('click', e=>{
+  e.stopPropagation(); document.getElementById('about-modal').classList.remove('open');
+});
+
+document.getElementById('btn-share').addEventListener('click', async ()=>{
+  const data={title:'Senescence',text:'A serene generative music game',url:location.href};
+  if(navigator.share){try{await navigator.share(data);}catch(_){}}
+  else if(navigator.clipboard){await navigator.clipboard.writeText(data.url);}
+});
+
+// Intro
+const introEl=document.getElementById('intro-overlay');
+const introDone=localStorage.getItem('snsc_intro_seen')==='1';
+if(introDone) introEl.style.display='none';
+document.getElementById('intro-enter').addEventListener('click', ()=>{
+  introEl.style.opacity='0';
+  localStorage.setItem('snsc_intro_seen','1');
+  setTimeout(()=>introEl.style.display='none', 700);
+});
+
+// Game cards hover accent
+document.querySelectorAll('.game-card').forEach(card=>{
+  const acc=card.style.getPropertyValue('--accent');
+  card.addEventListener('pointerenter',()=>{
+    card.style.borderColor=acc+'55'; card.style.boxShadow=`0 0 20px ${acc}22`;
+  });
+  card.addEventListener('pointerleave',()=>{
+    card.style.borderColor='rgba(255,255,255,.10)'; card.style.boxShadow='none';
+  });
+});
+
+// Start home
+startHomeSeedling();
+</script>
 </body>
 </html>

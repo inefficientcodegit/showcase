@@ -1,0 +1,12 @@
+Cd C:\Users\maart\AppGames\showcase
+
+Git add . 
+Git commit -m “update”
+Git push 
+
+Cd C:\Users\maart\AppGames\app-arcade
+
+Git add . 
+Git commit -m “update”
+Git push 
+
