@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHIFT: Modes</title>
+    <title>SHIFT: A Little Math Game</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
@@ -36,9 +36,7 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px 0;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -46,7 +44,7 @@
         .container {
             width: 100%;
             max-width: 440px;
-            padding: 16px 24px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -58,7 +56,7 @@
         #homepage-view {
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 32px;
             align-items: center;
             width: 100%;
             animation: fadeIn 0.4s ease-out;
@@ -66,14 +64,14 @@
 
         .hero-section {
             text-align: center;
-            margin-top: 10px;
+            margin-top: 20px;
             transform: rotate(-1deg);
         }
 
         .mega-brand {
             margin: 0;
-            font-size: 4.5rem;
-            letter-spacing: -3px;
+            font-size: 5.5rem;
+            letter-spacing: -4px;
             font-weight: 700;
             color: var(--surface);
             text-shadow: 
@@ -86,7 +84,7 @@
         .hero-sub {
             color: var(--text-main);
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 1rem;
             margin-top: 16px;
             background: var(--accent-4);
             display: inline-block;
@@ -101,7 +99,7 @@
             background: var(--surface);
             border: var(--border-width) solid var(--text-main);
             box-shadow: 8px 8px 0px var(--text-main);
-            padding: 24px 20px;
+            padding: 32px 24px;
             border-radius: 12px;
             width: 100%;
             transform: rotate(0.5deg);
@@ -111,7 +109,7 @@
         #game-view {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
             width: 100%;
             animation: fadeIn 0.4s ease-out;
         }
@@ -121,7 +119,7 @@
             justify-content: space-between;
             align-items: flex-end;
             background: var(--surface);
-            padding: 12px 16px;
+            padding: 16px;
             border: var(--border-width) solid var(--text-main);
             box-shadow: var(--shadow-depth) var(--shadow-depth) 0px var(--text-main);
             border-radius: 8px;
@@ -130,7 +128,7 @@
 
         .brand h1 {
             margin: 0;
-            font-size: 1.8rem;
+            font-size: 2rem;
             letter-spacing: -1px;
             font-weight: 700;
             color: var(--text-main);
@@ -164,7 +162,7 @@
         }
 
         .score-value {
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: var(--text-main);
             transition: transform 0.2s;
@@ -172,13 +170,13 @@
 
         .game-board {
             background: var(--surface);
-            padding: 20px;
+            padding: 24px;
             border-radius: 12px;
             border: var(--border-width) solid var(--text-main);
             box-shadow: 6px 6px 0px var(--text-main);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 28px;
             position: relative;
         }
 
@@ -211,7 +209,7 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 8px;
-            padding-bottom: 12px;
+            padding-bottom: 16px;
             border-bottom: 2px dashed var(--text-muted);
         }
 
@@ -246,13 +244,13 @@
         }
 
         .start-number {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 700;
             margin-top: 8px;
         }
 
         .target-number {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: var(--text-main);
             margin-top: 8px;
@@ -263,7 +261,7 @@
             align-items: center;
             justify-content: space-between;
             background: var(--accent-1);
-            padding: 10px 16px;
+            padding: 12px 20px;
             border-radius: 8px;
             border: var(--border-width) solid var(--text-main);
             box-shadow: 2px 2px 0px var(--text-main);
@@ -271,11 +269,11 @@
         }
 
         #current-val {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: var(--text-main);
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            min-width: 50px;
+            min-width: 60px;
         }
 
         .slot-container {
@@ -286,8 +284,8 @@
         }
 
         .slot {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             background-color: var(--surface);
             border-radius: 6px;
             display: flex;
@@ -312,29 +310,28 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .op-btn {
             background-color: var(--surface);
             color: var(--text-main);
             border: var(--border-width) solid var(--text-main);
-            padding: 12px 0;
+            padding: 14px 0;
             border-radius: 8px;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.1s ease;
             box-shadow: var(--shadow-depth) var(--shadow-depth) 0px var(--text-main);
             position: relative;
             -webkit-tap-highlight-color: transparent;
-            /* Dynamic flex basis handled in JS/CSS classes */
-            flex: 1 1 calc(33.33% - 10px);
+            flex: 1 1 calc(33.33% - 12px);
         }
 
         /* Adjustments for different layouts */
-        .controls.count-4 .op-btn { flex: 1 1 calc(50% - 10px); }
-        .controls.count-5 .op-btn { flex: 1 1 calc(33.33% - 10px); }
+        .controls.count-4 .op-btn { flex: 1 1 calc(50% - 12px); }
+        .controls.count-5 .op-btn { flex: 1 1 calc(33.33% - 12px); }
 
         /* Subtle wonkiness */
         .op-btn:nth-child(3n+1) { transform: rotate(-0.5deg); background-color: var(--accent-2); }
@@ -362,13 +359,13 @@
             text-align: center;
             color: var(--text-main);
             background: var(--surface);
-            padding: 10px;
+            padding: 12px;
             border: var(--border-width) solid var(--text-main);
             box-shadow: 2px 2px 0px var(--text-main);
             border-radius: 8px;
             font-weight: 400;
-            font-size: 0.85rem;
-            min-height: 44px;
+            font-size: 0.9rem;
+            min-height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -379,8 +376,8 @@
 
         /* Overlays */
         .overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(245, 243, 239, 0.85);
             backdrop-filter: blur(2px);
             display: flex;
@@ -388,6 +385,7 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
+            border-radius: 12px;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -402,13 +400,13 @@
             background: var(--surface);
             border: var(--border-width) solid var(--text-main);
             box-shadow: 6px 6px 0px var(--text-main);
-            padding: 24px 20px;
+            padding: 32px 24px;
             border-radius: 12px;
             text-align: center;
             transform: scale(0.95) rotate(-1deg);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: 380px;
-            width: 90%;
+            max-width: 85%;
+            width: 100%;
         }
 
         .overlay.active .overlay-card {
@@ -416,7 +414,7 @@
         }
 
         .overlay-title {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 700;
             margin-bottom: 8px;
             color: var(--text-main);
@@ -424,7 +422,7 @@
 
         .overlay-subtitle {
             color: var(--text-muted);
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             font-weight: 400;
             font-size: 0.9rem;
             line-height: 1.4;
@@ -435,7 +433,7 @@
             color: var(--text-main);
             border: var(--border-width) solid var(--text-main);
             box-shadow: 4px 4px 0px var(--text-main);
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 6px;
             font-size: 1rem;
             font-weight: 700;
@@ -451,9 +449,9 @@
         .menu-btn {
             display: block;
             width: 100%;
-            margin-bottom: 10px;
-            font-size: 1.05rem;
-            padding: 14px 20px;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            padding: 16px 24px;
         }
         
         .menu-btn:last-child {
@@ -464,28 +462,9 @@
             display: block;
             font-size: 0.75rem;
             font-weight: 400;
-            margin-top: 4px;
+            margin-top: 6px;
             opacity: 0.8;
             letter-spacing: -0.5px;
-        }
-
-        /* Responsive Compact Heights for Laptops */
-        @media (max-height: 750px) {
-            .container { gap: 12px; padding: 12px 16px; }
-            .mega-brand { font-size: 3.5rem; }
-            #homepage-view { gap: 16px; }
-            .menu-card { padding: 16px; }
-            .menu-btn { padding: 10px 16px; font-size: 1rem; margin-bottom: 8px; }
-            
-            #game-view { gap: 12px; }
-            header { padding: 10px 12px; }
-            .game-board { padding: 16px; gap: 16px; }
-            .target-row { padding-bottom: 8px; }
-            .target-number { font-size: 1.8rem; }
-            #current-val { font-size: 1.8rem; }
-            .current-math { padding: 8px 16px; }
-            .op-btn { padding: 10px 0; font-size: 1rem; }
-            .snarky-text { min-height: 40px; padding: 8px; font-size: 0.8rem; }
         }
 
         /* Animations */
@@ -536,7 +515,7 @@
         }
 
         #countdown-text {
-            font-size: 6rem;
+            font-size: 7rem;
             font-weight: 700;
             color: var(--text-main);
             text-shadow: 6px 6px 0px var(--accent-4), -4px -4px 0px var(--accent-1);
@@ -559,7 +538,6 @@
 
     <div class="container">
         
-        <!-- HOMEPAGE VIEW -->
         <div id="homepage-view">
             <div class="hero-section">
                 <h1 class="mega-brand">SHIFT</h1>
@@ -582,7 +560,6 @@
             </div>
         </div>
 
-        <!-- GAME VIEW -->
         <div id="game-view" style="display: none;">
             <header>
                 <div class="brand">
@@ -614,54 +591,47 @@
                 <div class="current-math">
                     <span id="current-val">--</span>
                     <div class="slot-container" id="slots">
-                        <!-- Populated dynamically -->
-                    </div>
+                        </div>
                     <div class="floating-score" id="float-score">+0</div>
                 </div>
 
                 <div class="controls count-3" id="controls">
-                    <!-- Populated dynamically -->
-                </div>
+                    </div>
             </div>
             
             <div class="snarky-text" id="snarky">"booting up brain module..."</div>
         </div>
-    </div>
 
-    <!-- OVERLAYS (Moved to body level to ensure full screen coverage) -->
-    
-    <!-- Solo Menu -->
-    <div class="overlay" id="solo-menu-overlay">
-        <div class="overlay-card">
-            <div class="overlay-title">solo play</div>
-            <div class="overlay-subtitle">choose difficulty (endless)</div>
-            <button class="primary-btn menu-btn" style="background: var(--accent-2)" onclick="startSoloMode(3)">easy (3 steps)</button>
-            <button class="primary-btn menu-btn" style="background: var(--accent-3)" onclick="startSoloMode(4)">med (4 steps)</button>
-            <button class="primary-btn menu-btn" style="background: var(--accent-1)" onclick="startSoloMode(5)">hard (5 steps)</button>
-            <button class="primary-btn menu-btn" style="background: var(--surface); margin-top: 12px;" onclick="showMainMenu()">back</button>
+        <div class="overlay" id="solo-menu-overlay">
+            <div class="overlay-card">
+                <div class="overlay-title">solo play</div>
+                <div class="overlay-subtitle">choose difficulty (endless)</div>
+                <button class="primary-btn menu-btn" style="background: var(--accent-2)" onclick="startSoloMode(3)">easy (3 steps)</button>
+                <button class="primary-btn menu-btn" style="background: var(--accent-3)" onclick="startSoloMode(4)">med (4 steps)</button>
+                <button class="primary-btn menu-btn" style="background: var(--accent-1)" onclick="startSoloMode(5)">hard (5 steps)</button>
+                <button class="primary-btn menu-btn" style="background: var(--surface); margin-top: 12px;" onclick="showMainMenu()">back</button>
+            </div>
         </div>
-    </div>
 
-    <!-- Queue (Vs) Menu -->
-    <div class="overlay" id="queue-overlay">
-        <div class="overlay-card">
-            <div class="overlay-title" id="queue-title">searching...</div>
-            <div class="overlay-subtitle" id="queue-sub">finding a worthy opponent</div>
+        <div class="overlay" id="queue-overlay">
+            <div class="overlay-card">
+                <div class="overlay-title" id="queue-title">searching...</div>
+                <div class="overlay-subtitle" id="queue-sub">finding a worthy opponent</div>
+            </div>
         </div>
-    </div>
 
-    <!-- Round Result / Game Over -->
-    <div class="overlay" id="round-overlay">
-        <div class="overlay-card">
-            <div class="overlay-title" id="round-result-title">oof.</div>
-            <div class="overlay-subtitle" id="round-result-sub">math is hard.</div>
-            <button class="primary-btn" onclick="handleNextAction()" id="next-btn">next</button>
+        <div class="overlay" id="round-overlay">
+            <div class="overlay-card">
+                <div class="overlay-title" id="round-result-title">oof.</div>
+                <div class="overlay-subtitle" id="round-result-sub">math is hard.</div>
+                <button class="primary-btn" onclick="handleNextAction()" id="next-btn">next</button>
+            </div>
         </div>
-    </div>
 
-    <!-- Countdown -->
-    <div class="overlay" id="countdown-overlay" style="background: rgba(245, 243, 239, 0.95);">
-        <div id="countdown-text"></div>
+        <div class="overlay" id="countdown-overlay" style="background: rgba(245, 243, 239, 0.95);">
+            <div id="countdown-text"></div>
+        </div>
+
     </div>
 
     <script>
@@ -690,72 +660,62 @@
 
         // Procedural Equation Generator
         function generatePuzzle(numSteps, rng = Math.random) {
-            let start, current, ops;
-            let hasAdvancedOp = false;
-            let puzzleAttempts = 0;
+            let current = Math.floor(rng() * 10) + 1; // Start 1-10
+            const start = current;
+            const ops = [];
 
-            do {
-                puzzleAttempts++;
-                current = Math.floor(rng() * 10) + 1; // Start 1-10
-                start = current;
-                ops = [];
-                hasAdvancedOp = false;
+            for (let i = 0; i < numSteps; i++) {
+                let valid = false;
+                let opType, operand, symbol;
 
-                for (let i = 0; i < numSteps; i++) {
-                    let valid = false;
-                    let opType, operand, symbol;
-
-                    let attempts = 0;
-                    while(!valid && attempts < 50) {
-                        attempts++;
-                        opType = Math.floor(rng() * 4); // 0:+, 1:-, 2:*, 3:/
-                        
-                        if (opType === 0) {
-                            operand = Math.floor(rng() * 12) + 1;
-                            symbol = '+';
-                            current += operand;
-                            valid = true;
-                        } else if (opType === 1) {
-                            operand = Math.floor(rng() * 12) + 1;
-                            symbol = '-';
-                            current -= operand;
-                            valid = true;
-                        } else if (opType === 2 && Math.abs(current) < 60) { 
-                            // Cap multiplication to prevent giant numbers
-                            operand = Math.floor(rng() * 3) + 2; // 2, 3, 4
-                            symbol = '×';
-                            current *= operand;
-                            valid = true;
-                            hasAdvancedOp = true;
-                        } else if (opType === 3) {
-                            // Division must result in a clean integer
-                            operand = Math.floor(rng() * 4) + 2; // 2, 3, 4, 5
-                            if (current % operand === 0) {
-                                symbol = '÷';
-                                current /= operand;
-                                valid = true;
-                                hasAdvancedOp = true;
-                            }
-                        }
-                    }
+                let attempts = 0;
+                while(!valid && attempts < 50) {
+                    attempts++;
+                    opType = Math.floor(rng() * 4); // 0:+, 1:-, 2:*, 3:/
                     
-                    // Fallback to simple addition if RNG gets stuck
-                    if(!valid) {
-                        operand = Math.floor(rng() * 10) + 1;
+                    if (opType === 0) {
+                        operand = Math.floor(rng() * 12) + 1;
                         symbol = '+';
                         current += operand;
+                        valid = true;
+                    } else if (opType === 1) {
+                        operand = Math.floor(rng() * 12) + 1;
+                        symbol = '-';
+                        current -= operand;
+                        valid = true;
+                    } else if (opType === 2 && Math.abs(current) < 60) { 
+                        // Cap multiplication to prevent giant numbers
+                        operand = Math.floor(rng() * 3) + 2; // 2, 3, 4
+                        symbol = '×';
+                        current *= operand;
+                        valid = true;
+                    } else if (opType === 3) {
+                        // Division must result in a clean integer
+                        operand = Math.floor(rng() * 4) + 2; // 2, 3, 4, 5
+                        if (current % operand === 0) {
+                            symbol = '÷';
+                            current /= operand;
+                            valid = true;
+                        }
                     }
-
-                    ops.push({
-                        id: `op${i}`,
-                        label: `${symbol} ${operand}`,
-                        symbol: symbol,
-                        val: operand,
-                        type: symbol,
-                        expectedIndex: i
-                    });
                 }
-            } while (!hasAdvancedOp && puzzleAttempts < 100);
+                
+                // Fallback to simple addition if RNG gets stuck
+                if(!valid) {
+                    operand = Math.floor(rng() * 10) + 1;
+                    symbol = '+';
+                    current += operand;
+                }
+
+                ops.push({
+                    id: `op${i}`,
+                    label: `${symbol} ${operand}`,
+                    symbol: symbol,
+                    val: operand,
+                    type: symbol,
+                    expectedIndex: i
+                });
+            }
             
             // Map functions cleanly
             ops.forEach(op => {
@@ -842,9 +802,9 @@
             
             const dailyRNG = mulberry32(getBSTSeed());
             generatedLevels = [
-                generatePuzzle(3, dailyRNG),
-                generatePuzzle(3, dailyRNG),
-                generatePuzzle(3, dailyRNG)
+                generatePuzzle(4, dailyRNG),
+                generatePuzzle(4, dailyRNG),
+                generatePuzzle(4, dailyRNG)
             ];
 
             transitionToGame();
@@ -866,9 +826,9 @@
             
             // Generate Random Set
             generatedLevels = [
-                generatePuzzle(3),
-                generatePuzzle(3),
-                generatePuzzle(3)
+                generatePuzzle(4),
+                generatePuzzle(4),
+                generatePuzzle(4)
             ];
             dummyScore = Math.floor(Math.random() * 2500) + 1500;
 
@@ -897,7 +857,15 @@
                     return;
                 }
                 currentLevelObj = generatedLevels[index];
-                ui.roundText.innerText = `${gameMode.toLowerCase()} - r${index + 1}/3`;
+                
+                if (gameMode === 'DAILY') {
+                    const dateStr = new Intl.DateTimeFormat('en-GB', { 
+                        timeZone: 'Europe/London', month: 'short', day: 'numeric' 
+                    }).format(new Date()).toLowerCase();
+                    ui.roundText.innerText = `daily (${dateStr}) - r${index + 1}/3`;
+                } else {
+                    ui.roundText.innerText = `vs mode - r${index + 1}/3`;
+                }
             } else if (gameMode === 'SOLO') {
                 currentLevelObj = generatePuzzle(soloDifficulty);
                 ui.roundText.innerText = `solo run - p${index + 1}`;
