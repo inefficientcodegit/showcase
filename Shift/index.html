@@ -690,62 +690,72 @@
 
         // Procedural Equation Generator
         function generatePuzzle(numSteps, rng = Math.random) {
-            let current = Math.floor(rng() * 10) + 1; // Start 1-10
-            const start = current;
-            const ops = [];
+            let start, current, ops;
+            let hasAdvancedOp = false;
+            let puzzleAttempts = 0;
 
-            for (let i = 0; i < numSteps; i++) {
-                let valid = false;
-                let opType, operand, symbol;
+            do {
+                puzzleAttempts++;
+                current = Math.floor(rng() * 10) + 1; // Start 1-10
+                start = current;
+                ops = [];
+                hasAdvancedOp = false;
 
-                let attempts = 0;
-                while(!valid && attempts < 50) {
-                    attempts++;
-                    opType = Math.floor(rng() * 4); // 0:+, 1:-, 2:*, 3:/
-                    
-                    if (opType === 0) {
-                        operand = Math.floor(rng() * 12) + 1;
-                        symbol = '+';
-                        current += operand;
-                        valid = true;
-                    } else if (opType === 1) {
-                        operand = Math.floor(rng() * 12) + 1;
-                        symbol = '-';
-                        current -= operand;
-                        valid = true;
-                    } else if (opType === 2 && Math.abs(current) < 60) { 
-                        // Cap multiplication to prevent giant numbers
-                        operand = Math.floor(rng() * 3) + 2; // 2, 3, 4
-                        symbol = '×';
-                        current *= operand;
-                        valid = true;
-                    } else if (opType === 3) {
-                        // Division must result in a clean integer
-                        operand = Math.floor(rng() * 4) + 2; // 2, 3, 4, 5
-                        if (current % operand === 0) {
-                            symbol = '÷';
-                            current /= operand;
+                for (let i = 0; i < numSteps; i++) {
+                    let valid = false;
+                    let opType, operand, symbol;
+
+                    let attempts = 0;
+                    while(!valid && attempts < 50) {
+                        attempts++;
+                        opType = Math.floor(rng() * 4); // 0:+, 1:-, 2:*, 3:/
+                        
+                        if (opType === 0) {
+                            operand = Math.floor(rng() * 12) + 1;
+                            symbol = '+';
+                            current += operand;
                             valid = true;
+                        } else if (opType === 1) {
+                            operand = Math.floor(rng() * 12) + 1;
+                            symbol = '-';
+                            current -= operand;
+                            valid = true;
+                        } else if (opType === 2 && Math.abs(current) < 60) { 
+                            // Cap multiplication to prevent giant numbers
+                            operand = Math.floor(rng() * 3) + 2; // 2, 3, 4
+                            symbol = '×';
+                            current *= operand;
+                            valid = true;
+                            hasAdvancedOp = true;
+                        } else if (opType === 3) {
+                            // Division must result in a clean integer
+                            operand = Math.floor(rng() * 4) + 2; // 2, 3, 4, 5
+                            if (current % operand === 0) {
+                                symbol = '÷';
+                                current /= operand;
+                                valid = true;
+                                hasAdvancedOp = true;
+                            }
                         }
                     }
-                }
-                
-                // Fallback to simple addition if RNG gets stuck
-                if(!valid) {
-                    operand = Math.floor(rng() * 10) + 1;
-                    symbol = '+';
-                    current += operand;
-                }
+                    
+                    // Fallback to simple addition if RNG gets stuck
+                    if(!valid) {
+                        operand = Math.floor(rng() * 10) + 1;
+                        symbol = '+';
+                        current += operand;
+                    }
 
-                ops.push({
-                    id: `op${i}`,
-                    label: `${symbol} ${operand}`,
-                    symbol: symbol,
-                    val: operand,
-                    type: symbol,
-                    expectedIndex: i
-                });
-            }
+                    ops.push({
+                        id: `op${i}`,
+                        label: `${symbol} ${operand}`,
+                        symbol: symbol,
+                        val: operand,
+                        type: symbol,
+                        expectedIndex: i
+                    });
+                }
+            } while (!hasAdvancedOp && puzzleAttempts < 100);
             
             // Map functions cleanly
             ops.forEach(op => {
