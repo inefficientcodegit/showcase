@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIFT: Modes</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+        :root {
+            --bg-color: #f5f3ef; /* Warm cream */
+            --surface: #ffffff;
+            --text-main: #1a1a1a; /* Charcoal */
+            --text-muted: #737373;
+            --accent-1: #e8e4f2; /* Muted lavender */
+            --accent-2: #dcf0e5; /* Muted sage */
+            --accent-3: #f7dfd6; /* Muted peach */
+            --accent-4: #f2e9c9; /* Muted butter */
+            --border-width: 2px;
+            --shadow-depth: 4px;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Space Mono', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(rgba(0,0,0,0.08) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- HOMEPAGE VIEW --- */
+        #homepage-view {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            align-items: center;
+            width: 100%;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-top: 10px;
+            transform: rotate(-1deg);
+        }
+
+        .mega-brand {
+            margin: 0;
+            font-size: 4.5rem;
+            letter-spacing: -3px;
+            font-weight: 700;
+            color: var(--surface);
+            text-shadow: 
+                3px 3px 0px var(--text-main),
+                8px 8px 0px var(--accent-1),
+                12px 12px 0px var(--accent-3);
+            line-height: 1;
+        }
+
+        .hero-sub {
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-top: 16px;
+            background: var(--accent-4);
+            display: inline-block;
+            padding: 4px 12px;
+            border: var(--border-width) solid var(--text-main);
+            border-radius: 4px;
+            box-shadow: 2px 2px 0px var(--text-main);
+            transform: rotate(2deg);
+        }
+
+        .menu-card {
+            background: var(--surface);
+            border: var(--border-width) solid var(--text-main);
+            box-shadow: 8px 8px 0px var(--text-main);
+            padding: 24px 20px;
+            border-radius: 12px;
+            width: 100%;
+            transform: rotate(0.5deg);
+        }
+
+        /* --- GAME VIEW --- */
+        #game-view {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            background: var(--surface);
+            padding: 12px 16px;
+            border: var(--border-width) solid var(--text-main);
+            box-shadow: var(--shadow-depth) var(--shadow-depth) 0px var(--text-main);
+            border-radius: 8px;
+            transform: rotate(-0.5deg);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            letter-spacing: -1px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .round-indicator {
+            color: var(--text-main);
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: var(--accent-1);
+            padding: 4px 8px;
+            border: 1px solid var(--text-main);
+            margin-top: 4px;
+            display: inline-block;
+            border-radius: 4px;
+        }
+
+        .score-display {
+            text-align: right;
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: var(--accent-2);
+            padding: 2px 6px;
+            border: 1px solid var(--text-main);
+            display: inline-block;
+            margin-bottom: 4px;
+            border-radius: 4px;
+        }
+
+        .score-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            transition: transform 0.2s;
+        }
+
+        .game-board {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            border: var(--border-width) solid var(--text-main);
+            box-shadow: 6px 6px 0px var(--text-main);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
+
+        /* Quirky Timer Bar */
+        .timer-track {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: calc(100% + 4px);
+            height: 12px;
+            background: #fff;
+            border: var(--border-width) solid var(--text-main);
+            border-bottom: var(--border-width) solid var(--text-main);
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        .timer-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--accent-4);
+            border-right: 2px solid var(--text-main);
+            transform-origin: left;
+            transition: width 0.1s linear, background-color 0.3s ease;
+        }
+
+        .target-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding-bottom: 12px;
+            border-bottom: 2px dashed var(--text-muted);
+        }
+
+        .stat-block {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .stat-block.right {
+            text-align: right;
+            align-items: flex-end;
+        }
+
+        .start-label, .target-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: var(--text-main);
+            color: var(--bg-color);
+            padding: 2px 8px;
+            position: absolute;
+            top: -10px;
+            border-radius: 4px;
+            transform: rotate(-1deg);
+        }
+        
+        .target-label {
+            transform: rotate(1deg);
+            background: var(--accent-3);
+            color: var(--text-main);
+            border: 1px solid var(--text-main);
+        }
+
+        .start-number {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        .target-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 8px;
+        }
+
+        .current-math {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--accent-1);
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: var(--border-width) solid var(--text-main);
+            box-shadow: 2px 2px 0px var(--text-main);
+            position: relative;
+        }
+
+        #current-val {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-width: 50px;
+        }
+
+        .slot-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .slot {
+            width: 32px;
+            height: 32px;
+            background-color: var(--surface);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-main);
+            border: 2px dashed var(--text-muted);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .slot.filled {
+            border-style: solid;
+            border-color: var(--text-main);
+            background-color: var(--accent-2);
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 2px 2px 0px var(--text-main);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .op-btn {
+            background-color: var(--surface);
+            color: var(--text-main);
+            border: var(--border-width) solid var(--text-main);
+            padding: 12px 0;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: var(--shadow-depth) var(--shadow-depth) 0px var(--text-main);
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
+            /* Dynamic flex basis handled in JS/CSS classes */
+            flex: 1 1 calc(33.33% - 10px);
+        }
+
+        /* Adjustments for different layouts */
+        .controls.count-4 .op-btn { flex: 1 1 calc(50% - 10px); }
+        .controls.count-5 .op-btn { flex: 1 1 calc(33.33% - 10px); }
+
+        /* Subtle wonkiness */
+        .op-btn:nth-child(3n+1) { transform: rotate(-0.5deg); background-color: var(--accent-2); }
+        .op-btn:nth-child(3n+2) { transform: translateY(2px) rotate(0.5deg); background-color: var(--accent-1); }
+        .op-btn:nth-child(3n) { transform: rotate(1deg); background-color: var(--accent-3); }
+
+        .op-btn:hover:not(:disabled) {
+            filter: brightness(1.05);
+        }
+
+        .op-btn:active:not(:disabled) {
+            transform: translate(var(--shadow-depth), var(--shadow-depth)) !important;
+            box-shadow: 0px 0px 0px var(--text-main) !important;
+        }
+
+        .op-btn.used {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.8);
+            transform: scale(0.95) translate(0, 4px) !important;
+            box-shadow: 0px 0px 0px var(--text-main) !important;
+        }
+
+        .snarky-text {
+            text-align: center;
+            color: var(--text-main);
+            background: var(--surface);
+            padding: 10px;
+            border: var(--border-width) solid var(--text-main);
+            box-shadow: 2px 2px 0px var(--text-main);
+            border-radius: 8px;
+            font-weight: 400;
+            font-size: 0.85rem;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(0.5deg);
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+
+        /* Overlays */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(245, 243, 239, 0.85);
+            backdrop-filter: blur(2px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .overlay-card {
+            background: var(--surface);
+            border: var(--border-width) solid var(--text-main);
+            box-shadow: 6px 6px 0px var(--text-main);
+            padding: 24px 20px;
+            border-radius: 12px;
+            text-align: center;
+            transform: scale(0.95) rotate(-1deg);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 380px;
+            width: 90%;
+        }
+
+        .overlay.active .overlay-card {
+            transform: scale(1) rotate(-1deg);
+        }
+
+        .overlay-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .overlay-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-weight: 400;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .primary-btn {
+            background: var(--accent-4);
+            color: var(--text-main);
+            border: var(--border-width) solid var(--text-main);
+            box-shadow: 4px 4px 0px var(--text-main);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .primary-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px var(--text-main);
+        }
+
+        .menu-btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 1.05rem;
+            padding: 14px 20px;
+        }
+        
+        .menu-btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn-sub {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 400;
+            margin-top: 4px;
+            opacity: 0.8;
+            letter-spacing: -0.5px;
+        }
+
+        /* Responsive Compact Heights for Laptops */
+        @media (max-height: 750px) {
+            .container { gap: 12px; padding: 12px 16px; }
+            .mega-brand { font-size: 3.5rem; }
+            #homepage-view { gap: 16px; }
+            .menu-card { padding: 16px; }
+            .menu-btn { padding: 10px 16px; font-size: 1rem; margin-bottom: 8px; }
+            
+            #game-view { gap: 12px; }
+            header { padding: 10px 12px; }
+            .game-board { padding: 16px; gap: 16px; }
+            .target-row { padding-bottom: 8px; }
+            .target-number { font-size: 1.8rem; }
+            #current-val { font-size: 1.8rem; }
+            .current-math { padding: 8px 16px; }
+            .op-btn { padding: 10px 0; font-size: 1rem; }
+            .snarky-text { min-height: 40px; padding: 8px; font-size: 0.8rem; }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes wacky-shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-4px, 2px) rotate(-1deg); }
+            40% { transform: translate(4px, -2px) rotate(1deg); }
+            60% { transform: translate(-4px, -2px) rotate(-1deg); }
+            80% { transform: translate(4px, 2px) rotate(1deg); }
+        }
+
+        .shake {
+            animation: wacky-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+            border-color: #e5a5a5 !important;
+            background-color: #fdf5f5 !important;
+        }
+
+        @keyframes float-up {
+            0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+            20% { opacity: 1; transform: translateY(-5px) scale(1.1); }
+            80% { opacity: 1; transform: translateY(-20px) scale(1); }
+            100% { opacity: 0; transform: translateY(-30px) scale(0.9); }
+        }
+
+        .floating-score {
+            position: absolute;
+            right: 20px;
+            top: -24px;
+            color: var(--text-main);
+            background: var(--accent-2);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 2px solid var(--text-main);
+            font-weight: 700;
+            font-size: 1rem;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 50;
+        }
+
+        .floating-score.animate {
+            animation: float-up 1.2s ease-out forwards;
+        }
+
+        #countdown-text {
+            font-size: 6rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-shadow: 6px 6px 0px var(--accent-4), -4px -4px 0px var(--accent-1);
+            transform-origin: center;
+        }
+
+        @keyframes countdown-pop {
+            0% { transform: scale(0.2) rotate(-8deg); opacity: 0; }
+            30% { transform: scale(1.1) rotate(4deg); opacity: 1; }
+            70% { transform: scale(1) rotate(-2deg); opacity: 1; }
+            100% { transform: scale(1.4) rotate(6deg); opacity: 0; }
+        }
+
+        .countdown-animate {
+            animation: countdown-pop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- HOMEPAGE VIEW -->
+        <div id="homepage-view">
+            <div class="hero-section">
+                <h1 class="mega-brand">SHIFT</h1>
+                <div class="hero-sub">a little math game.</div>
+            </div>
+            
+            <div class="menu-card">
+                <button class="primary-btn menu-btn" style="background: var(--accent-1)" onclick="startDailyMode()">
+                    daily challenge
+                    <span class="btn-sub">reign supreme (for just today)</span>
+                </button>
+                <button class="primary-btn menu-btn" style="background: var(--accent-2)" onclick="showSoloMenu()">
+                    solo play
+                    <span class="btn-sub">go your own way</span>
+                </button>
+                <button class="primary-btn menu-btn" style="background: var(--accent-3)" onclick="startVsMode()">
+                    vs mode (live)
+                    <span class="btn-sub">take on the world</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- GAME VIEW -->
+        <div id="game-view" style="display: none;">
+            <header>
+                <div class="brand">
+                    <h1>SHIFT</h1>
+                    <div class="round-indicator" id="round-text">Round 1</div>
+                </div>
+                <div class="score-display">
+                    <div class="score-label">score</div>
+                    <div class="score-value" id="score-val">0</div>
+                </div>
+            </header>
+
+            <div class="game-board" id="board">
+                <div class="timer-track">
+                    <div class="timer-fill" id="timer"></div>
+                </div>
+
+                <div class="target-row">
+                    <div class="stat-block">
+                        <span class="start-label">start</span>
+                        <span class="start-number" id="start-val">--</span>
+                    </div>
+                    <div class="stat-block right">
+                        <span class="target-label">target</span>
+                        <span class="target-number" id="target-val">--</span>
+                    </div>
+                </div>
+
+                <div class="current-math">
+                    <span id="current-val">--</span>
+                    <div class="slot-container" id="slots">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div class="floating-score" id="float-score">+0</div>
+                </div>
+
+                <div class="controls count-3" id="controls">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            
+            <div class="snarky-text" id="snarky">"booting up brain module..."</div>
+        </div>
+    </div>
+
+    <!-- OVERLAYS (Moved to body level to ensure full screen coverage) -->
+    
+    <!-- Solo Menu -->
+    <div class="overlay" id="solo-menu-overlay">
+        <div class="overlay-card">
+            <div class="overlay-title">solo play</div>
+            <div class="overlay-subtitle">choose difficulty (endless)</div>
+            <button class="primary-btn menu-btn" style="background: var(--accent-2)" onclick="startSoloMode(3)">easy (3 steps)</button>
+            <button class="primary-btn menu-btn" style="background: var(--accent-3)" onclick="startSoloMode(4)">med (4 steps)</button>
+            <button class="primary-btn menu-btn" style="background: var(--accent-1)" onclick="startSoloMode(5)">hard (5 steps)</button>
+            <button class="primary-btn menu-btn" style="background: var(--surface); margin-top: 12px;" onclick="showMainMenu()">back</button>
+        </div>
+    </div>
+
+    <!-- Queue (Vs) Menu -->
+    <div class="overlay" id="queue-overlay">
+        <div class="overlay-card">
+            <div class="overlay-title" id="queue-title">searching...</div>
+            <div class="overlay-subtitle" id="queue-sub">finding a worthy opponent</div>
+        </div>
+    </div>
+
+    <!-- Round Result / Game Over -->
+    <div class="overlay" id="round-overlay">
+        <div class="overlay-card">
+            <div class="overlay-title" id="round-result-title">oof.</div>
+            <div class="overlay-subtitle" id="round-result-sub">math is hard.</div>
+            <button class="primary-btn" onclick="handleNextAction()" id="next-btn">next</button>
+        </div>
+    </div>
+
+    <!-- Countdown -->
+    <div class="overlay" id="countdown-overlay" style="background: rgba(245, 243, 239, 0.95);">
+        <div id="countdown-text"></div>
+    </div>
+
+    <script>
+        // --- Core RNG & Puzzle Generation ---
+        
+        // Seeded RNG for Daily Mode
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        function getBSTSeed() {
+            const date = new Date();
+            const formatter = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Europe/London',
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            });
+            const formatted = formatter.format(date); // "DD/MM/YYYY"
+            const parts = formatted.split('/');
+            return parseInt(`${parts[2]}${parts[1]}${parts[0]}`, 10);
+        }
+
+        // Procedural Equation Generator
+        function generatePuzzle(numSteps, rng = Math.random) {
+            let current = Math.floor(rng() * 10) + 1; // Start 1-10
+            const start = current;
+            const ops = [];
+
+            for (let i = 0; i < numSteps; i++) {
+                let valid = false;
+                let opType, operand, symbol;
+
+                let attempts = 0;
+                while(!valid && attempts < 50) {
+                    attempts++;
+                    opType = Math.floor(rng() * 4); // 0:+, 1:-, 2:*, 3:/
+                    
+                    if (opType === 0) {
+                        operand = Math.floor(rng() * 12) + 1;
+                        symbol = '+';
+                        current += operand;
+                        valid = true;
+                    } else if (opType === 1) {
+                        operand = Math.floor(rng() * 12) + 1;
+                        symbol = '-';
+                        current -= operand;
+                        valid = true;
+                    } else if (opType === 2 && Math.abs(current) < 60) { 
+                        // Cap multiplication to prevent giant numbers
+                        operand = Math.floor(rng() * 3) + 2; // 2, 3, 4
+                        symbol = '×';
+                        current *= operand;
+                        valid = true;
+                    } else if (opType === 3) {
+                        // Division must result in a clean integer
+                        operand = Math.floor(rng() * 4) + 2; // 2, 3, 4, 5
+                        if (current % operand === 0) {
+                            symbol = '÷';
+                            current /= operand;
+                            valid = true;
+                        }
+                    }
+                }
+                
+                // Fallback to simple addition if RNG gets stuck
+                if(!valid) {
+                    operand = Math.floor(rng() * 10) + 1;
+                    symbol = '+';
+                    current += operand;
+                }
+
+                ops.push({
+                    id: `op${i}`,
+                    label: `${symbol} ${operand}`,
+                    symbol: symbol,
+                    val: operand,
+                    type: symbol,
+                    expectedIndex: i
+                });
+            }
+            
+            // Map functions cleanly
+            ops.forEach(op => {
+                if (op.type === '+') op.fn = (x) => x + op.val;
+                if (op.type === '-') op.fn = (x) => x - op.val;
+                if (op.type === '×') op.fn = (x) => x * op.val;
+                if (op.type === '÷') op.fn = (x) => x / op.val;
+            });
+
+            return { start, target: current, ops };
+        }
+
+        // --- Game State ---
+
+        let gameMode = 'MENU'; // DAILY, SOLO, VS
+        let soloDifficulty = 3;
+        let generatedLevels = [];
+        let currentLevelObj = null;
+
+        let currentRound = 0;
+        let score = 0;
+        let currentVal = 0;
+        let appliedOps = [];
+        
+        let maxTimeForRound = 20;
+        let timeRemaining = 0;
+        let timerInterval = null;
+        let isAnimating = false;
+        let dummyScore = 0;
+
+        const ui = {
+            homepageView: document.getElementById('homepage-view'),
+            gameView: document.getElementById('game-view'),
+            soloMenuOverlay: document.getElementById('solo-menu-overlay'),
+            queueOverlay: document.getElementById('queue-overlay'),
+            roundOverlay: document.getElementById('round-overlay'),
+            countdownOverlay: document.getElementById('countdown-overlay'),
+            board: document.getElementById('board'),
+            controls: document.getElementById('controls'),
+            slots: document.getElementById('slots'),
+            currentVal: document.getElementById('current-val'),
+            startVal: document.getElementById('start-val'),
+            targetVal: document.getElementById('target-val'),
+            scoreVal: document.getElementById('score-val'),
+            timerFill: document.getElementById('timer'),
+            snarky: document.getElementById('snarky'),
+            roundText: document.getElementById('round-text'),
+            floatScore: document.getElementById('float-score'),
+            countdownText: document.getElementById('countdown-text')
+        };
+
+        // --- Flow Controllers ---
+
+        function hideAllOverlays() {
+            document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active'));
+        }
+
+        function showMainMenu() {
+            hideAllOverlays();
+            ui.homepageView.style.display = 'flex';
+            ui.gameView.style.display = 'none';
+        }
+
+        function showSoloMenu() {
+            hideAllOverlays();
+            ui.soloMenuOverlay.classList.add('active');
+        }
+
+        function initGameData() {
+            score = 0;
+            currentRound = 0;
+            ui.scoreVal.innerText = score;
+        }
+
+        function transitionToGame() {
+            hideAllOverlays();
+            ui.homepageView.style.display = 'none';
+            ui.gameView.style.display = 'flex';
+        }
+
+        function startDailyMode() {
+            gameMode = 'DAILY';
+            initGameData();
+            
+            const dailyRNG = mulberry32(getBSTSeed());
+            generatedLevels = [
+                generatePuzzle(3, dailyRNG),
+                generatePuzzle(3, dailyRNG),
+                generatePuzzle(3, dailyRNG)
+            ];
+
+            transitionToGame();
+            runCountdown(() => loadRound(currentRound));
+        }
+
+        function startSoloMode(diff) {
+            gameMode = 'SOLO';
+            soloDifficulty = diff;
+            initGameData();
+            
+            transitionToGame();
+            runCountdown(() => loadRound(currentRound));
+        }
+
+        function startVsMode() {
+            gameMode = 'VS';
+            initGameData();
+            
+            // Generate Random Set
+            generatedLevels = [
+                generatePuzzle(3),
+                generatePuzzle(3),
+                generatePuzzle(3)
+            ];
+            dummyScore = Math.floor(Math.random() * 2500) + 1500;
+
+            ui.queueOverlay.classList.add('active');
+            document.getElementById('queue-title').innerText = "searching...";
+            document.getElementById('queue-sub').innerText = "finding a worthy opponent";
+
+            setTimeout(() => {
+                document.getElementById('queue-title').innerText = "match found!";
+                document.getElementById('queue-title').style.color = "var(--accent-3)";
+                document.getElementById('queue-sub').innerText = "playing against: DUMMY_PRO_99";
+                
+                setTimeout(() => {
+                    transitionToGame();
+                    runCountdown(() => loadRound(currentRound));
+                }, 1500);
+            }, 2000);
+        }
+
+        // --- Core Gameplay Loop ---
+
+        function loadRound(index) {
+            if (gameMode === 'DAILY' || gameMode === 'VS') {
+                if (index >= generatedLevels.length) {
+                    endGame();
+                    return;
+                }
+                currentLevelObj = generatedLevels[index];
+                ui.roundText.innerText = `${gameMode.toLowerCase()} - r${index + 1}/3`;
+            } else if (gameMode === 'SOLO') {
+                currentLevelObj = generatePuzzle(soloDifficulty);
+                ui.roundText.innerText = `solo run - p${index + 1}`;
+            }
+
+            currentVal = currentLevelObj.start;
+            appliedOps = [];
+            
+            // Setup Info
+            ui.startVal.innerText = currentLevelObj.start;
+            ui.targetVal.innerText = currentLevelObj.target;
+            ui.currentVal.innerText = currentLevelObj.start;
+            ui.currentVal.style.color = 'var(--text-main)';
+            ui.snarky.innerText = '"don\'t mess up. i\'m watching."';
+            ui.snarky.style.background = 'var(--surface)';
+            ui.board.classList.remove('shake');
+
+            // Setup Dynamic Slots
+            ui.slots.innerHTML = '';
+            for (let i = 0; i < currentLevelObj.ops.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.id = `slot-${i}`;
+                ui.slots.appendChild(slot);
+            }
+
+            // Setup Dynamic Buttons
+            ui.controls.innerHTML = '';
+            ui.controls.className = `controls count-${currentLevelObj.ops.length}`;
+            
+            const shuffledOps = shuffleArray([...currentLevelObj.ops]);
+            shuffledOps.forEach((op) => {
+                const btn = document.createElement('button');
+                btn.className = 'op-btn';
+                btn.id = op.id;
+                btn.innerText = op.label;
+                btn.onclick = () => handleOpClick(op);
+                ui.controls.appendChild(btn);
+            });
+
+            // Adjust timer logic based on steps
+            maxTimeForRound = currentLevelObj.ops.length * 10 - 10; 
+            // 3 steps = 20s, 4 steps = 30s, 5 steps = 40s
+            
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeRemaining = maxTimeForRound;
+            updateTimerVisuals();
+            
+            timerInterval = setInterval(() => {
+                timeRemaining -= 0.05; // Smooth 50ms updates
+                updateTimerVisuals();
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    timeRemaining = 0;
+                    handleTimeOut();
+                }
+            }, 50);
+        }
+
+        function updateTimerVisuals() {
+            const percentage = Math.max(0, (timeRemaining / maxTimeForRound) * 100);
+            ui.timerFill.style.width = `${percentage}%`;
+            
+            if (percentage < 30) {
+                ui.timerFill.style.backgroundColor = 'var(--accent-3)';
+            } else {
+                ui.timerFill.style.backgroundColor = 'var(--accent-4)';
+            }
+        }
+
+        function handleTimeOut() {
+            ui.snarky.innerText = '"bzzzt. time is up."';
+            ui.snarky.style.background = 'var(--accent-3)';
+            ui.board.classList.add('shake');
+            ui.currentVal.style.color = '#c25';
+            
+            document.querySelectorAll('.op-btn').forEach(btn => btn.style.pointerEvents = 'none');
+            
+            let correctCount = 0;
+            appliedOps.forEach((op, i) => { if (op.expectedIndex === i) correctCount++; });
+
+            if (correctCount > 0) {
+                const partialScore = correctCount * 250; 
+                triggerFloatScore(partialScore, 'var(--accent-4)');
+                addScore(partialScore);
+                setTimeout(() => showRoundOverlay("time out.", `too slow, but ${correctCount} right. +${partialScore} pts.`, false), 1800);
+            } else {
+                triggerFloatScore(0, 'var(--accent-3)');
+                setTimeout(() => showRoundOverlay("time out.", "too slow. zero points.", true), 1800);
+            }
+        }
+
+        function handleOpClick(op) {
+            if (appliedOps.length >= currentLevelObj.ops.length || isAnimating) return;
+
+            const oldVal = currentVal;
+            currentVal = op.fn(currentVal);
+            appliedOps.push(op);
+            
+            document.getElementById(op.id).classList.add('used');
+
+            const slotIndex = appliedOps.length - 1;
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            slot.innerText = op.symbol;
+            slot.classList.add('filled');
+
+            ui.currentVal.style.transform = 'scale(1.1) rotate(-2deg)';
+            setTimeout(() => ui.currentVal.style.transform = 'scale(1) rotate(0deg)', 150);
+
+            animateNumber(ui.currentVal, oldVal, currentVal, 300, () => {
+                checkGameState();
+            });
+
+            // Mid-game snark logic
+            if (appliedOps.length < currentLevelObj.ops.length) {
+                if (currentVal % 1 !== 0) {
+                    ui.snarky.innerText = '"decimals? gross."';
+                    ui.snarky.style.background = 'var(--accent-1)';
+                } else if (currentVal < 0) {
+                    ui.snarky.innerText = '"into the negative zone we go..."';
+                    ui.snarky.style.background = 'var(--accent-2)';
+                } else if (currentVal > currentLevelObj.target * 3) {
+                    ui.snarky.innerText = '"you are so far away it hurts."';
+                } else {
+                    const quips = ['"okay big brain..."', '"i guess that works..."', '"suspicious move..."'];
+                    ui.snarky.innerText = quips[Math.floor(Math.random()*quips.length)];
+                    ui.snarky.style.background = 'var(--surface)';
+                }
+            }
+        }
+
+        function checkGameState() {
+            if (appliedOps.length < currentLevelObj.ops.length) return;
+            
+            clearInterval(timerInterval);
+            
+            let correctCount = 0;
+            appliedOps.forEach((op, i) => { if (op.expectedIndex === i) correctCount++; });
+
+            if (currentVal === currentLevelObj.target) {
+                // Perfect Win
+                ui.currentVal.style.color = 'var(--text-main)';
+                ui.snarky.innerText = '"bingo bango. you did it."';
+                ui.snarky.style.background = 'var(--accent-2)';
+                
+                const baseScore = 1000;
+                const timeBonus = Math.max(100, Math.floor(baseScore * (timeRemaining / maxTimeForRound)));
+                
+                triggerFloatScore(timeBonus, 'var(--accent-2)');
+                addScore(timeBonus);
+                setTimeout(() => showRoundOverlay("nice.", `target acquired. +${timeBonus} pts.`, false), 1500);
+
+            } else {
+                ui.board.classList.add('shake');
+                
+                if (correctCount > 0) {
+                    // Partial Match
+                    const partialScore = correctCount * 250; 
+                    ui.snarky.innerText = `"wrong. but ${correctCount} in the right spot, so i pity u."`;
+                    ui.snarky.style.background = 'var(--accent-4)';
+                    
+                    triggerFloatScore(partialScore, 'var(--accent-4)');
+                    addScore(partialScore);
+                    setTimeout(() => showRoundOverlay("eh.", `missed, but ${correctCount} right. +${partialScore} pts.`, false), 1800);
+                } else {
+                    // Total Fail
+                    ui.currentVal.style.color = '#c25';
+                    ui.snarky.innerText = '"absolute trash fire of a calculation."';
+                    ui.snarky.style.background = 'var(--accent-3)';
+                    
+                    triggerFloatScore(0, 'var(--accent-3)');
+                    setTimeout(() => showRoundOverlay("nope.", "totally whiffed it. zero points.", true), 1800);
+                }
+            }
+        }
+
+        // --- Helpers & UI Renderers ---
+
+        function triggerFloatScore(amount, color) {
+            ui.floatScore.innerText = `+${amount}`;
+            ui.floatScore.style.background = color;
+            ui.floatScore.classList.remove('animate');
+            void ui.floatScore.offsetWidth; 
+            ui.floatScore.classList.add('animate');
+        }
+
+        function addScore(amount) {
+            const newScore = score + amount;
+            animateNumber(ui.scoreVal, score, newScore, 800);
+            score = newScore;
+        }
+
+        function showRoundOverlay(title, sub, isTotalFail) {
+            document.getElementById('round-result-title').innerText = title;
+            document.getElementById('round-result-sub').innerText = sub;
+            
+            const btn = document.getElementById('next-btn');
+            
+            // Logic for next action
+            if (gameMode === 'SOLO') {
+                if (isTotalFail) {
+                    btn.innerText = "end run";
+                    btn.dataset.action = "gameover";
+                } else {
+                    btn.innerText = "next puzzle";
+                    btn.dataset.action = "next";
+                }
+            } else {
+                if (currentRound === generatedLevels.length - 1) {
+                    btn.innerText = "see results";
+                    btn.dataset.action = "gameover";
+                } else {
+                    btn.innerText = "next round";
+                    btn.dataset.action = "next";
+                }
+            }
+
+            ui.roundOverlay.classList.add('active');
+        }
+
+        function handleNextAction() {
+            ui.roundOverlay.classList.remove('active');
+            const btn = document.getElementById('next-btn');
+            
+            if (btn.dataset.action === "gameover") {
+                endGame();
+            } else {
+                currentRound++;
+                if (gameMode === 'SOLO') {
+                    // Solo skips countdown for speed, just loads next
+                    loadRound(currentRound); 
+                } else {
+                    runCountdown(() => loadRound(currentRound));
+                }
+            }
+        }
+
+        function endGame() {
+            ui.roundOverlay.classList.add('active');
+            
+            const titleEl = document.getElementById('round-result-title');
+            const subEl = document.getElementById('round-result-sub');
+            const btn = document.getElementById('next-btn');
+
+            let rank = "";
+            if (score === 0) rank = "math potato";
+            else if (score < 1500) rank = "average noodle";
+            else if (score < 2500) rank = "number wizard";
+            else rank = "silicon god";
+
+            if (gameMode === 'DAILY') {
+                titleEl.innerText = "daily complete";
+                subEl.innerHTML = `today's score: <strong style="background:var(--accent-4); padding:0 4px; border:1px solid #000;">${score}</strong><br><br>rank: <br><strong>${rank}</strong><br><br>come back tomorrow.`;
+            } else if (gameMode === 'SOLO') {
+                titleEl.innerText = "run over";
+                subEl.innerHTML = `puzzles survived: <strong>${currentRound}</strong><br>total score: <strong style="background:var(--accent-2); padding:0 4px; border:1px solid #000;">${score}</strong>`;
+            } else if (gameMode === 'VS') {
+                const won = score >= dummyScore;
+                titleEl.innerText = won ? "you won!" : "you lost.";
+                subEl.innerHTML = `your score: <strong>${score}</strong><br>DUMMY_PRO_99: <strong>${dummyScore}</strong>`;
+            }
+            
+            btn.innerText = "back to menu";
+            btn.dataset.action = "menu";
+            btn.onclick = () => {
+                btn.onclick = handleNextAction; // Reset handler
+                showMainMenu();
+            };
+        }
+
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function runCountdown(callback) {
+            ui.countdownOverlay.classList.add('active');
+            let count = 3;
+            
+            function updateCountText(num) {
+                ui.countdownText.innerText = num;
+                ui.countdownText.classList.remove('countdown-animate');
+                void ui.countdownText.offsetWidth; 
+                ui.countdownText.classList.add('countdown-animate');
+                
+                const colors = ['var(--accent-1)', 'var(--accent-2)', 'var(--accent-3)', 'var(--accent-4)'];
+                const bgColors = [...colors].reverse();
+                ui.countdownText.style.textShadow = `6px 6px 0px ${colors[count % 4]}, -4px -4px 0px ${bgColors[count % 4]}`;
+            }
+
+            updateCountText(count);
+
+            const countInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    updateCountText(count);
+                } else if (count === 0) {
+                    updateCountText("go.");
+                } else {
+                    clearInterval(countInterval);
+                    ui.countdownOverlay.classList.remove('active');
+                    callback();
+                }
+            }, 1000);
+        }
+
+        function animateNumber(element, start, end, duration, callback) {
+            isAnimating = true;
+            let startTimestamp = null;
+            
+            if(element.id === 'score-val') {
+                element.style.transform = 'scale(1.1) rotate(2deg)';
+                setTimeout(() => element.style.transform = 'scale(1) rotate(0deg)', duration + 50);
+            }
+
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                let current = start + (end - start) * ease;
+                
+                element.innerText = (current % 1 !== 0) ? current.toFixed(1) : Math.round(current);
+
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    element.innerText = (end % 1 !== 0) ? parseFloat(end.toFixed(2)) : end;
+                    isAnimating = false;
+                    if(callback) callback();
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Init
+        showMainMenu();
+
+    </script>
+</body>
+</html>

@@ -124,6 +124,15 @@
   "description": "Memorize the colour and match it best you can",
   "iosLink": null,
   "androidLink": null
+ },
+{
+  "id": "shift",
+  "title": "Shift",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Shift/index.html",
+  "description": "Quick little math game",
+  "iosLink": null,
+  "androidLink": null
  }
 
 ]
