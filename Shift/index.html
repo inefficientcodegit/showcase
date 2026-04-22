@@ -1,1218 +1,1248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHIFT: A Little Math Game</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-
-        :root {
-            --bg-color: #f5f3ef; /* Warm cream */
-            --surface: #ffffff;
-            --text-main: #1a1a1a; /* Charcoal */
-            --text-muted: #737373;
-            --accent-1: #e8e4f2; /* Muted lavender */
-            --accent-2: #dcf0e5; /* Muted sage */
-            --accent-3: #f7dfd6; /* Muted peach */
-            --accent-4: #f2e9c9; /* Muted butter */
-            --border-width: 2px;
-            --shadow-depth: 4px;
-        }
-
-        * {
-            box-sizing: border-box;
-            font-family: 'Space Mono', monospace;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            background-image: radial-gradient(rgba(0,0,0,0.08) 1px, transparent 1px);
-            background-size: 20px 20px;
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 440px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            position: relative;
-            z-index: 10;
-        }
-
-        /* --- HOMEPAGE VIEW --- */
-        #homepage-view {
-            display: flex;
-            flex-direction: column;
-            gap: 32px;
-            align-items: center;
-            width: 100%;
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        .hero-section {
-            text-align: center;
-            margin-top: 20px;
-            transform: rotate(-1deg);
-        }
-
-        .mega-brand {
-            margin: 0;
-            font-size: 5.5rem;
-            letter-spacing: -4px;
-            font-weight: 700;
-            color: var(--surface);
-            text-shadow: 
-                3px 3px 0px var(--text-main),
-                8px 8px 0px var(--accent-1),
-                12px 12px 0px var(--accent-3);
-            line-height: 1;
-        }
-
-        .hero-sub {
-            color: var(--text-main);
-            font-weight: 700;
-            font-size: 1rem;
-            margin-top: 16px;
-            background: var(--accent-4);
-            display: inline-block;
-            padding: 4px 12px;
-            border: var(--border-width) solid var(--text-main);
-            border-radius: 4px;
-            box-shadow: 2px 2px 0px var(--text-main);
-            transform: rotate(2deg);
-        }
-
-        .menu-card {
-            background: var(--surface);
-            border: var(--border-width) solid var(--text-main);
-            box-shadow: 8px 8px 0px var(--text-main);
-            padding: 32px 24px;
-            border-radius: 12px;
-            width: 100%;
-            transform: rotate(0.5deg);
-        }
-
-        /* --- GAME VIEW --- */
-        #game-view {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 100%;
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            background: var(--surface);
-            padding: 16px;
-            border: var(--border-width) solid var(--text-main);
-            box-shadow: var(--shadow-depth) var(--shadow-depth) 0px var(--text-main);
-            border-radius: 8px;
-            transform: rotate(-0.5deg);
-        }
-
-        .brand h1 {
-            margin: 0;
-            font-size: 2rem;
-            letter-spacing: -1px;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .round-indicator {
-            color: var(--text-main);
-            font-size: 0.75rem;
-            font-weight: 700;
-            background: var(--accent-1);
-            padding: 4px 8px;
-            border: 1px solid var(--text-main);
-            margin-top: 4px;
-            display: inline-block;
-            border-radius: 4px;
-        }
-
-        .score-display {
-            text-align: right;
-        }
-
-        .score-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            background: var(--accent-2);
-            padding: 2px 6px;
-            border: 1px solid var(--text-main);
-            display: inline-block;
-            margin-bottom: 4px;
-            border-radius: 4px;
-        }
-
-        .score-value {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--text-main);
-            transition: transform 0.2s;
-        }
-
-        .game-board {
-            background: var(--surface);
-            padding: 24px;
-            border-radius: 12px;
-            border: var(--border-width) solid var(--text-main);
-            box-shadow: 6px 6px 0px var(--text-main);
-            display: flex;
-            flex-direction: column;
-            gap: 28px;
-            position: relative;
-        }
-
-        /* Quirky Timer Bar */
-        .timer-track {
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            width: calc(100% + 4px);
-            height: 12px;
-            background: #fff;
-            border: var(--border-width) solid var(--text-main);
-            border-bottom: var(--border-width) solid var(--text-main);
-            border-radius: 12px 12px 0 0;
-            overflow: hidden;
-            z-index: 5;
-        }
-
-        .timer-fill {
-            height: 100%;
-            width: 100%;
-            background: var(--accent-4);
-            border-right: 2px solid var(--text-main);
-            transform-origin: left;
-            transition: width 0.1s linear, background-color 0.3s ease;
-        }
-
-        .target-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            padding-bottom: 16px;
-            border-bottom: 2px dashed var(--text-muted);
-        }
-
-        .stat-block {
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .stat-block.right {
-            text-align: right;
-            align-items: flex-end;
-        }
-
-        .start-label, .target-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            background: var(--text-main);
-            color: var(--bg-color);
-            padding: 2px 8px;
-            position: absolute;
-            top: -10px;
-            border-radius: 4px;
-            transform: rotate(-1deg);
-        }
-        
-        .target-label {
-            transform: rotate(1deg);
-            background: var(--accent-3);
-            color: var(--text-main);
-            border: 1px solid var(--text-main);
-        }
-
-        .start-number {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-top: 8px;
-        }
-
-        .target-number {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-top: 8px;
-        }
-
-        .current-math {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--accent-1);
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: var(--border-width) solid var(--text-main);
-            box-shadow: 2px 2px 0px var(--text-main);
-            position: relative;
-        }
-
-        #current-val {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--text-main);
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            min-width: 60px;
-        }
-
-        .slot-container {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-
-        .slot {
-            width: 36px;
-            height: 36px;
-            background-color: var(--surface);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--text-main);
-            border: 2px dashed var(--text-muted);
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .slot.filled {
-            border-style: solid;
-            border-color: var(--text-main);
-            background-color: var(--accent-2);
-            transform: scale(1.05) rotate(2deg);
-            box-shadow: 2px 2px 0px var(--text-main);
-        }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .op-btn {
-            background-color: var(--surface);
-            color: var(--text-main);
-            border: var(--border-width) solid var(--text-main);
-            padding: 14px 0;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.1s ease;
-            box-shadow: var(--shadow-depth) var(--shadow-depth) 0px var(--text-main);
-            position: relative;
-            -webkit-tap-highlight-color: transparent;
-            flex: 1 1 calc(33.33% - 12px);
-        }
-
-        /* Adjustments for different layouts */
-        .controls.count-4 .op-btn { flex: 1 1 calc(50% - 12px); }
-        .controls.count-5 .op-btn { flex: 1 1 calc(33.33% - 12px); }
-
-        /* Subtle wonkiness */
-        .op-btn:nth-child(3n+1) { transform: rotate(-0.5deg); background-color: var(--accent-2); }
-        .op-btn:nth-child(3n+2) { transform: translateY(2px) rotate(0.5deg); background-color: var(--accent-1); }
-        .op-btn:nth-child(3n) { transform: rotate(1deg); background-color: var(--accent-3); }
-
-        .op-btn:hover:not(:disabled) {
-            filter: brightness(1.05);
-        }
-
-        .op-btn:active:not(:disabled) {
-            transform: translate(var(--shadow-depth), var(--shadow-depth)) !important;
-            box-shadow: 0px 0px 0px var(--text-main) !important;
-        }
-
-        .op-btn.used {
-            opacity: 0.4;
-            pointer-events: none;
-            filter: grayscale(0.8);
-            transform: scale(0.95) translate(0, 4px) !important;
-            box-shadow: 0px 0px 0px var(--text-main) !important;
-        }
-
-        .snarky-text {
-            text-align: center;
-            color: var(--text-main);
-            background: var(--surface);
-            padding: 12px;
-            border: var(--border-width) solid var(--text-main);
-            box-shadow: 2px 2px 0px var(--text-main);
-            border-radius: 8px;
-            font-weight: 400;
-            font-size: 0.9rem;
-            min-height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transform: rotate(0.5deg);
-            transition: background 0.3s ease;
-            width: 100%;
-        }
-
-        /* Overlays */
-        .overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(245, 243, 239, 0.85);
-            backdrop-filter: blur(2px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            border-radius: 12px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .overlay-card {
-            background: var(--surface);
-            border: var(--border-width) solid var(--text-main);
-            box-shadow: 6px 6px 0px var(--text-main);
-            padding: 32px 24px;
-            border-radius: 12px;
-            text-align: center;
-            transform: scale(0.95) rotate(-1deg);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: 85%;
-            width: 100%;
-        }
-
-        .overlay.active .overlay-card {
-            transform: scale(1) rotate(-1deg);
-        }
-
-        .overlay-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-main);
-        }
-
-        .overlay-subtitle {
-            color: var(--text-muted);
-            margin-bottom: 24px;
-            font-weight: 400;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .primary-btn {
-            background: var(--accent-4);
-            color: var(--text-main);
-            border: var(--border-width) solid var(--text-main);
-            box-shadow: 4px 4px 0px var(--text-main);
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.1s;
-        }
-
-        .primary-btn:active {
-            transform: translate(4px, 4px);
-            box-shadow: 0px 0px 0px var(--text-main);
-        }
-
-        .menu-btn {
-            display: block;
-            width: 100%;
-            margin-bottom: 12px;
-            font-size: 1.1rem;
-            padding: 16px 24px;
-        }
-        
-        .menu-btn:last-child {
-            margin-bottom: 0;
-        }
-
-        .btn-sub {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 400;
-            margin-top: 6px;
-            opacity: 0.8;
-            letter-spacing: -0.5px;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes wacky-shake {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            20% { transform: translate(-4px, 2px) rotate(-1deg); }
-            40% { transform: translate(4px, -2px) rotate(1deg); }
-            60% { transform: translate(-4px, -2px) rotate(-1deg); }
-            80% { transform: translate(4px, 2px) rotate(1deg); }
-        }
-
-        .shake {
-            animation: wacky-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-            border-color: #e5a5a5 !important;
-            background-color: #fdf5f5 !important;
-        }
-
-        @keyframes float-up {
-            0% { opacity: 0; transform: translateY(10px) scale(0.8); }
-            20% { opacity: 1; transform: translateY(-5px) scale(1.1); }
-            80% { opacity: 1; transform: translateY(-20px) scale(1); }
-            100% { opacity: 0; transform: translateY(-30px) scale(0.9); }
-        }
-
-        .floating-score {
-            position: absolute;
-            right: 20px;
-            top: -24px;
-            color: var(--text-main);
-            background: var(--accent-2);
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 2px solid var(--text-main);
-            font-weight: 700;
-            font-size: 1rem;
-            pointer-events: none;
-            opacity: 0;
-            z-index: 50;
-        }
-
-        .floating-score.animate {
-            animation: float-up 1.2s ease-out forwards;
-        }
-
-        #countdown-text {
-            font-size: 7rem;
-            font-weight: 700;
-            color: var(--text-main);
-            text-shadow: 6px 6px 0px var(--accent-4), -4px -4px 0px var(--accent-1);
-            transform-origin: center;
-        }
-
-        @keyframes countdown-pop {
-            0% { transform: scale(0.2) rotate(-8deg); opacity: 0; }
-            30% { transform: scale(1.1) rotate(4deg); opacity: 1; }
-            70% { transform: scale(1) rotate(-2deg); opacity: 1; }
-            100% { transform: scale(1.4) rotate(6deg); opacity: 0; }
-        }
-
-        .countdown-animate {
-            animation: countdown-pop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f5f0e8">
+<title>SHIFT – a little math game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { fontFamily: { mono: ['Space Mono','monospace'] } } }
+  };
+</script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#f5f0e8;font-family:'Space Mono',monospace}
+  #root{height:100%;display:flex;flex-direction:column}
+  .dot-grid{background-image:radial-gradient(circle,rgba(0,0,0,.15) 1px,transparent 1px);background-size:24px 24px}
+  .bs{box-shadow:4px 4px 0 0 #000}
+  .bs2{box-shadow:2px 2px 0 0 #000}
+  .bs6{box-shadow:6px 6px 0 0 #000}
+  .bs8{box-shadow:8px 8px 0 0 #000}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  @keyframes floatUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-44px);opacity:0}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+  @keyframes spinBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+  .anim-shake{animation:shake .4s ease-in-out}
+  .anim-float{animation:floatUp 1.2s ease-out forwards}
+  .anim-fade{animation:fadeIn .3s ease-out}
+  .anim-pop{animation:pop .35s ease-out}
+  .scroll-y{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#c5bfb0;border-radius:2px}
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-    <div class="container">
-        
-        <div id="homepage-view">
-            <div class="hero-section">
-                <h1 class="mega-brand">SHIFT</h1>
-                <div class="hero-sub">a little math game.</div>
-            </div>
-            
-            <div class="menu-card">
-                <button class="primary-btn menu-btn" style="background: var(--accent-1)" onclick="startDailyMode()">
-                    daily challenge
-                    <span class="btn-sub">reign supreme (for just today)</span>
-                </button>
-                <button class="primary-btn menu-btn" style="background: var(--accent-2)" onclick="showSoloMenu()">
-                    solo play
-                    <span class="btn-sub">go your own way</span>
-                </button>
-                <button class="primary-btn menu-btn" style="background: var(--accent-3)" onclick="startVsMode()">
-                    vs mode (live)
-                    <span class="btn-sub">take on the world</span>
-                </button>
-            </div>
-        </div>
+// ─── PlayFab ──────────────────────────────────────────────────────────────────
+const TITLE_ID = '1EA45F';
+const BASE     = `https://${TITLE_ID}.playfabapi.com`;
+const QUEUE    = 'ShiftPvP';
 
-        <div id="game-view" style="display: none;">
-            <header>
-                <div class="brand">
-                    <h1>SHIFT</h1>
-                    <div class="round-indicator" id="round-text">Round 1</div>
-                </div>
-                <div class="score-display">
-                    <div class="score-label">score</div>
-                    <div class="score-value" id="score-val">0</div>
-                </div>
-            </header>
+let _sess = null, _eToken = null, _eId = null, _pfId = null;
 
-            <div class="game-board" id="board">
-                <div class="timer-track">
-                    <div class="timer-fill" id="timer"></div>
-                </div>
+const pf = async (path, body, auth = 'session') => {
+  const h = { 'Content-Type': 'application/json' };
+  if (auth === 'session' && _sess)   h['X-Authorization'] = _sess;
+  if (auth === 'entity'  && _eToken) h['X-EntityToken']   = _eToken;
+  try {
+    const r = await fetch(BASE + path, { method: 'POST', headers: h, body: JSON.stringify(body) });
+    const j = await r.json();
+    return j.code === 200 ? { ok: true, data: j.data } : { ok: false, error: j.errorMessage || `err ${j.code}` };
+  } catch(e) { return { ok: false, error: e.message }; }
+};
 
-                <div class="target-row">
-                    <div class="stat-block">
-                        <span class="start-label">start</span>
-                        <span class="start-number" id="start-val">--</span>
-                    </div>
-                    <div class="stat-block right">
-                        <span class="target-label">target</span>
-                        <span class="target-number" id="target-val">--</span>
-                    </div>
-                </div>
+const deviceId = () => {
+  let id = localStorage.getItem('shift_device_id');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('shift_device_id', id); }
+  return id;
+};
 
-                <div class="current-math">
-                    <span id="current-val">--</span>
-                    <div class="slot-container" id="slots">
-                        </div>
-                    <div class="floating-score" id="float-score">+0</div>
-                </div>
+const pfLogin = async () => {
+  const r = await pf('/Client/LoginWithCustomID', {
+    TitleId: TITLE_ID, CustomId: deviceId(), CreateAccount: true,
+    InfoRequestParameters: { GetUserAccountInfo: true, GetPlayerProfile: true },
+  }, 'none');
+  if (r.ok) {
+    _sess   = r.data.SessionTicket;
+    _eToken = r.data.EntityToken.EntityToken;
+    _eId    = r.data.EntityToken.Entity.Id;
+    _pfId   = r.data.PlayFabId;
+  }
+  return r;
+};
 
-                <div class="controls count-3" id="controls">
-                    </div>
-            </div>
-            
-            <div class="snarky-text" id="snarky">"booting up brain module..."</div>
-        </div>
+const pfSetName    = n  => pf('/Client/UpdateUserTitleDisplayName', { DisplayName: n });
+const pfSubmit     = v  => pf('/Client/UpdatePlayerStatistics', { Statistics: [{ StatisticName: 'DailyScore', Value: Math.round(v * 10000) }] });
+const pfBoard      = () => pf('/Client/GetLeaderboard', { StatisticName: 'DailyScore', StartPosition: 0, MaxResultsCount: 15, ProfileConstraints: { ShowDisplayName: true } });
+const pfMyRank     = () => pf('/Client/GetLeaderboardAroundPlayer', { StatisticName: 'DailyScore', MaxResultsCount: 3, ProfileConstraints: { ShowDisplayName: true } });
+const pfCreateTix  = () => pf('/Match/CreateMatchmakingTicket', { Creator: { Entity: { Id: _eId, Type: 'title_player_account' } }, GiveUpAfterSeconds: 120, QueueName: QUEUE }, 'entity');
+const pfPollTix    = id => pf('/Match/GetMatchmakingTicket', { TicketId: id, QueueName: QUEUE, EscapeObject: false }, 'entity');
+const pfGetMatch   = id => pf('/Match/GetMatch', { MatchId: id, QueueName: QUEUE, EscapeObject: false, ReturnMemberAttributes: false }, 'entity');
+const pfCancelTix  = () => pf('/Match/CancelAllMatchmakingTicketsForPlayer', { QueueName: QUEUE, Entity: { Id: _eId, Type: 'title_player_account' } }, 'entity');
+const pfWriteSetup = (mid, seed)     => pf('/Client/UpdateUserData', { Data: { [`match_${mid}_setup`]: JSON.stringify({ seed }) }, Permission: 'Public' });
+const pfWriteRound = (mid, ri, sc)   => pf('/Client/UpdateUserData', { Data: { [`match_${mid}_r${ri}`]: JSON.stringify({ score: sc }) }, Permission: 'Public' });
+const pfReadOpp    = async (oppId, key) => {
+  const r = await pf('/Client/GetUserPublicData', { PlayFabId: oppId, Keys: [key] });
+  if (!r.ok) return r;
+  const raw = r.data.Data?.[key]?.Value;
+  return { ok: true, data: raw ? JSON.parse(raw) : null };
+};
 
-        <div class="overlay" id="solo-menu-overlay">
-            <div class="overlay-card">
-                <div class="overlay-title">solo play</div>
-                <div class="overlay-subtitle">choose difficulty (endless)</div>
-                <button class="primary-btn menu-btn" style="background: var(--accent-2)" onclick="startSoloMode(3)">easy (3 steps)</button>
-                <button class="primary-btn menu-btn" style="background: var(--accent-3)" onclick="startSoloMode(4)">med (4 steps)</button>
-                <button class="primary-btn menu-btn" style="background: var(--accent-1)" onclick="startSoloMode(5)">hard (5 steps)</button>
-                <button class="primary-btn menu-btn" style="background: var(--surface); margin-top: 12px;" onclick="showMainMenu()">back</button>
-            </div>
-        </div>
+// ─── Puzzle ───────────────────────────────────────────────────────────────────
+const mulberry32 = seed => {
+  let s = seed;
+  return () => {
+    s |= 0; s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
 
-        <div class="overlay" id="queue-overlay">
-            <div class="overlay-card">
-                <div class="overlay-title" id="queue-title">searching...</div>
-                <div class="overlay-subtitle" id="queue-sub">finding a worthy opponent</div>
-            </div>
-        </div>
+const shuffle = (arr, rng = Math.random) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
 
-        <div class="overlay" id="round-overlay">
-            <div class="overlay-card">
-                <div class="overlay-title" id="round-result-title">oof.</div>
-                <div class="overlay-subtitle" id="round-result-sub">math is hard.</div>
-                <button class="primary-btn" onclick="handleNextAction()" id="next-btn">next</button>
-            </div>
-        </div>
+function _genOnce(n, rng) {
+  let cur = Math.floor(rng() * 10) + 1;
+  const start = cur, ops = [];
+  for (let i = 0; i < n; i++) {
+    let valid = false, t, op, sym, tries = 0;
+    while (!valid && tries++ < 50) {
+      t = Math.floor(rng() * 4);
+      if (t === 0) { op = Math.floor(rng()*12)+1; sym='+'; cur+=op; valid=true; }
+      else if (t===1) { op=Math.floor(rng()*12)+1; sym='-'; cur-=op; valid=true; }
+      else if (t===2 && Math.abs(cur)<60) { op=Math.floor(rng()*3)+2; sym='×'; cur*=op; valid=true; }
+      else if (t===3) { op=Math.floor(rng()*4)+2; if(cur!==0&&cur%op===0){ sym='÷'; cur/=op; valid=true; } }
+    }
+    if (!valid) { op=Math.floor(rng()*10)+1; sym='+'; cur+=op; }
+    const v=op;
+    ops.push({ id:`op${i}`, label:`${sym} ${v}`, symbol:sym, val:v, type:sym, expectedIndex:i,
+      fn: sym==='+'?x=>x+v:sym==='-'?x=>x-v:sym==='×'?x=>x*v:x=>x/v });
+  }
+  return { start, target: cur, ops };
+}
 
-        <div class="overlay" id="countdown-overlay" style="background: rgba(245, 243, 239, 0.95);">
-            <div id="countdown-text"></div>
-        </div>
+const genPuzzle = (n, rng = Math.random) => {
+  for (let a = 0; a < 20; a++) {
+    const p = _genOnce(n, rng);
+    if (p.ops.some(o=>o.type==='×'||o.type==='÷') && p.ops.some(o=>o.type==='+'||o.type==='-')) return p;
+  }
+  return _genOnce(n, rng);
+};
 
+const maxT  = n => n * 10 - 10;
+const scoreR = (applied, val, target, tLeft, mT) => {
+  const c = applied.filter((o,i)=>o.expectedIndex===i).length;
+  return val===target ? { score: Math.max(100, Math.floor(1000*(tLeft/mT))), perfect:true, correct:c, timedOut:false }
+                      : { score: c*125, perfect:false, correct:c, timedOut:false };
+};
+const scoreTO = applied => {
+  const c = applied.filter((o,i)=>o.expectedIndex===i).length;
+  return { score:c*125, perfect:false, correct:c, timedOut:true };
+};
+
+// ─── Daily ────────────────────────────────────────────────────────────────────
+const dailySeed    = () => { const d=new Date(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); };
+const dailyPuzzles = () => { const rng=mulberry32(dailySeed()); return [0,1,2].map(()=>genPuzzle(4,rng)); };
+const dailyKey     = () => { const d=new Date(); return `shift_daily_${d.getFullYear()}_${d.getMonth()+1}_${d.getDate()}`; };
+const todayLabel   = () => new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+// ─── Names / Ghost ────────────────────────────────────────────────────────────
+const ADJS  = ['Swift','Clever','Bold','Keen','Sharp','Bright','Quick','Smart','Nimble','Savvy'];
+const NOUNS = ['Fox','Eagle','Wolf','Bear','Hawk','Owl','Lynx','Puma','Viper','Tiger'];
+const randName  = () => ADJS[Math.floor(Math.random()*10)]+NOUNS[Math.floor(Math.random()*10)];
+const GHOSTS    = ['AlgebraBot','NumericNick','CalcQueen','TheoremX','PrimeTime','DeltaForce','SigmaShift','MathWizard','FactorBot','RootRaider'];
+const ghostSc   = () => { const r=Math.random(); return r<.07?0:r<.17?250+r*100:r<.4?350+r*200:r<.75?550+r*250:r<.93?800+r*150:950+r*50; };
+
+// ─── Lines (from GAME_LINES.md) ───────────────────────────────────────────────
+const LINES = {
+  idle:     ['"don\'t mess up. i\'m watching."','"tick tock, math brain."','"you\'ve got this. probably."','"looking at you. no pressure."','"go on then."'],
+  mid:      ['"okay big brain..."','"i guess that works..."','"suspicious move..."','"bold choice."','"hm. we\'ll see."','"interesting strategy."','"really?"','"sure, why not."','"that\'s one way to do it."','"i\'m not judging. (i\'m judging.)"'],
+  decimal:  ['"decimals? gross."','"oh no. fractions."','"things just got messy."','"eww. a decimal."'],
+  negative: ['"into the negative zone we go..."','"below zero. risky move."','"negative energy detected."','"oh we\'re going negative. brave."'],
+  wayoff:   ['"you are so far away it hurts."','"where are you going?"','"bold detour."','"this is a very scenic route."','"target? what target?"'],
+  perfect:  ['"bingo bango. you did it."','"correct. don\'t get cocky."','"well well well."','"i didn\'t think you had it in you."','"nailed it. annoying."','"okay fine. that was good."','"perfect. i\'m almost proud."'],
+  partial:  ['"wrong. but {n} in the right spot, so i pity u."','"not quite. {n} right though."','"partial credit. very partial."','"almost. but almost doesn\'t count here."'],
+  zero:     ['"absolute trash fire of a calculation."','"zero correct. zero."','"not a single one. wow."','"did you even try?"','"spectacular failure. truly."'],
+  toPartial:['"too slow. but {n} right — i\'ll allow it."','"time\'s up. {n} correct though."','"bzzt. time. but {n} weren\'t bad."'],
+  toZero:   ['"bzzzt. time is up."','"time\'s up. and nothing right. rough combo."','"zero and out of time. double loss."','"the clock killed you AND you were wrong."'],
+};
+const pick = (cat, vars = {}) => {
+  let s = LINES[cat][Math.floor(Math.random()*LINES[cat].length)];
+  for (const [k,v] of Object.entries(vars)) s = s.replace(`{${k}}`, v);
+  return s;
+};
+
+// ─── Colours ──────────────────────────────────────────────────────────────────
+const BC  = ['#dcf0e5','#e8e4f2','#f7dfd6'];
+const BR  = ['-0.5deg','0.5deg','1deg'];
+
+// ─── AnimScore ────────────────────────────────────────────────────────────────
+function AnimScore({ target, dur = 1000 }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const t0 = Date.now(); let raf;
+    const tick = () => {
+      const p = Math.min(1,(Date.now()-t0)/dur);
+      setV((1-Math.pow(1-p,3))*target);
+      if (p < 1) raf = requestAnimationFrame(tick); else setV(target);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return <>{Math.round(v)}</>;
+}
+
+// ─── Countdown ────────────────────────────────────────────────────────────────
+function Countdown({ onDone }) {
+  const [n, setN] = useState(3);
+  useEffect(() => {
+    if (n <= 0) { onDone(); return; }
+    const t = setTimeout(() => setN(n-1), 800);
+    return () => clearTimeout(t);
+  }, [n]);
+  return (
+    <div style={{position:'fixed',inset:0,background:'#000',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Space Mono,monospace',zIndex:100}}>
+      <div className="anim-pop" key={n} style={{fontSize:'8rem',fontWeight:900,color:'#fff',lineHeight:1}}>
+        {n || 'GO!'}
+      </div>
     </div>
+  );
+}
 
-    <script>
-        // --- Core RNG & Puzzle Generation ---
-        
-        // Seeded RNG for Daily Mode
-        function mulberry32(a) {
-            return function() {
-              var t = a += 0x6D2B79F5;
-              t = Math.imul(t ^ t >>> 15, t | 1);
-              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+// ─── GameBoard ────────────────────────────────────────────────────────────────
+function GameBoard({ puzzle, label, total, onDone }) {
+  const mt = maxT(puzzle.ops.length);
+  const [cur, setCur]     = useState(puzzle.start);
+  const [applied, setApp] = useState([]);
+  const [used, setUsed]   = useState(new Set());
+  const [slots, setSlots] = useState([]);
+  const [msg, setMsg]     = useState(() => pick('idle'));
+  const [msgBg, setMsgBg] = useState('#ffffff');
+  const [shake, setShake] = useState(false);
+  const [vClr, setVClr]   = useState('');
+  const [fKey, setFKey]   = useState(0);
+  const [fTxt, setFTxt]   = useState('+0');
+  const [fBg,  setFBg]    = useState('#dcf0e5');
+  const [fin,  setFin]    = useState(false);
+  const [shuf]            = useState(() => shuffle(puzzle.ops));
+
+  const timerEl  = useRef(null);
+  const doneR    = useRef(false);
+  const appR     = useRef([]);
+  const curR     = useRef(puzzle.start);
+  const timeR    = useRef(mt);
+  const timerI   = useRef(null);
+
+  useEffect(()=>{ appR.current = applied; }, [applied]);
+  useEffect(()=>{ curR.current = cur;     }, [cur]);
+
+  const finish = useCallback((res) => {
+    if (doneR.current) return;
+    doneR.current = true;
+    clearInterval(timerI.current);
+    setFin(true);
+    const fb = res.perfect ? '#dcf0e5' : res.score > 0 ? '#f2e9c9' : '#f7dfd6';
+    setFBg(fb); setFTxt(`+${res.score}`); setFKey(k => k+1);
+    if (res.timedOut) {
+      setVClr('#cc2255');
+      if (res.score > 0) { setMsg(pick('toPartial',{n:res.correct})); setMsgBg('#f2e9c9'); }
+      else               { setMsg(pick('toZero'));  setMsgBg('#f7dfd6'); setShake(true); }
+    } else if (res.perfect) {
+      setMsg(pick('perfect')); setMsgBg('#dcf0e5');
+    } else if (res.score > 0) {
+      setMsg(pick('partial',{n:res.correct})); setMsgBg('#f2e9c9'); setShake(true);
+    } else {
+      setVClr('#cc2255'); setMsg(pick('zero')); setMsgBg('#f7dfd6'); setShake(true);
+    }
+    setTimeout(() => onDone(res), res.perfect ? 1500 : 1800);
+  }, [onDone]);
+
+  useEffect(() => {
+    timerI.current = setInterval(() => {
+      timeR.current -= 0.05;
+      const pct = Math.max(0, (timeR.current / mt) * 100);
+      if (timerEl.current) {
+        timerEl.current.style.width = `${pct}%`;
+        timerEl.current.style.backgroundColor = pct < 30 ? '#f7dfd6' : '#f2e9c9';
+      }
+      if (timeR.current <= 0 && !doneR.current) { clearInterval(timerI.current); finish(scoreTO(appR.current)); }
+    }, 50);
+    return () => clearInterval(timerI.current);
+  }, [finish, mt]);
+
+  const handleOp = op => {
+    if (fin || used.has(op.id)) return;
+    const nv = op.fn(curR.current);
+    const na = [...appR.current, op];
+    const ns = [...slots, op.symbol];
+    setCur(nv); curR.current = nv;
+    setApp(na); appR.current = na;
+    setUsed(p => new Set([...p, op.id]));
+    setSlots(ns);
+    if (na.length < puzzle.ops.length) {
+      if (nv % 1 !== 0)                             { setMsg(pick('decimal'));  setMsgBg('#e8e4f2'); }
+      else if (nv < 0)                              { setMsg(pick('negative')); setMsgBg('#dcf0e5'); }
+      else if (Math.abs(nv) > Math.abs(puzzle.target)*3) { setMsg(pick('wayoff'));  setMsgBg('#ffffff'); }
+      else                                          { setMsg(pick('mid'));      setMsgBg('#ffffff'); }
+    }
+    if (na.length === puzzle.ops.length) finish(scoreR(na, nv, puzzle.target, timeR.current, mt));
+  };
+
+  const cols = puzzle.ops.length <= 3 ? 3 : puzzle.ops.length === 4 ? 2 : 3;
+
+  return (
+    <div className="anim-fade flex flex-col gap-4 w-full">
+      {/* Header */}
+      <header style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',background:'#fff',padding:'.75rem 1rem',border:'2px solid #000',borderRadius:'.5rem',transform:'rotate(-.5deg)'}} className="bs">
+        <div>
+          <div style={{fontSize:'1.5rem',fontWeight:900,letterSpacing:'-.05em',lineHeight:1}}>SHIFT</div>
+          <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',background:'#dcf0e5',padding:'2px 8px',marginTop:4,border:'1px solid #000',borderRadius:4,display:'inline-block'}}>{label}</div>
+        </div>
+        <div style={{textAlign:'right'}}>
+          <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',background:'#e8e4f2',padding:'2px 8px',border:'1px solid #000',borderRadius:4,display:'inline-block',marginBottom:4}}>score</div>
+          <div style={{fontSize:'1.6rem',fontWeight:900,lineHeight:1}}>{total}</div>
+        </div>
+      </header>
+
+      {/* Card */}
+      <div className={shake ? 'anim-shake' : ''} style={{position:'relative',background:'#fff',padding:'1.5rem',border:'2px solid #000',borderRadius:'.75rem',display:'flex',flexDirection:'column',gap:'1.5rem'}} className={`bs6${shake?' anim-shake':''}`}>
+        {/* Timer */}
+        <div style={{position:'absolute',top:-2,left:-2,width:'calc(100% + 4px)',height:12,background:'#fff',border:'2px solid #000',borderRadius:'.75rem .75rem 0 0',overflow:'hidden',zIndex:10}}>
+          <div ref={timerEl} style={{height:'100%',backgroundColor:'#f2e9c9',transition:'width .1s linear',borderRight:'2px solid #000',borderRadius:'.75rem 0 0 0'}} />
+        </div>
+
+        {/* Start / Target */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:4,paddingBottom:'1rem',borderBottom:'2px dashed #c5bfb0'}}>
+          <div style={{position:'relative'}}>
+            <span style={{position:'absolute',top:-12,left:0,fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',padding:'2px 8px',background:'#1a1a1a',color:'#f5f0e8',borderRadius:4,transform:'rotate(-1deg)'}}>start</span>
+            <span style={{fontSize:'1.8rem',fontWeight:900,marginTop:8,display:'block',lineHeight:1}}>{puzzle.start}</span>
+          </div>
+          <div style={{position:'relative',textAlign:'right'}}>
+            <span style={{position:'absolute',top:-12,right:0,fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',padding:'2px 8px',background:'#f7dfd6',border:'1px solid #000',borderRadius:4,transform:'rotate(1deg)'}}>target</span>
+            <span style={{fontSize:'2.2rem',fontWeight:900,marginTop:8,display:'block',lineHeight:1}}>{puzzle.target}</span>
+          </div>
+        </div>
+
+        {/* Current + Slots */}
+        <div style={{position:'relative',display:'flex',alignItems:'center',justifyContent:'space-between',background:'#dcf0e5',padding:'.75rem 1.25rem',borderRadius:'.5rem',border:'2px solid #000'}} className="bs2">
+          <span style={{fontSize:'2.2rem',fontWeight:900,minWidth:60,color:vClr||'#1a1a1a',transition:'color .1s'}}>
+            {Number.isInteger(cur) ? cur : cur.toFixed(2)}
+          </span>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}>
+            {Array.from({length:puzzle.ops.length},(_,i) => (
+              <div key={i} style={{width:36,height:36,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',fontWeight:900,border:slots[i]?'2px solid #000':'2px dashed #c5bfb0',background:slots[i]?'#e8e4f2':'#fff',transform:slots[i]?'scale(1.05) rotate(2deg)':'none',boxShadow:slots[i]?'2px 2px 0 0 #000':'none',transition:'all .15s'}}>
+                {slots[i]||''}
+              </div>
+            ))}
+          </div>
+          {fKey > 0 && (
+            <div key={fKey} className="anim-float" style={{position:'absolute',right:'1.25rem',top:'-1.5rem',fontWeight:900,fontSize:'.875rem',padding:'2px 10px',borderRadius:6,border:'2px solid #000',background:fBg,pointerEvents:'none'}}>
+              {fTxt}
+            </div>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:12}}>
+          {shuf.map((op,i) => {
+            const isUsed = used.has(op.id);
+            return (
+              <button key={op.id} onClick={()=>handleOp(op)} disabled={fin||isUsed}
+                style={{border:'2px solid #000',padding:'.875rem 0',borderRadius:'.5rem',fontSize:'1.25rem',fontWeight:900,cursor:isUsed?'not-allowed':'pointer',background:BC[i%3],transform:isUsed?undefined:`rotate(${BR[i%3]})`,opacity:isUsed?.4:1,boxShadow:isUsed?'none':'4px 4px 0 0 #000',transition:'all .075s',userSelect:'none',fontFamily:'Space Mono,monospace'}}>
+                {op.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Snarky */}
+      <div style={{textAlign:'center',fontSize:'.875rem',padding:'.75rem',border:'2px solid #000',borderRadius:'.5rem',minHeight:48,display:'flex',alignItems:'center',justifyContent:'center',background:msgBg,transition:'background .3s',transform:'rotate(.5deg)',lineHeight:1.5}} className="bs2">
+        {msg}
+      </div>
+    </div>
+  );
+}
+
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
+function LeaderBoard({ onBack }) {
+  const [rows,    setRows]    = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err,     setErr]     = useState('');
+
+  useEffect(() => {
+    pfBoard().then(r => {
+      setLoading(false);
+      if (r.ok) setRows(r.data.Leaderboard || []);
+      else setErr(r.error);
+    });
+  }, []);
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',gap:0,zIndex:1}}>
+        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden'}} className="bs8 anim-fade">
+          <div style={{padding:'1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',textAlign:'center'}}>
+            <div style={{fontSize:'.875rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em'}}>Daily Leaderboard</div>
+            <div style={{fontSize:'.75rem',opacity:.5,marginTop:2}}>{todayLabel()}</div>
+          </div>
+          {loading && <div style={{padding:'2rem',textAlign:'center',fontSize:'.875rem',color:'#999',fontWeight:700}}>Loading…</div>}
+          {err     && <div style={{padding:'1rem',textAlign:'center',fontSize:'.75rem',color:'#c00',fontWeight:700}}>{err}</div>}
+          {rows && rows.length === 0 && <div style={{padding:'2rem',textAlign:'center',fontSize:'.875rem',color:'#999',fontWeight:700}}>No scores yet today — be the first!</div>}
+          {rows && rows.map((e,i) => (
+            <div key={e.PlayFabId} style={{display:'flex',alignItems:'center',gap:12,padding:'.75rem 1rem',borderBottom:'2px solid #000',background:i===0?'#000':'#fff',color:i===0?'#fff':'#1a1a1a'}}>
+              <span style={{fontSize:'.75rem',fontWeight:900,width:24,color:i===0?'rgba(255,255,255,.5)':'#999'}}>#{e.Position+1}</span>
+              <span style={{flex:1,fontSize:'.875rem',fontWeight:900,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.DisplayName||'Unknown'}</span>
+              <span style={{fontSize:'.875rem',fontWeight:900}}>{(e.StatValue/10000).toFixed(4)}</span>
+            </div>
+          ))}
+          <div style={{padding:'1rem'}}>
+            <button onClick={onBack} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">← Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DailyGame ────────────────────────────────────────────────────────────────
+function DailyGame({ onExit }) {
+  const [puzzles]     = useState(dailyPuzzles);
+  const [round,  setR]       = useState(0);
+  const [scores, setScores]  = useState([]); // per-round score objects
+  const [phase,  setPhase]   = useState(() => {
+    const saved = localStorage.getItem(dailyKey());
+    return saved ? 'done' : 'countdown';
+  });
+  const [settled, setSettled] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Load saved scores if already played
+  const savedData = useMemo(() => {
+    const s = localStorage.getItem(dailyKey());
+    return s ? JSON.parse(s) : null;
+  }, []);
+
+  const displayScores = phase === 'done' && savedData ? savedData.rounds : scores;
+
+  useEffect(() => {
+    if (phase !== 'inter') return;
+    setSettled(false);
+    const id = setTimeout(() => setSettled(true), 1300);
+    return () => clearTimeout(id);
+  }, [phase, round]);
+
+  const onRoundDone = (res) => {
+    setScores(prev => [...prev, res]);
+    setPhase('inter');
+  };
+
+  const totalSoFar = scores.reduce((a,r) => a+r.score, 0);
+  const last = scores[scores.length - 1];
+  const isLastRound = round === 2;
+
+  const goNext = () => {
+    if (isLastRound) {
+      const total = scores.reduce((a,r) => a+r.score, 0);
+      const rounds = scores;
+      localStorage.setItem(dailyKey(), JSON.stringify({ totalScore: total, rounds }));
+      setPhase('done');
+      if (!submitted) {
+        setSubmitted(true);
+        pfSubmit(total / 3).catch(() => {});
+      }
+    } else {
+      setR(r => r + 1);
+      setPhase('countdown');
+    }
+  };
+
+  // Submit if we just reached done without a prior save
+  useEffect(() => {
+    if (phase !== 'done' || submitted || savedData) return;
+  }, [phase]);
+
+  const iWon = last && last.score > 0;
+
+  if (phase === 'countdown') return <Countdown onDone={() => setPhase('playing')} />;
+
+  if (phase === 'playing') return (
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+      <button onClick={onExit} style={{position:'absolute',top:16,right:16,zIndex:50,background:'#fff',border:'2px solid #000',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs2">✕</button>
+      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',paddingTop:'3.5rem',zIndex:1}}>
+        <GameBoard key={round} puzzle={puzzles[round]} label={`Daily · Round ${round+1}/3`} total={totalSoFar} onDone={onRoundDone} />
+      </div>
+    </div>
+  );
+
+  if (phase === 'inter' && last) {
+    const perfect = last.perfect;
+    const partial = !perfect && last.score > 0;
+    const header = !settled ? `Round ${round+1}`
+      : last.score === 0   ? `Round ${round+1} — Zero`
+      : perfect            ? `Round ${round+1} — Perfect!`
+      : partial            ? `Round ${round+1} — Partial`
+      :                      `Round ${round+1}`;
+
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace'}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        <button onClick={onExit} style={{position:'absolute',top:16,right:16,zIndex:50,background:'#fff',border:'2px solid #000',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs2">✕</button>
+        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
+          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',fontSize:'.875rem',background:settled&&perfect?'#000':'#fff',color:settled&&perfect?'#fff':'#1a1a1a',transition:'all .3s'}}>
+            {header}
+          </div>
+          <div style={{padding:'1.5rem',textAlign:'center',borderBottom:'4px solid #000'}}>
+            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',color:'#999',marginBottom:8}}>this round</div>
+            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}><AnimScore target={last.score} /></div>
+          </div>
+          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase'}}>Running Total</span>
+            <span style={{fontSize:'1.25rem',fontWeight:900}}>{totalSoFar}</span>
+          </div>
+          <div style={{padding:'1rem'}}>
+            <button onClick={goNext} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              {isLastRound ? 'See Final Result' : `Round ${round+2} →`}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'done') {
+    const ds = savedData || { totalScore: scores.reduce((a,r)=>a+r.score,0), rounds: scores };
+    const total = ds.totalScore;
+    const avg   = (total / 3).toFixed(4);
+    const quality = total >= 2500 ? 'elite' : total >= 1500 ? 'decent' : 'humble';
+    const tagline = quality === 'elite' ? 'elite work, genuinely.' : quality === 'decent' ? 'not bad. not great. but not bad.' : 'you showed up. that\'s something.';
+
+    const share = async () => {
+      const text = `SHIFT · ${todayLabel()}\nMy score: ${total} (avg ${avg})\nhttps://shift.inefficientcode.com`;
+      if (navigator.share) { try { await navigator.share({ text }); return; } catch(e) { if (e.name==='AbortError') return; } }
+      try { await navigator.clipboard.writeText(text); } catch(e) {}
+    };
+
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
+          <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',textAlign:'center'}}>
+            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',opacity:.5,marginBottom:4}}>Daily Complete · {todayLabel()}</div>
+            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}>{total}</div>
+            <div style={{fontSize:'.75rem',opacity:.5,marginTop:4}}>avg {avg}</div>
+          </div>
+          <div style={{padding:'.75rem 1rem',borderBottom:'2px solid #000',fontSize:'.8rem',fontStyle:'italic',textAlign:'center',color:'#666'}}>
+            {tagline}
+          </div>
+          {ds.rounds.map((r,i) => (
+            <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'.625rem 1rem',borderBottom:'2px solid #000'}}>
+              <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase',width:40,color:'#999'}}>R{i+1}</span>
+              <span style={{flex:1,fontSize:'.875rem',fontWeight:900}}>{r.score}</span>
+              <span style={{fontSize:'.75rem',fontWeight:900,color: r.perfect?'#2a7a4b':'#999'}}>{r.perfect?'✓ perfect':r.score>0?'✓ partial':'✗'}</span>
+            </div>
+          ))}
+          <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
+            <button onClick={share} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              ↑ Share Score
+            </button>
+            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              ← Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ─── SoloGame ─────────────────────────────────────────────────────────────────
+function SoloGame({ onExit }) {
+  const [puzzleRound, setPR]    = useState(0);
+  const [puzzle, setPuzzle]     = useState(() => genPuzzle(4));
+  const [scores, setScores]     = useState([]);
+  const [phase, setPhase]       = useState('countdown');
+  const [lastRes, setLastRes]   = useState(null);
+  const [settled, setSettled]   = useState(false);
+
+  useEffect(() => {
+    if (phase !== 'inter') return;
+    setSettled(false);
+    const id = setTimeout(() => setSettled(true), 1300);
+    return () => clearTimeout(id);
+  }, [phase, puzzleRound]);
+
+  const total = scores.reduce((a,r) => a+r.score, 0);
+
+  const onDone = (res) => {
+    setLastRes(res);
+    setScores(prev => [...prev, res]);
+    setPhase('inter');
+  };
+
+  const nextPuzzle = () => {
+    setPuzzle(genPuzzle(4));
+    setPR(n => n + 1);
+    setPhase('countdown');
+  };
+
+  const endRun = () => setPhase('ended');
+
+  if (phase === 'countdown') return <Countdown onDone={() => setPhase('playing')} />;
+
+  if (phase === 'playing') return (
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+      <button onClick={endRun} style={{position:'absolute',top:16,right:16,zIndex:50,background:'#fff',border:'2px solid #000',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs2">✕</button>
+      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',paddingTop:'3.5rem',zIndex:1}}>
+        <GameBoard key={puzzleRound} puzzle={puzzle} label={`Solo · Puzzle ${puzzleRound+1}`} total={total} onDone={onDone} />
+      </div>
+    </div>
+  );
+
+  if (phase === 'inter' && lastRes) {
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace'}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
+          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center',fontWeight:900,textTransform:'uppercase',fontSize:'.875rem',background:settled&&lastRes.perfect?'#000':'#fff',color:settled&&lastRes.perfect?'#fff':'#1a1a1a',transition:'all .3s',letterSpacing:'.1em'}}>
+            {!settled ? `Puzzle ${puzzleRound+1}` : lastRes.perfect ? 'Perfect!' : lastRes.score > 0 ? 'Partial' : 'Zero score'}
+          </div>
+          <div style={{padding:'1.5rem',textAlign:'center',borderBottom:'4px solid #000'}}>
+            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',color:'#999',marginBottom:8}}>this round</div>
+            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}><AnimScore target={lastRes.score} /></div>
+          </div>
+          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase'}}>Total</span>
+            <span style={{fontSize:'1.25rem',fontWeight:900}}>{total}</span>
+          </div>
+          <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
+            <button onClick={nextPuzzle} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              Next Puzzle →
+            </button>
+            <button onClick={endRun} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              End Run
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'ended') {
+    const n = scores.length;
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace'}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
+          <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',textAlign:'center'}}>
+            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',opacity:.5,marginBottom:4}}>Run Over</div>
+            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}>{total}</div>
+            <div style={{fontSize:'.75rem',opacity:.5,marginTop:4}}>{n} puzzle{n!==1?'s':''}</div>
+          </div>
+          <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
+            <button onClick={() => { setScores([]); setPR(0); setPuzzle(genPuzzle(4)); setPhase('countdown'); }} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              Play Again
+            </button>
+            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              ← Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ─── VersusGame ───────────────────────────────────────────────────────────────
+const POLL_MS    = 2500;
+const MATCH_TO   = 12000;
+
+function VersusGame({ onExit }) {
+  const [phase,    setPhase]   = useState('lobby');
+  const [puzzles,  setPuzzles] = useState([]);
+  const [round,    setRound]   = useState(0);
+  const [rounds,   setRounds]  = useState([]);
+  const [myLast,   setMyLast]  = useState(null);
+  const [oppLast,  setOppLast] = useState(null);
+  const [oppName,  setOppName] = useState('');
+  const [isGhost,  setIsGhost] = useState(false);
+  const [matchId,  setMatchId] = useState(null);
+  const [oppId,    setOppId]   = useState(null);
+  const [status,   setStatus]  = useState('');
+  const [lMsg,     setLMsg]    = useState('');
+  const [settled,  setSettled] = useState(false);
+  const [dots,     setDots]    = useState(0);
+
+  const pollR     = useRef(null);
+  const ghostR    = useRef(null);
+  const toR       = useRef(null);
+  const pendingR  = useRef(null);
+  const roundsR   = useRef([]);
+
+  useEffect(() => { roundsR.current = rounds; }, [rounds]);
+
+  const stopPoll = () => { clearInterval(pollR.current); pollR.current = null; };
+  const clearAll = () => { stopPoll(); clearTimeout(ghostR.current); clearTimeout(toR.current); };
+  useEffect(() => () => clearAll(), []);
+
+  useEffect(() => {
+    if (phase !== 'waiting') return;
+    const id = setInterval(() => setDots(d => (d+1)%4), 480);
+    return () => clearInterval(id);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'inter') return;
+    setSettled(false);
+    const id = setTimeout(() => setSettled(true), 1300);
+    return () => clearTimeout(id);
+  }, [phase, round]);
+
+  const mkPuzzles = seed => {
+    const rng = mulberry32(seed);
+    return [0,1,2].map(() => genPuzzle(4, rng));
+  };
+
+  const startGhost = useCallback(() => {
+    const name = GHOSTS[Math.floor(Math.random()*GHOSTS.length)];
+    const seed = Math.floor(Math.random() * 0xFFFFFF);
+    setIsGhost(true); setOppName(name);
+    setPuzzles(mkPuzzles(seed));
+    setRound(0); setRounds([]); roundsR.current = [];
+    setPhase('flash');
+    ghostR.current = setTimeout(() => setPhase('countdown'), 1800);
+  }, []);
+
+  const startMatch = async () => {
+    if (!navigator.onLine) { setLMsg('No internet connection'); return; }
+    setLMsg(''); setPhase('matching'); setStatus('Searching for opponent…');
+    const r = await pfCreateTix();
+    if (!r.ok) { ghostR.current = setTimeout(startGhost, 2000 + Math.random()*2000); return; }
+    const tid = r.data.TicketId;
+    toR.current = setTimeout(async () => {
+      stopPoll();
+      await pfCancelTix().catch(()=>{});
+      ghostR.current = setTimeout(startGhost, 1500 + Math.random()*2000);
+    }, MATCH_TO);
+    pollR.current = setInterval(async () => {
+      const p = await pfPollTix(tid);
+      if (!p.ok) return;
+      if (p.data.Status === 'Matched') {
+        clearAll();
+        const mr = await pfGetMatch(p.data.MatchId);
+        if (!mr.ok) { startGhost(); return; }
+        const members = mr.data.Members;
+        const opp = members.find(m => m.Entity.Id !== _pfId);
+        if (!opp) { startGhost(); return; }
+        const mid = p.data.MatchId, oid = opp.Entity.Id;
+        const host = members[0].Entity.Id === _pfId;
+        setMatchId(mid); setOppId(oid);
+        setIsGhost(false); setOppName('Opponent');
+        setRound(0); setRounds([]); roundsR.current = [];
+        if (host) {
+          const seed = Math.floor(Math.random() * 0xFFFFFF);
+          setPuzzles(mkPuzzles(seed));
+          await pfWriteSetup(mid, seed);
+          setPhase('flash');
+          ghostR.current = setTimeout(() => setPhase('countdown'), 1800);
+        } else {
+          setStatus('Syncing…');
+          pollR.current = setInterval(async () => {
+            const d = await pfReadOpp(oid, `match_${mid}_setup`);
+            if (d.ok && d.data?.seed != null) {
+              stopPoll();
+              setPuzzles(mkPuzzles(d.data.seed));
+              setPhase('flash');
+              ghostR.current = setTimeout(() => setPhase('countdown'), 1800);
             }
+          }, POLL_MS);
         }
+      } else if (p.data.Status === 'Cancelled' || p.data.Status === 'Failed') {
+        clearAll(); startGhost();
+      }
+    }, POLL_MS);
+  };
 
-        function getBSTSeed() {
-            const date = new Date();
-            const formatter = new Intl.DateTimeFormat('en-GB', {
-                timeZone: 'Europe/London',
-                year: 'numeric', month: '2-digit', day: '2-digit'
-            });
-            const formatted = formatter.format(date); // "DD/MM/YYYY"
-            const parts = formatted.split('/');
-            return parseInt(`${parts[2]}${parts[1]}${parts[0]}`, 10);
-        }
+  const onRoundDone = useCallback((res) => {
+    pendingR.current = { ri: round, my: res.score };
+    setMyLast(res.score); setOppLast(null);
+    if (!isGhost && matchId) pfWriteRound(matchId, round, res.score).catch(()=>{});
+    setPhase('waiting');
+  }, [round, isGhost, matchId]);
 
-        // Procedural Equation Generator
-        function generatePuzzle(numSteps, rng = Math.random) {
-            let current = Math.floor(rng() * 10) + 1; // Start 1-10
-            const start = current;
-            const ops = [];
+  useEffect(() => {
+    if (phase !== 'waiting') return;
+    const pr = pendingR.current;
+    if (!pr) return;
+    if (isGhost) {
+      const r = Math.random();
+      const delay = r<.65 ? 800+Math.random()*2200 : r<.88 ? 3000+Math.random()*2000 : 5000+Math.random()*3000;
+      ghostR.current = setTimeout(() => completeRound(pr.ri, pr.my, Math.round(ghostSc())), delay);
+    } else {
+      pollR.current = setInterval(async () => {
+        const d = await pfReadOpp(oppId, `match_${matchId}_r${pr.ri}`);
+        if (d.ok && d.data?.score != null) { stopPoll(); completeRound(pr.ri, pr.my, d.data.score); }
+      }, POLL_MS);
+    }
+  }, [phase]); // eslint-disable-line
 
-            for (let i = 0; i < numSteps; i++) {
-                let valid = false;
-                let opType, operand, symbol;
+  const completeRound = (ri, my, opp) => {
+    const nr = { ri, my, opp };
+    const updated = [...roundsR.current, nr];
+    roundsR.current = updated;
+    setOppLast(opp);
+    setRounds(updated);
+    setPhase('inter');
+  };
 
-                let attempts = 0;
-                while(!valid && attempts < 50) {
-                    attempts++;
-                    opType = Math.floor(rng() * 4); // 0:+, 1:-, 2:*, 3:/
-                    
-                    if (opType === 0) {
-                        operand = Math.floor(rng() * 12) + 1;
-                        symbol = '+';
-                        current += operand;
-                        valid = true;
-                    } else if (opType === 1) {
-                        operand = Math.floor(rng() * 12) + 1;
-                        symbol = '-';
-                        current -= operand;
-                        valid = true;
-                    } else if (opType === 2 && Math.abs(current) < 60) { 
-                        // Cap multiplication to prevent giant numbers
-                        operand = Math.floor(rng() * 3) + 2; // 2, 3, 4
-                        symbol = '×';
-                        current *= operand;
-                        valid = true;
-                    } else if (opType === 3) {
-                        // Division must result in a clean integer
-                        operand = Math.floor(rng() * 4) + 2; // 2, 3, 4, 5
-                        if (current % operand === 0) {
-                            symbol = '÷';
-                            current /= operand;
-                            valid = true;
-                        }
-                    }
-                }
-                
-                // Fallback to simple addition if RNG gets stuck
-                if(!valid) {
-                    operand = Math.floor(rng() * 10) + 1;
-                    symbol = '+';
-                    current += operand;
-                }
+  const nextRound = () => {
+    const ni = round + 1;
+    if (ni >= 3) { setPhase('done'); }
+    else { setRound(ni); setMyLast(null); setOppLast(null); setPhase('countdown'); }
+  };
 
-                ops.push({
-                    id: `op${i}`,
-                    label: `${symbol} ${operand}`,
-                    symbol: symbol,
-                    val: operand,
-                    type: symbol,
-                    expectedIndex: i
-                });
-            }
-            
-            // Map functions cleanly
-            ops.forEach(op => {
-                if (op.type === '+') op.fn = (x) => x + op.val;
-                if (op.type === '-') op.fn = (x) => x - op.val;
-                if (op.type === '×') op.fn = (x) => x * op.val;
-                if (op.type === '÷') op.fn = (x) => x / op.val;
-            });
+  const reset = () => {
+    clearAll();
+    setPhase('lobby'); setRound(0); setRounds([]); roundsR.current = [];
+    setPuzzles([]); setMyLast(null); setOppLast(null);
+  };
 
-            return { start, target: current, ops };
-        }
+  const abort = () => { clearAll(); setPhase('lobby'); setRound(0); setRounds([]); roundsR.current = []; setPuzzles([]); };
 
-        // --- Game State ---
+  const abortBtn = (
+    <button onClick={abort} style={{position:'absolute',top:16,right:16,zIndex:50,background:'#fff',border:'2px solid #000',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs2">✕</button>
+  );
 
-        let gameMode = 'MENU'; // DAILY, SOLO, VS
-        let soloDifficulty = 3;
-        let generatedLevels = [];
-        let currentLevelObj = null;
+  // Flash screen
+  if (phase === 'flash') return (
+    <div style={{position:'fixed',inset:0,background:'#000',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16,fontFamily:'Space Mono,monospace'}}>
+      <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.2em',color:'rgba(255,255,255,.5)'}}>Opponent Found</div>
+      <div style={{fontSize:'2rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'-.05em',color:'#fff'}}>{oppName}</div>
+      <div style={{fontSize:'.75rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'rgba(255,255,255,.35)',marginTop:8}}>prepare to play…</div>
+    </div>
+  );
 
-        let currentRound = 0;
-        let score = 0;
-        let currentVal = 0;
-        let appliedOps = [];
-        
-        let maxTimeForRound = 20;
-        let timeRemaining = 0;
-        let timerInterval = null;
-        let isAnimating = false;
-        let dummyScore = 0;
+  if (phase === 'countdown') return <Countdown onDone={() => setPhase('playing')} />;
 
-        const ui = {
-            homepageView: document.getElementById('homepage-view'),
-            gameView: document.getElementById('game-view'),
-            soloMenuOverlay: document.getElementById('solo-menu-overlay'),
-            queueOverlay: document.getElementById('queue-overlay'),
-            roundOverlay: document.getElementById('round-overlay'),
-            countdownOverlay: document.getElementById('countdown-overlay'),
-            board: document.getElementById('board'),
-            controls: document.getElementById('controls'),
-            slots: document.getElementById('slots'),
-            currentVal: document.getElementById('current-val'),
-            startVal: document.getElementById('start-val'),
-            targetVal: document.getElementById('target-val'),
-            scoreVal: document.getElementById('score-val'),
-            timerFill: document.getElementById('timer'),
-            snarky: document.getElementById('snarky'),
-            roundText: document.getElementById('round-text'),
-            floatScore: document.getElementById('float-score'),
-            countdownText: document.getElementById('countdown-text')
-        };
+  if (phase === 'playing' && puzzles.length > 0) return (
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+      {abortBtn}
+      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',paddingTop:'3.5rem',zIndex:1}}>
+        <GameBoard key={round} puzzle={puzzles[round]} label={`vs ${oppName} · Round ${round+1}/3`} total={roundsR.current.reduce((a,r)=>a+r.my,0)} onDone={onRoundDone} />
+      </div>
+    </div>
+  );
 
-        // --- Flow Controllers ---
+  if (phase === 'waiting') {
+    const DOTSTR = ['○○○','●○○','●●○','●●●'];
+    return (
+      <div style={{position:'fixed',inset:0,background:'#18181b',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16,fontFamily:'Space Mono,monospace',color:'#fff'}}>
+        {abortBtn}
+        <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.15em',opacity:.4}}>Round {round+1} · Waiting</div>
+        <div style={{border:'4px solid rgba(255,255,255,.15)',width:'100%',maxWidth:380,overflow:'hidden',margin:'0 1.5rem'}}>
+          <div style={{display:'flex'}}>
+            <div style={{flex:1,borderRight:'2px solid rgba(255,255,255,.1)',background:'#27272a',padding:'1.25rem 1rem',textAlign:'center'}}>
+              <div style={{fontSize:'.5625rem',fontWeight:700,textTransform:'uppercase',color:'rgba(255,255,255,.4)',marginBottom:8}}>You</div>
+              <div style={{fontSize:'2.5rem',fontWeight:900}}>{myLast ?? '—'}</div>
+            </div>
+            <div style={{flex:1,background:'#27272a',padding:'1.25rem 1rem',textAlign:'center'}}>
+              <div style={{fontSize:'.5625rem',fontWeight:700,textTransform:'uppercase',color:'rgba(255,255,255,.4)',marginBottom:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{oppName}</div>
+              <div style={{fontSize:'1.75rem',fontWeight:900,color:'rgba(255,255,255,.25)',letterSpacing:'.1em'}}>{DOTSTR[dots]}</div>
+              <div style={{fontSize:'.5rem',fontWeight:700,textTransform:'uppercase',color:'rgba(255,255,255,.25)',marginTop:4}}>Calculating…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-        function hideAllOverlays() {
-            document.querySelectorAll('.overlay').forEach(el => el.classList.remove('active'));
-        }
+  if (phase === 'inter' && rounds.length > 0) {
+    const last   = rounds[rounds.length - 1];
+    const iWon   = last.my > last.opp;
+    const tied   = last.my === last.opp;
+    const totMy  = rounds.reduce((a,r)=>a+r.my,  0);
+    const totOpp = rounds.reduce((a,r)=>a+r.opp, 0);
+    const hdr    = !settled ? `Round ${round+1}`
+      : tied   ? `Round ${round+1} — Tied`
+      : iWon   ? `Round ${round+1} — You Win`
+      :          `Round ${round+1} — They Win`;
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace'}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        {abortBtn}
+        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
+          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center',fontWeight:900,textTransform:'uppercase',fontSize:'.875rem',letterSpacing:'.1em',background:settled&&!tied&&iWon?'#000':'#fff',color:settled&&!tied&&iWon?'#fff':'#1a1a1a',transition:'all .3s'}}>
+            {hdr}
+          </div>
+          <div style={{display:'flex',borderBottom:'4px solid #000'}}>
+            <div style={{flex:1,borderRight:'2px solid #000',padding:'1.25rem 1rem',textAlign:'center',background:settled&&!tied&&iWon?'#000':'#fff',color:settled&&!tied&&iWon?'#fff':'#1a1a1a',transition:'all .3s'}}>
+              <div style={{fontSize:'.5625rem',fontWeight:700,textTransform:'uppercase',marginBottom:8,opacity:.5}}>You</div>
+              <div style={{fontSize:'2.5rem',fontWeight:900}}><AnimScore target={last.my} /></div>
+            </div>
+            <div style={{flex:1,padding:'1.25rem 1rem',textAlign:'center',background:settled&&!tied&&!iWon?'#000':'#fff',color:settled&&!tied&&!iWon?'#fff':'#1a1a1a',transition:'all .3s'}}>
+              <div style={{fontSize:'.5625rem',fontWeight:700,textTransform:'uppercase',marginBottom:8,opacity:.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{oppName}</div>
+              <div style={{fontSize:'2.5rem',fontWeight:900}}><AnimScore target={last.opp} /></div>
+            </div>
+          </div>
+          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase'}}>Total</span>
+            <span style={{fontSize:'1.25rem',fontWeight:900,letterSpacing:'-.05em'}}>{totMy} — {totOpp}</span>
+          </div>
+          <div style={{padding:'1rem'}}>
+            <button onClick={nextRound} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              {round + 1 >= 3 ? 'See Final Result' : `Round ${round+2} →`}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-        function showMainMenu() {
-            hideAllOverlays();
-            ui.homepageView.style.display = 'flex';
-            ui.gameView.style.display = 'none';
-        }
+  if (phase === 'done' && rounds.length > 0) {
+    const totMy  = rounds.reduce((a,r)=>a+r.my,  0);
+    const totOpp = rounds.reduce((a,r)=>a+r.opp, 0);
+    const won    = totMy > totOpp;
+    const tied   = totMy === totOpp;
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
+          <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',background:won&&!tied?'#000':'#fff',color:won&&!tied?'#fff':'#1a1a1a',textAlign:'center'}}>
+            <div style={{fontSize:'.875rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em'}}>{tied?'Draw':won?'You Win!':'You Lose'}</div>
+            <div style={{fontSize:'2.5rem',fontWeight:900,marginTop:4,lineHeight:1}}>{totMy} — {totOpp}</div>
+            <div style={{fontSize:'.625rem',opacity:won&&!tied?.5:.4,marginTop:4,textTransform:'uppercase',letterSpacing:'.1em'}}>total score</div>
+          </div>
+          {rounds.map((r,i) => (
+            <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'.625rem 1rem',borderBottom:'2px solid #000'}}>
+              <span style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',width:24,color:'#999'}}>R{i+1}</span>
+              <span style={{flex:1,fontSize:'.875rem',fontWeight:900}}>You {r.my}</span>
+              <span style={{fontSize:'.875rem',color:'#666'}}>{r.opp} {oppName}</span>
+              <span style={{fontSize:'.75rem',fontWeight:900}}>{r.my>r.opp?'✓':r.my<r.opp?'✗':'='}</span>
+            </div>
+          ))}
+          <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
+            <button onClick={reset} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              Play Again
+            </button>
+            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              ← Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-        function showSoloMenu() {
-            hideAllOverlays();
-            ui.soloMenuOverlay.classList.add('active');
-        }
+  // Lobby / Matching
+  const searching = phase === 'matching';
+  return (
+    <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+      <div style={{background:'#fff',border:'8px solid #000',padding:'2rem',width:'100%',maxWidth:400,display:'flex',flexDirection:'column',alignItems:'center',gap:24,zIndex:1}} className="bs8 anim-fade">
+        <div style={{fontSize:'2.5rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'-.05em',textAlign:'center'}}>Versus Mode</div>
+        {searching ? (
+          <>
+            <div style={{width:'100%',border:'2px solid #000',padding:'1rem',display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
+              <div style={{display:'flex',gap:6}}>
+                {[0,1,2,3].map(i => (
+                  <div key={i} style={{width:10,height:10,borderRadius:'50%',background:'#000',animation:`spinBounce .8s ease-in-out ${i*.15}s infinite`}} />
+                ))}
+              </div>
+              <div style={{fontSize:'.75rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',textAlign:'center'}}>{status}</div>
+            </div>
+            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            {lMsg && <div style={{width:'100%',border:'2px solid #c00',padding:'.75rem 1rem',fontSize:'.75rem',fontWeight:700,textTransform:'uppercase',textAlign:'center',color:'#c00'}}>{lMsg}</div>}
+            <p style={{fontSize:'.75rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',textAlign:'center',borderTop:'2px solid #000',borderBottom:'2px solid #000',padding:'1rem 0',width:'100%',margin:0,lineHeight:1.8}}>
+              3 rounds · highest total wins
+            </p>
+            <button onClick={startMatch} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'1.25rem',fontWeight:900,fontSize:'1.25rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              Find Match
+            </button>
+            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              ← Back
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
-        function initGameData() {
-            score = 0;
-            currentRound = 0;
-            ui.scoreVal.innerText = score;
-        }
+// ─── HowToPlay modal ──────────────────────────────────────────────────────────
+function HowToPlay({ onClose }) {
+  const S = { fontFamily:'Space Mono,monospace' };
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:'1.5rem',...S}}>
+      <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:420,maxHeight:'90vh',overflowY:'auto'}} className="bs8 anim-fade">
+        <div style={{padding:'1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',fontSize:'.875rem'}}>How to Play</span>
+          <button onClick={onClose} style={{background:'none',border:'none',color:'#fff',fontSize:'1.25rem',cursor:'pointer',lineHeight:1,padding:'0 4px'}}>✕</button>
+        </div>
 
-        function transitionToGame() {
-            hideAllOverlays();
-            ui.homepageView.style.display = 'none';
-            ui.gameView.style.display = 'flex';
-        }
+        {[
+          { title:'The Goal', body:'Transform the start number into the target number using all the operation buttons.' },
+          { title:'The Buttons', body:'You\'re given operation buttons like "+ 7", "× 3", "- 2", "÷ 4" — shuffled each round. Tap them one by one. Each tap applies the operation to your running total.' },
+          { title:'Order Matters', body:'Operations must be applied in the correct order. Get them right and your running total will land exactly on the target.' },
+          { title:'Scoring', body:'Perfect solve (correct order, exact target): 100–1000 points — time-based bonus. The faster you solve, the higher the score. Partial: 250 points per operation in the correct position.' },
+          { title:'The Timer', body:'Each round has a countdown timer. Running out of time ends the round — you still earn points for any correct positions.' },
+          { title:'Daily Challenge', body:'Every day there are 3 new rounds, seeded so everyone worldwide gets the same puzzles. Your score goes on the global leaderboard.' },
+          { title:'Solo Play', body:'Infinite random rounds. No leaderboard — just you versus the puzzles. Try to build the highest total score.' },
+          { title:'VS Mode', body:'Matched against another player in real-time (or an AI opponent if no one\'s found). 3 rounds, same puzzle for both players. Highest total score wins.' },
+        ].map(({ title, body }) => (
+          <div key={title} style={{padding:'.875rem 1rem',borderBottom:'2px solid #000'}}>
+            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#999',marginBottom:4}}>{title}</div>
+            <div style={{fontSize:'.8125rem',lineHeight:1.6}}>{body}</div>
+          </div>
+        ))}
 
-        function startDailyMode() {
-            gameMode = 'DAILY';
-            initGameData();
-            
-            const dailyRNG = mulberry32(getBSTSeed());
-            generatedLevels = [
-                generatePuzzle(4, dailyRNG),
-                generatePuzzle(4, dailyRNG),
-                generatePuzzle(4, dailyRNG)
-            ];
+        <div style={{padding:'1rem'}}>
+          <button onClick={onClose} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+            Got It
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-            transitionToGame();
-            runCountdown(() => loadRound(currentRound));
-        }
+// ─── Settings modal ────────────────────────────────────────────────────────────
+function Settings({ playerName, onShuffle, onClose, onLeaderboard }) {
+  const S = { fontFamily:'Space Mono,monospace' };
+  const [shuffling, setShuffling] = useState(false);
 
-        function startSoloMode(diff) {
-            gameMode = 'SOLO';
-            soloDifficulty = diff;
-            initGameData();
-            
-            transitionToGame();
-            runCountdown(() => loadRound(currentRound));
-        }
+  const doShuffle = () => {
+    setShuffling(true);
+    onShuffle();
+    setTimeout(() => setShuffling(false), 600);
+  };
 
-        function startVsMode() {
-            gameMode = 'VS';
-            initGameData();
-            
-            // Generate Random Set
-            generatedLevels = [
-                generatePuzzle(4),
-                generatePuzzle(4),
-                generatePuzzle(4)
-            ];
-            dummyScore = Math.floor(Math.random() * 2500) + 1500;
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:'1.5rem',...S}}>
+      <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:380}} className="bs8 anim-fade">
+        <div style={{padding:'1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',fontSize:'.875rem'}}>Settings</span>
+          <button onClick={onClose} style={{background:'none',border:'none',color:'#fff',fontSize:'1.25rem',cursor:'pointer',lineHeight:1,padding:'0 4px'}}>✕</button>
+        </div>
 
-            ui.queueOverlay.classList.add('active');
-            document.getElementById('queue-title').innerText = "searching...";
-            document.getElementById('queue-sub').innerText = "finding a worthy opponent";
+        {/* Name */}
+        <div style={{padding:'1rem',borderBottom:'4px solid #000'}}>
+          <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#999',marginBottom:8}}>Your Name</div>
+          <div style={{display:'flex',alignItems:'center',gap:10,padding:'.625rem',border:'2px solid #e5e0d8',borderRadius:6,background:'#f9f7f4'}}>
+            <span style={{flex:1,fontSize:'.9rem',fontWeight:700,transition:'opacity .3s',opacity:shuffling?.4:1}}>{playerName}</span>
+            <button onClick={doShuffle} title="Shuffle name" style={{background:'#f7dfd6',border:'2px solid #000',padding:'4px 10px',fontWeight:900,fontSize:'.75rem',cursor:'pointer',...S}} className="bs2">
+              ⇄ Shuffle
+            </button>
+          </div>
+          <div style={{fontSize:'.625rem',color:'#999',marginTop:6,lineHeight:1.5}}>Name is randomly assigned. Shuffle for a new one.</div>
+        </div>
 
-            setTimeout(() => {
-                document.getElementById('queue-title').innerText = "match found!";
-                document.getElementById('queue-title').style.color = "var(--accent-3)";
-                document.getElementById('queue-sub').innerText = "playing against: DUMMY_PRO_99";
-                
-                setTimeout(() => {
-                    transitionToGame();
-                    runCountdown(() => loadRound(currentRound));
-                }, 1500);
-            }, 2000);
-        }
+        {/* Leaderboard link */}
+        <div style={{padding:'1rem',borderBottom:'4px solid #000'}}>
+          <button onClick={() => { onClose(); onLeaderboard(); }} style={{width:'100%',background:'#e8e4f2',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',textAlign:'left',...S}} className="bs">
+            📊 Leaderboard
+          </button>
+        </div>
 
-        // --- Core Gameplay Loop ---
+        <div style={{padding:'1rem'}}>
+          <button onClick={onClose} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        function loadRound(index) {
-            if (gameMode === 'DAILY' || gameMode === 'VS') {
-                if (index >= generatedLevels.length) {
-                    endGame();
-                    return;
-                }
-                currentLevelObj = generatedLevels[index];
-                
-                if (gameMode === 'DAILY') {
-                    const dateStr = new Intl.DateTimeFormat('en-GB', { 
-                        timeZone: 'Europe/London', month: 'short', day: 'numeric' 
-                    }).format(new Date()).toLowerCase();
-                    ui.roundText.innerText = `daily (${dateStr}) - r${index + 1}/3`;
-                } else {
-                    ui.roundText.innerText = `vs mode - r${index + 1}/3`;
-                }
-            } else if (gameMode === 'SOLO') {
-                currentLevelObj = generatePuzzle(soloDifficulty);
-                ui.roundText.innerText = `solo run - p${index + 1}`;
-            }
+// ─── StartScreen ──────────────────────────────────────────────────────────────
+function StartScreen({ onNav, playerName, onShuffle }) {
+  const [showHow,      setShowHow]      = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDonate,   setShowDonate]   = useState(false);
+  const [toast,        setToast]        = useState('');
 
-            currentVal = currentLevelObj.start;
-            appliedOps = [];
-            
-            // Setup Info
-            ui.startVal.innerText = currentLevelObj.start;
-            ui.targetVal.innerText = currentLevelObj.target;
-            ui.currentVal.innerText = currentLevelObj.start;
-            ui.currentVal.style.color = 'var(--text-main)';
-            ui.snarky.innerText = '"don\'t mess up. i\'m watching."';
-            ui.snarky.style.background = 'var(--surface)';
-            ui.board.classList.remove('shake');
+  const savedDaily = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem(dailyKey())); } catch { return null; }
+  }, []);
 
-            // Setup Dynamic Slots
-            ui.slots.innerHTML = '';
-            for (let i = 0; i < currentLevelObj.ops.length; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'slot';
-                slot.id = `slot-${i}`;
-                ui.slots.appendChild(slot);
-            }
+  const share = async () => {
+    let text = 'Check out Shift — a little math game 🧮\nhttps://shift.inefficientcode.com';
+    if (savedDaily) {
+      const avg = (savedDaily.totalScore / 3).toFixed(4);
+      text = `SHIFT · ${todayLabel()}\nMy score: ${savedDaily.totalScore} (avg ${avg})\nhttps://shift.inefficientcode.com`;
+    }
+    if (navigator.share) { try { await navigator.share({ text }); return; } catch(e) { if(e.name==='AbortError') return; } }
+    try { await navigator.clipboard.writeText(text); setToast('Copied!'); setTimeout(()=>setToast(''),2000); } catch(e) {}
+  };
 
-            // Setup Dynamic Buttons
-            ui.controls.innerHTML = '';
-            ui.controls.className = `controls count-${currentLevelObj.ops.length}`;
-            
-            const shuffledOps = shuffleArray([...currentLevelObj.ops]);
-            shuffledOps.forEach((op) => {
-                const btn = document.createElement('button');
-                btn.className = 'op-btn';
-                btn.id = op.id;
-                btn.innerText = op.label;
-                btn.onclick = () => handleOpClick(op);
-                ui.controls.appendChild(btn);
-            });
+  const BTN = { fontFamily:'Space Mono,monospace', cursor:'pointer' };
 
-            // Adjust timer logic based on steps
-            maxTimeForRound = currentLevelObj.ops.length * 10 - 10; 
-            // 3 steps = 20s, 4 steps = 30s, 5 steps = 40s
-            
-            startTimer();
-        }
+  return (
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
 
-        function startTimer() {
-            clearInterval(timerInterval);
-            timeRemaining = maxTimeForRound;
-            updateTimerVisuals();
-            
-            timerInterval = setInterval(() => {
-                timeRemaining -= 0.05; // Smooth 50ms updates
-                updateTimerVisuals();
+      {showHow      && <HowToPlay onClose={()=>setShowHow(false)} />}
+      {showSettings && <Settings playerName={playerName} onShuffle={onShuffle} onClose={()=>setShowSettings(false)} onLeaderboard={()=>onNav('leaderboard')} />}
+      {showDonate && (
+        <div style={{position:'fixed',inset:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.55)',fontFamily:'Space Mono,monospace'}} onClick={()=>setShowDonate(false)}>
+          <div style={{background:'#fff',border:'8px solid #000',boxShadow:'8px 8px 0 #000',width:'100%',maxWidth:360,margin:'0 1.5rem',padding:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem'}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:'2rem'}}>♥</div>
+            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',textAlign:'center',borderBottom:'4px solid #000',paddingBottom:'1rem',width:'100%'}}>Enjoying Shift?</div>
+            <p style={{fontSize:'.625rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',textAlign:'center',lineHeight:1.8,color:'#555',margin:0}}>Support the developer</p>
+            <button onClick={()=>{ window.open('https://ko-fi.com/inefficientcode','_blank','noopener'); setShowDonate(false); }} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}}>
+              Take me to Ko-fi ♥
+            </button>
+            <button onClick={()=>setShowDonate(false)} style={{width:'100%',background:'#fff',color:'#000',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}}>
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      )}
 
-                if (timeRemaining <= 0) {
-                    clearInterval(timerInterval);
-                    timeRemaining = 0;
-                    handleTimeOut();
-                }
-            }, 50);
-        }
+      <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',zIndex:1}}>
 
-        function updateTimerVisuals() {
-            const percentage = Math.max(0, (timeRemaining / maxTimeForRound) * 100);
-            ui.timerFill.style.width = `${percentage}%`;
-            
-            if (percentage < 30) {
-                ui.timerFill.style.backgroundColor = 'var(--accent-3)';
-            } else {
-                ui.timerFill.style.backgroundColor = 'var(--accent-4)';
-            }
-        }
+        {/* Main card */}
+        <div style={{background:'#fff',border:'8px solid #000',padding:'2rem',paddingBottom:'5rem',width:'100%',maxWidth:400,display:'flex',flexDirection:'column',gap:20,position:'relative'}} className="bs8 anim-fade">
 
-        function handleTimeOut() {
-            ui.snarky.innerText = '"bzzzt. time is up."';
-            ui.snarky.style.background = 'var(--accent-3)';
-            ui.board.classList.add('shake');
-            ui.currentVal.style.color = '#c25';
-            
-            document.querySelectorAll('.op-btn').forEach(btn => btn.style.pointerEvents = 'none');
-            
-            let correctCount = 0;
-            appliedOps.forEach((op, i) => { if (op.expectedIndex === i) correctCount++; });
+          {/* Share ↑ — bottom left */}
+          <button onClick={share} title="Share" style={{position:'absolute',bottom:'2rem',left:'2rem',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',...BTN}} className="bs2">↑</button>
+          {toast && <div style={{position:'absolute',bottom:'2.5rem',left:'4rem',fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',background:'#1a1a1a',color:'#f5f0e8',padding:'2px 8px',borderRadius:4}}>{toast}</div>}
 
-            if (correctCount > 0) {
-                const partialScore = correctCount * 250; 
-                triggerFloatScore(partialScore, 'var(--accent-4)');
-                addScore(partialScore);
-                setTimeout(() => showRoundOverlay("time out.", `too slow, but ${correctCount} right. +${partialScore} pts.`, false), 1800);
-            } else {
-                triggerFloatScore(0, 'var(--accent-3)');
-                setTimeout(() => showRoundOverlay("time out.", "too slow. zero points.", true), 1800);
-            }
-        }
+          {/* Ko-fi ♥ — bottom centre */}
+          <button onClick={()=>setShowDonate(true)} title="Support Shift" style={{position:'absolute',bottom:'2rem',left:'50%',transform:'translateX(-50%)',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',...BTN}} className="bs2">♥</button>
 
-        function handleOpClick(op) {
-            if (appliedOps.length >= currentLevelObj.ops.length || isAnimating) return;
+          {/* How to play ⓘ — bottom right */}
+          <button onClick={()=>setShowHow(true)} title="How to play" style={{position:'absolute',bottom:'2rem',right:'4.5rem',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.875rem',...BTN}} className="bs2">i</button>
 
-            const oldVal = currentVal;
-            currentVal = op.fn(currentVal);
-            appliedOps.push(op);
-            
-            document.getElementById(op.id).classList.add('used');
+          {/* Settings ⚙ — bottom right */}
+          <button onClick={()=>setShowSettings(true)} title="Settings" style={{position:'absolute',bottom:'2rem',right:'2rem',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.875rem',...BTN}} className="bs2">⚙</button>
 
-            const slotIndex = appliedOps.length - 1;
-            const slot = document.getElementById(`slot-${slotIndex}`);
-            slot.innerText = op.symbol;
-            slot.classList.add('filled');
+          {/* Title */}
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:'3.5rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'-.05em',lineHeight:.9}}>SHIFT</div>
+            <div style={{fontSize:'.75rem',fontStyle:'italic',color:'#666',marginTop:8}}>a little math game.</div>
+          </div>
 
-            ui.currentVal.style.transform = 'scale(1.1) rotate(-2deg)';
-            setTimeout(() => ui.currentVal.style.transform = 'scale(1) rotate(0deg)', 150);
+          {/* Game mode buttons */}
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <button onClick={()=>onNav('daily')} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'1.25rem',fontWeight:900,fontSize:'1.1rem',textTransform:'uppercase',textAlign:'left',position:'relative',...BTN}} className="bs">
+              Daily Challenge
+              {savedDaily && <span style={{position:'absolute',right:'1rem',top:'50%',transform:'translateY(-50%)',fontSize:'.625rem',fontWeight:700,textTransform:'uppercase',opacity:.5}}>{savedDaily.totalScore} pts</span>}
+            </button>
+            <button onClick={()=>onNav('solo')} style={{width:'100%',background:'#f7dfd6',border:'4px solid #000',padding:'1rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',textAlign:'left',...BTN}} className="bs">
+              Solo Play
+            </button>
+            <button onClick={()=>onNav('versus')} style={{width:'100%',background:'#dcf0e5',border:'4px solid #000',padding:'1rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',textAlign:'left',...BTN}} className="bs">
+              VS Mode
+            </button>
+          </div>
+        </div>
 
-            animateNumber(ui.currentVal, oldVal, currentVal, 300, () => {
-                checkGameState();
-            });
+        {/* App store badges — equal-sized, coming soon */}
+        <div style={{display:'flex',gap:12,marginTop:20,alignItems:'stretch',justifyContent:'center'}}>
+          {[
+            { label:'App Store',   icon:'🍎', title:'iOS App — Coming Soon',     imgSrc:'https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' },
+            { label:'Google Play', icon:'▶',  title:'Android App — Coming Soon', imgSrc:null },
+          ].map(({ label, icon, title, imgSrc }) => (
+            <div key={label} title={title} style={{position:'relative',cursor:'default',width:148,height:48,borderRadius:8,overflow:'hidden',opacity:.55,filter:'grayscale(25%)',border:'2px solid rgba(0,0,0,.2)',background:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8,color:'#fff',flexShrink:0}}>
+              {imgSrc ? (
+                <img src={imgSrc} alt={label} style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0}}
+                  onError={e=>{e.target.style.display='none';}} />
+              ) : (
+                <>
+                  <span style={{fontSize:'1.1rem'}}>{icon}</span>
+                  <div style={{textAlign:'left'}}>
+                    <div style={{fontSize:'.45rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.08em',opacity:.6,fontFamily:'Space Mono,monospace'}}>Get it on</div>
+                    <div style={{fontSize:'.75rem',fontWeight:900,fontFamily:'Space Mono,monospace'}}>{label}</div>
+                  </div>
+                </>
+              )}
+              <div style={{position:'absolute',inset:0,background:'rgba(245,240,232,.5)',display:'flex',alignItems:'flex-end',justifyContent:'center',paddingBottom:5}}>
+                <span style={{background:'#1a1a1a',color:'#f5f0e8',fontSize:'.45rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',padding:'1px 6px',borderRadius:3,fontFamily:'Space Mono,monospace'}}>Coming Soon</span>
+              </div>
+            </div>
+          ))}
+        </div>
 
-            // Mid-game snark logic
-            if (appliedOps.length < currentLevelObj.ops.length) {
-                if (currentVal % 1 !== 0) {
-                    ui.snarky.innerText = '"decimals? gross."';
-                    ui.snarky.style.background = 'var(--accent-1)';
-                } else if (currentVal < 0) {
-                    ui.snarky.innerText = '"into the negative zone we go..."';
-                    ui.snarky.style.background = 'var(--accent-2)';
-                } else if (currentVal > currentLevelObj.target * 3) {
-                    ui.snarky.innerText = '"you are so far away it hurts."';
-                } else {
-                    const quips = ['"okay big brain..."', '"i guess that works..."', '"suspicious move..."'];
-                    ui.snarky.innerText = quips[Math.floor(Math.random()*quips.length)];
-                    ui.snarky.style.background = 'var(--surface)';
-                }
-            }
-        }
+      </div>
+    </div>
+  );
+}
 
-        function checkGameState() {
-            if (appliedOps.length < currentLevelObj.ops.length) return;
-            
-            clearInterval(timerInterval);
-            
-            let correctCount = 0;
-            appliedOps.forEach((op, i) => { if (op.expectedIndex === i) correctCount++; });
+// ─── App ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [screen, setScreen]     = useState('start');
+  const [ready,  setReady]      = useState(false);
+  const [name,   setName]       = useState(() => localStorage.getItem('shift_display_name') || '');
 
-            if (currentVal === currentLevelObj.target) {
-                // Perfect Win
-                ui.currentVal.style.color = 'var(--text-main)';
-                ui.snarky.innerText = '"bingo bango. you did it."';
-                ui.snarky.style.background = 'var(--accent-2)';
-                
-                const baseScore = 1000;
-                const timeBonus = Math.max(100, Math.floor(baseScore * (timeRemaining / maxTimeForRound)));
-                
-                triggerFloatScore(timeBonus, 'var(--accent-2)');
-                addScore(timeBonus);
-                setTimeout(() => showRoundOverlay("nice.", `target acquired. +${timeBonus} pts.`, false), 1500);
+  useEffect(() => {
+    (async () => {
+      let n = localStorage.getItem('shift_display_name');
+      if (!n) { n = randName(); localStorage.setItem('shift_display_name', n); }
+      setName(n);
+      await pfLogin();
+      if (!localStorage.getItem('shift_display_name_set')) {
+        await pfSetName(n).catch(()=>{});
+        localStorage.setItem('shift_display_name_set', '1');
+      }
+      setReady(true);
+    })();
+  }, []);
 
-            } else {
-                ui.board.classList.add('shake');
-                
-                if (correctCount > 0) {
-                    // Partial Match
-                    const partialScore = correctCount * 250; 
-                    ui.snarky.innerText = `"wrong. but ${correctCount} in the right spot, so i pity u."`;
-                    ui.snarky.style.background = 'var(--accent-4)';
-                    
-                    triggerFloatScore(partialScore, 'var(--accent-4)');
-                    addScore(partialScore);
-                    setTimeout(() => showRoundOverlay("eh.", `missed, but ${correctCount} right. +${partialScore} pts.`, false), 1800);
-                } else {
-                    // Total Fail
-                    ui.currentVal.style.color = '#c25';
-                    ui.snarky.innerText = '"absolute trash fire of a calculation."';
-                    ui.snarky.style.background = 'var(--accent-3)';
-                    
-                    triggerFloatScore(0, 'var(--accent-3)');
-                    setTimeout(() => showRoundOverlay("nope.", "totally whiffed it. zero points.", true), 1800);
-                }
-            }
-        }
+  const handleShuffle = async () => {
+    const n = randName();
+    localStorage.setItem('shift_display_name', n);
+    localStorage.removeItem('shift_display_name_set');
+    setName(n);
+    await pfSetName(n).catch(()=>{});
+  };
 
-        // --- Helpers & UI Renderers ---
+  if (!ready) return (
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Space Mono,monospace'}}>
+      <div style={{fontSize:'2.5rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'-.05em',color:'#1a1a1a',animation:'spinBounce .9s ease-in-out infinite'}}>SHIFT</div>
+    </div>
+  );
 
-        function triggerFloatScore(amount, color) {
-            ui.floatScore.innerText = `+${amount}`;
-            ui.floatScore.style.background = color;
-            ui.floatScore.classList.remove('animate');
-            void ui.floatScore.offsetWidth; 
-            ui.floatScore.classList.add('animate');
-        }
+  if (screen === 'daily')       return <DailyGame   onExit={() => setScreen('start')} />;
+  if (screen === 'solo')        return <SoloGame    onExit={() => setScreen('start')} />;
+  if (screen === 'versus')      return <VersusGame  onExit={() => setScreen('start')} />;
+  if (screen === 'leaderboard') return <LeaderBoard onBack={() => setScreen('start')} />;
 
-        function addScore(amount) {
-            const newScore = score + amount;
-            animateNumber(ui.scoreVal, score, newScore, 800);
-            score = newScore;
-        }
+  return <StartScreen onNav={setScreen} playerName={name} onShuffle={handleShuffle} />;
+}
 
-        function showRoundOverlay(title, sub, isTotalFail) {
-            document.getElementById('round-result-title').innerText = title;
-            document.getElementById('round-result-sub').innerText = sub;
-            
-            const btn = document.getElementById('next-btn');
-            
-            // Logic for next action
-            if (gameMode === 'SOLO') {
-                if (isTotalFail) {
-                    btn.innerText = "end run";
-                    btn.dataset.action = "gameover";
-                } else {
-                    btn.innerText = "next puzzle";
-                    btn.dataset.action = "next";
-                }
-            } else {
-                if (currentRound === generatedLevels.length - 1) {
-                    btn.innerText = "see results";
-                    btn.dataset.action = "gameover";
-                } else {
-                    btn.innerText = "next round";
-                    btn.dataset.action = "next";
-                }
-            }
-
-            ui.roundOverlay.classList.add('active');
-        }
-
-        function handleNextAction() {
-            ui.roundOverlay.classList.remove('active');
-            const btn = document.getElementById('next-btn');
-            
-            if (btn.dataset.action === "gameover") {
-                endGame();
-            } else {
-                currentRound++;
-                if (gameMode === 'SOLO') {
-                    // Solo skips countdown for speed, just loads next
-                    loadRound(currentRound); 
-                } else {
-                    runCountdown(() => loadRound(currentRound));
-                }
-            }
-        }
-
-        function endGame() {
-            ui.roundOverlay.classList.add('active');
-            
-            const titleEl = document.getElementById('round-result-title');
-            const subEl = document.getElementById('round-result-sub');
-            const btn = document.getElementById('next-btn');
-
-            let rank = "";
-            if (score === 0) rank = "math potato";
-            else if (score < 1500) rank = "average noodle";
-            else if (score < 2500) rank = "number wizard";
-            else rank = "silicon god";
-
-            if (gameMode === 'DAILY') {
-                titleEl.innerText = "daily complete";
-                subEl.innerHTML = `today's score: <strong style="background:var(--accent-4); padding:0 4px; border:1px solid #000;">${score}</strong><br><br>rank: <br><strong>${rank}</strong><br><br>come back tomorrow.`;
-            } else if (gameMode === 'SOLO') {
-                titleEl.innerText = "run over";
-                subEl.innerHTML = `puzzles survived: <strong>${currentRound}</strong><br>total score: <strong style="background:var(--accent-2); padding:0 4px; border:1px solid #000;">${score}</strong>`;
-            } else if (gameMode === 'VS') {
-                const won = score >= dummyScore;
-                titleEl.innerText = won ? "you won!" : "you lost.";
-                subEl.innerHTML = `your score: <strong>${score}</strong><br>DUMMY_PRO_99: <strong>${dummyScore}</strong>`;
-            }
-            
-            btn.innerText = "back to menu";
-            btn.dataset.action = "menu";
-            btn.onclick = () => {
-                btn.onclick = handleNextAction; // Reset handler
-                showMainMenu();
-            };
-        }
-
-        function shuffleArray(array) {
-            let currentIndex = array.length, randomIndex;
-            while (currentIndex !== 0) {
-                randomIndex = Math.floor(Math.random() * currentIndex);
-                currentIndex--;
-                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-            }
-            return array;
-        }
-
-        function runCountdown(callback) {
-            ui.countdownOverlay.classList.add('active');
-            let count = 3;
-            
-            function updateCountText(num) {
-                ui.countdownText.innerText = num;
-                ui.countdownText.classList.remove('countdown-animate');
-                void ui.countdownText.offsetWidth; 
-                ui.countdownText.classList.add('countdown-animate');
-                
-                const colors = ['var(--accent-1)', 'var(--accent-2)', 'var(--accent-3)', 'var(--accent-4)'];
-                const bgColors = [...colors].reverse();
-                ui.countdownText.style.textShadow = `6px 6px 0px ${colors[count % 4]}, -4px -4px 0px ${bgColors[count % 4]}`;
-            }
-
-            updateCountText(count);
-
-            const countInterval = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    updateCountText(count);
-                } else if (count === 0) {
-                    updateCountText("go.");
-                } else {
-                    clearInterval(countInterval);
-                    ui.countdownOverlay.classList.remove('active');
-                    callback();
-                }
-            }, 1000);
-        }
-
-        function animateNumber(element, start, end, duration, callback) {
-            isAnimating = true;
-            let startTimestamp = null;
-            
-            if(element.id === 'score-val') {
-                element.style.transform = 'scale(1.1) rotate(2deg)';
-                setTimeout(() => element.style.transform = 'scale(1) rotate(0deg)', duration + 50);
-            }
-
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3);
-                let current = start + (end - start) * ease;
-                
-                element.innerText = (current % 1 !== 0) ? current.toFixed(1) : Math.round(current);
-
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
-                } else {
-                    element.innerText = (end % 1 !== 0) ? parseFloat(end.toFixed(2)) : end;
-                    isAnimating = false;
-                    if(callback) callback();
-                }
-            };
-            window.requestAnimationFrame(step);
-        }
-
-        // Init
-        showMainMenu();
-
-    </script>
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
