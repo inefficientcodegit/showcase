@@ -164,7 +164,7 @@ const scoreTO = applied => {
 
 // ─── Daily ────────────────────────────────────────────────────────────────────
 const dailySeed    = () => { const d=new Date(); return Math.floor(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())/86400000); };
-const dailyPuzzles = () => { const rng=mulberry32(dailySeed()); return [0,1,2].map(()=>genPuzzle(4,rng)); };
+const dailyPuzzles = () => { const rng=mulberry32(dailySeed()); return [0,1,2].map(()=>genPuzzle(3,rng)); };
 const dailyKey     = () => `shift_daily_${dailySeed()}`;
 const todayLabel   = () => new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
@@ -335,7 +335,7 @@ function GameBoard({ puzzle, label, total, onDone }) {
       playFail();
       setVClr('#cc2255'); setMsg(pick('zero')); setMsgBg('#f7dfd6'); setShake(true);
     }
-    setTimeout(() => onDone(res), res.perfect ? 1500 : 1800);
+    setTimeout(() => onDone({ ...res, puzzle }), res.perfect ? 1500 : 1800);
   }, [onDone]);
 
   useEffect(() => {
@@ -463,12 +463,13 @@ function LeaderBoard({ onBack }) {
   return (
     <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
       <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',gap:0,zIndex:1}}>
-        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden'}} className="bs8 anim-fade">
-          <div style={{padding:'1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',textAlign:'center'}}>
-            <div style={{fontSize:'.875rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em'}}>Daily Leaderboard</div>
-            <div style={{fontSize:'.75rem',opacity:.5,marginTop:2}}>{todayLabel()}</div>
-          </div>
+      {/* Sticky back button */}
+      <div style={{position:'relative',zIndex:10,padding:'.75rem 1rem',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'2px solid #000',background:'#f5f0e8'}}>
+        <button onClick={onBack} style={{background:'#fff',border:'2px solid #000',padding:'4px 12px',fontWeight:900,fontSize:'.75rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace',boxShadow:'2px 2px 0 #000'}}>← Back</button>
+        <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',color:'#999'}}>Daily Leaderboard · {todayLabel()}</div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',zIndex:1}}>
+        <div style={{background:'#fff',border:'2px solid #000',boxShadow:'8px 8px 0 #000',width:'100%',maxWidth:400,overflow:'hidden'}} className="anim-fade">
           {loading && <div style={{padding:'2rem',textAlign:'center',fontSize:'.875rem',color:'#999',fontWeight:700}}>Loading…</div>}
           {err     && <div style={{padding:'1rem',textAlign:'center',fontSize:'.75rem',color:'#c00',fontWeight:700}}>{err}</div>}
           {rows && rows.length === 0 && <div style={{padding:'2rem',textAlign:'center',fontSize:'.875rem',color:'#999',fontWeight:700}}>No scores yet today — be the first!</div>}
@@ -479,9 +480,6 @@ function LeaderBoard({ onBack }) {
               <span style={{fontSize:'.875rem',fontWeight:900}}>{(e.StatValue/10000).toFixed(4)}</span>
             </div>
           ))}
-          <div style={{padding:'1rem'}}>
-            <button onClick={onBack} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">← Back</button>
-          </div>
         </div>
       </div>
     </div>
@@ -489,6 +487,28 @@ function LeaderBoard({ onBack }) {
 }
 
 // ─── RoundOverlay ─────────────────────────────────────────────────────────────
+const SOLN_COLORS = ['#dcf0e5','#e8e4f2','#f7dfd6'];
+
+function SolutionRow({ puzzle }) {
+  const sorted = [...puzzle.ops].sort((a,b) => a.expectedIndex - b.expectedIndex);
+  return (
+    <div style={{marginTop:16,paddingTop:14,borderTop:'2px solid rgba(0,0,0,.1)'}}>
+      <div style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',color:'#aaa',marginBottom:8,fontFamily:'Space Mono,monospace'}}>correct order</div>
+      <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',justifyContent:'center'}}>
+        <span style={{background:'#1a1a1a',color:'#f5f0e8',border:'1px solid #000',padding:'4px 8px',fontWeight:900,fontSize:'.8125rem',lineHeight:1,fontFamily:'Space Mono,monospace'}}>{puzzle.start}</span>
+        {sorted.map((op,i) => (
+          <React.Fragment key={op.id}>
+            <span style={{color:'#aaa',fontSize:'.75rem',fontWeight:900}}>→</span>
+            <span style={{background:SOLN_COLORS[i%3],border:'1px solid #000',padding:'4px 8px',fontWeight:900,fontSize:'.8125rem',lineHeight:1,fontFamily:'Space Mono,monospace'}}>{op.label}</span>
+          </React.Fragment>
+        ))}
+        <span style={{color:'#aaa',fontSize:'.75rem',fontWeight:900}}>→</span>
+        <span style={{background:'#f2e9c9',border:'1px solid #000',padding:'4px 8px',fontWeight:900,fontSize:'.8125rem',lineHeight:1,fontFamily:'Space Mono,monospace'}}>{puzzle.target}</span>
+      </div>
+    </div>
+  );
+}
+
 const buildOverlayProps = (res, mode, roundIdx, totalRounds) => {
   let title, subtitle, btnLabel;
   if (res.timedOut) {
@@ -509,17 +529,18 @@ const buildOverlayProps = (res, mode, roundIdx, totalRounds) => {
   } else {
     btnLabel = roundIdx >= totalRounds - 1 ? 'see results' : 'next round';
   }
-  return { title, subtitle, btnLabel };
+  return { title, subtitle, btnLabel, puzzle: res.puzzle };
 };
 
-function RoundOverlay({ title, subtitle, btnLabel, onAction }) {
+function RoundOverlay({ title, subtitle, btnLabel, onAction, puzzle }) {
   const S = { fontFamily:'Space Mono,monospace' };
   return (
     <div style={{position:'fixed',inset:0,zIndex:40,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(245,243,239,0.88)',backdropFilter:'blur(2px)',...S}}>
       <div style={{background:'#fff',border:'2px solid #000',boxShadow:'6px 6px 0 #000',borderRadius:'.75rem',padding:'2rem 1.5rem',maxWidth:'85%',width:'100%',textAlign:'center',transform:'rotate(-1deg)'}} className="anim-fade">
         <div style={{fontSize:'1.8rem',fontWeight:900,marginBottom:8,lineHeight:1}}>{title}</div>
-        <div style={{color:'#737373',fontSize:'.875rem',lineHeight:1.5,marginBottom:24,whiteSpace:'pre-line'}}>{subtitle}</div>
-        <button onClick={()=>{playClick();onAction();}} style={{background:'#f2e9c9',border:'2px solid #000',boxShadow:'4px 4px 0 #000',borderRadius:'.375rem',padding:'.75rem 1.5rem',fontSize:'1rem',fontWeight:900,textTransform:'uppercase',cursor:'pointer',...S}}>
+        <div style={{color:'#737373',fontSize:'.875rem',lineHeight:1.5,whiteSpace:'pre-line'}}>{subtitle}</div>
+        {puzzle && <SolutionRow puzzle={puzzle} />}
+        <button onClick={()=>{playClick();onAction();}} style={{background:'#f2e9c9',border:'2px solid #000',boxShadow:'4px 4px 0 #000',borderRadius:'.375rem',padding:'.75rem 1.5rem',fontSize:'1rem',fontWeight:900,textTransform:'uppercase',cursor:'pointer',marginTop:20,...S}}>
           {btnLabel}
         </button>
       </div>
@@ -528,7 +549,7 @@ function RoundOverlay({ title, subtitle, btnLabel, onAction }) {
 }
 
 // ─── DailyGame ────────────────────────────────────────────────────────────────
-function DailyGame({ onExit }) {
+function DailyGame({ onExit, onLeaderboard }) {
   const [puzzles]     = useState(dailyPuzzles);
   const [round,  setR]       = useState(0);
   const [scores, setScores]  = useState([]); // per-round score objects
@@ -620,7 +641,10 @@ function DailyGame({ onExit }) {
               </div>
             ))}</div>
           <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
-            <button onClick={()=>{playClick();share();}} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();onLeaderboard();}} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+              Leaderboard
+            </button>
+            <button onClick={()=>{playClick();share();}} style={{width:'100%',background:'#e8e4f2',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               ↑ Share Score
             </button>
             <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
@@ -838,7 +862,7 @@ function VersusGame({ onExit }) {
 
   const mkPuzzles = seed => {
     const rng = mulberry32(seed);
-    return [0,1,2].map(() => genPuzzle(4, rng));
+    return [0,1,2].map(() => genPuzzle(3, rng));
   };
 
   const startGhost = useCallback(() => {
@@ -902,7 +926,7 @@ function VersusGame({ onExit }) {
   };
 
   const onRoundDone = useCallback((res) => {
-    pendingR.current = { ri: round, my: res.score };
+    pendingR.current = { ri: round, my: res.score, puzzle: res.puzzle };
     setMyLast(res.score); setOppLast(null);
     if (!isGhost && matchId) pfWriteRound(matchId, round, res.score).catch(()=>{});
     setPhase('waiting');
@@ -925,7 +949,7 @@ function VersusGame({ onExit }) {
   }, [phase]); // eslint-disable-line
 
   const completeRound = (ri, my, opp) => {
-    const nr = { ri, my, opp };
+    const nr = { ri, my, opp, puzzle: pendingR.current?.puzzle };
     const updated = [...roundsR.current, nr];
     roundsR.current = updated;
     setOppLast(opp);
@@ -1032,6 +1056,22 @@ function VersusGame({ onExit }) {
             <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase'}}>Total</span>
             <span style={{fontSize:'1.25rem',fontWeight:900,letterSpacing:'-.05em'}}>{totMy} — {totOpp}</span>
           </div>
+          {last.puzzle && (
+            <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center'}}>
+              <div style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',color:'#aaa',marginBottom:8,fontFamily:'Space Mono,monospace'}}>correct order</div>
+              <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',justifyContent:'center'}}>
+                <span style={{background:'#1a1a1a',color:'#f5f0e8',border:'1px solid #000',padding:'4px 8px',fontWeight:900,fontSize:'.8125rem',lineHeight:1,fontFamily:'Space Mono,monospace'}}>{last.puzzle.start}</span>
+                {[...last.puzzle.ops].sort((a,b)=>a.expectedIndex-b.expectedIndex).map((op,i)=>(
+                  <React.Fragment key={op.id}>
+                    <span style={{color:'#aaa',fontSize:'.75rem',fontWeight:900}}>→</span>
+                    <span style={{background:SOLN_COLORS[i%3],border:'1px solid #000',padding:'4px 8px',fontWeight:900,fontSize:'.8125rem',lineHeight:1,fontFamily:'Space Mono,monospace'}}>{op.label}</span>
+                  </React.Fragment>
+                ))}
+                <span style={{color:'#aaa',fontSize:'.75rem',fontWeight:900}}>→</span>
+                <span style={{background:'#f2e9c9',border:'1px solid #000',padding:'4px 8px',fontWeight:900,fontSize:'.8125rem',lineHeight:1,fontFamily:'Space Mono,monospace'}}>{last.puzzle.target}</span>
+              </div>
+            </div>
+          )}
           <div style={{padding:'1rem'}}>
             <button onClick={nextRound} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               {round + 1 >= 3 ? 'See Final Result' : `Round ${round+2} →`}
@@ -1443,7 +1483,7 @@ function App() {
     </div>
   );
 
-  if (screen === 'daily')       return <DailyGame   onExit={() => setScreen('start')} />;
+  if (screen === 'daily')       return <DailyGame   onExit={() => setScreen('start')} onLeaderboard={() => setScreen('leaderboard')} />;
   if (screen === 'solo')        return <SoloGame    onExit={() => setScreen('start')} />;
   if (screen === 'versus')      return <VersusGame  onExit={() => setScreen('start')} />;
   if (screen === 'leaderboard') return <LeaderBoard onBack={() => setScreen('start')} />;
