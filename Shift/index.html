@@ -26,6 +26,8 @@
   @keyframes floatUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-44px);opacity:0}}
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+  @keyframes countdownPop{0%{transform:scale(.2) rotate(-8deg);opacity:0}30%{transform:scale(1.1) rotate(4deg);opacity:1}70%{transform:scale(1) rotate(-2deg);opacity:1}100%{transform:scale(1.4) rotate(6deg);opacity:0}}
+  .anim-countdown{animation:countdownPop 1s cubic-bezier(.175,.885,.32,1.275) forwards}
   @keyframes spinBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
   .anim-shake{animation:shake .4s ease-in-out}
   .anim-float{animation:floatUp 1.2s ease-out forwards}
@@ -151,8 +153,9 @@ const genPuzzle = (n, rng = Math.random) => {
 const maxT  = n => n * 10 - 10;
 const scoreR = (applied, val, target, tLeft, mT) => {
   const c = applied.filter((o,i)=>o.expectedIndex===i).length;
-  return val===target ? { score: Math.max(100, Math.floor(1000*(tLeft/mT))), perfect:true, correct:c, timedOut:false }
-                      : { score: c*125, perfect:false, correct:c, timedOut:false };
+  const base = c * 125;
+  return val===target ? { score: base + Math.floor(500*(tLeft/mT)), perfect:true, correct:c, timedOut:false }
+                      : { score: base, perfect:false, correct:c, timedOut:false };
 };
 const scoreTO = applied => {
   const c = applied.filter((o,i)=>o.expectedIndex===i).length;
@@ -160,9 +163,9 @@ const scoreTO = applied => {
 };
 
 // ─── Daily ────────────────────────────────────────────────────────────────────
-const dailySeed    = () => { const d=new Date(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); };
+const dailySeed    = () => { const d=new Date(); return Math.floor(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())/86400000); };
 const dailyPuzzles = () => { const rng=mulberry32(dailySeed()); return [0,1,2].map(()=>genPuzzle(4,rng)); };
-const dailyKey     = () => { const d=new Date(); return `shift_daily_${d.getFullYear()}_${d.getMonth()+1}_${d.getDate()}`; };
+const dailyKey     = () => `shift_daily_${dailySeed()}`;
 const todayLabel   = () => new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
 // ─── Names / Ghost ────────────────────────────────────────────────────────────
@@ -174,22 +177,72 @@ const ghostSc   = () => { const r=Math.random(); return r<.07?0:r<.17?250+r*100:
 
 // ─── Lines (from GAME_LINES.md) ───────────────────────────────────────────────
 const LINES = {
-  idle:     ['"don\'t mess up. i\'m watching."','"tick tock, math brain."','"you\'ve got this. probably."','"looking at you. no pressure."','"go on then."'],
-  mid:      ['"okay big brain..."','"i guess that works..."','"suspicious move..."','"bold choice."','"hm. we\'ll see."','"interesting strategy."','"really?"','"sure, why not."','"that\'s one way to do it."','"i\'m not judging. (i\'m judging.)"'],
-  decimal:  ['"decimals? gross."','"oh no. fractions."','"things just got messy."','"eww. a decimal."'],
-  negative: ['"into the negative zone we go..."','"below zero. risky move."','"negative energy detected."','"oh we\'re going negative. brave."'],
-  wayoff:   ['"you are so far away it hurts."','"where are you going?"','"bold detour."','"this is a very scenic route."','"target? what target?"'],
-  perfect:  ['"bingo bango. you did it."','"correct. don\'t get cocky."','"well well well."','"i didn\'t think you had it in you."','"nailed it. annoying."','"okay fine. that was good."','"perfect. i\'m almost proud."'],
-  partial:  ['"wrong. but {n} in the right spot, so i pity u."','"not quite. {n} right though."','"partial credit. very partial."','"almost. but almost doesn\'t count here."'],
-  zero:     ['"absolute trash fire of a calculation."','"zero correct. zero."','"not a single one. wow."','"did you even try?"','"spectacular failure. truly."'],
-  toPartial:['"too slow. but {n} right — i\'ll allow it."','"time\'s up. {n} correct though."','"bzzt. time. but {n} weren\'t bad."'],
-  toZero:   ['"bzzzt. time is up."','"time\'s up. and nothing right. rough combo."','"zero and out of time. double loss."','"the clock killed you AND you were wrong."'],
+  idle:[`"don't mess up. i'm watching."`,`"tick tock, math brain."`,`"you've got this. probably."`,`"looking at you. no pressure."`,`"go on then."`,`"ready when you are. no rush. there is a timer though."`,`"i have all day. the clock doesn't."`,`"staring at it won't solve it."`,`"waiting for a miracle?"`,`"any time today would be great."`,`"blink twice if you're stuck already."`,`"take a deep breath and guess."`,`"the board is waiting for your brilliance."`,`"i can feel the gears turning. slowly."`,`"hope you stretched your fingers."`,`"you and the puzzle. a classic rivalry."`,`"paralysis by analysis."`,`"calculating... or just zoning out?"`,`"don't let the numbers intimidate you."`,`"we're all rooting for you. sort of."`,`"a bold opening move is usually good."`,`"just click something."`,`"the suspense is entirely one-sided."`,`"did you forget how numbers work?"`,`"channel your inner calculator."`,`"it goes faster if you actually move."`,`"i'm taking notes on your hesitation."`,`"breathe in, math out."`,`"i believe in you 45%."`,`"the numbers aren't going to move themselves."`,`"stalling is not a recognized strategy."`],
+  mid:[`"okay big brain..."`,`"i guess that works..."`,`"suspicious move..."`,`"bold choice."`,`"hm. we'll see."`,`"interesting strategy."`,`"really?"`,`"sure, why not."`,`"that's one way to do it."`,`"bold. maybe too bold."`,`"i'm not judging. (i'm judging.)"`,`"i'd have done it differently."`,`"fascinating... in a bad way."`,`"if you say so."`,`"a choice was certainly made."`,`"trusting the process?"`,`"calculating your regrets..."`,`"we're committing to this?"`,`"plot twist."`,`"didn't see that coming. neither did you."`,`"are you sure about that?"`,`"i admire your confidence."`,`"okay, steering hard left."`,`"playing 4D chess with 2D numbers."`,`"let's pretend that was intentional."`,`"mysterious. i like it."`,`"maybe it'll all work out."`,`"the numbers are confused too."`,`"boldly going nowhere?"`,`"i see a vision. it's blurry."`,`"a highly unorthodox maneuver."`,`"you like to live dangerously."`,`"we're making moves. debatable ones."`,`"keep going, i need the entertainment."`,`"that changes things. marginally."`,`"the board recoils slightly."`],
+  decimal:[`"decimals? gross."`,`"oh no. fractions."`,`"things just got messy."`,`"eww. a decimal."`,`"that's not clean. at all."`,`"we don't like dots here."`,`"floating point terror."`,`"fractions are just numbers that couldn't commit."`,`"this is a whole number household."`,`"you broke the integer."`,`"who invited the decimal point?"`,`"messy math. very messy."`,`"shattering the illusion of neatness."`,`"what is this, accounting?"`,`"i hope you plan to round that up."`,`"clean up on aisle point-five."`,`"decimals. the enemy of joy."`,`"it fell apart. literally."`,`"this is getting complicated."`,`"we're slicing numbers now?"`,`"nobody likes an uneven split."`,`"integers are crying right now."`,`"it used to be so round and perfect."`,`"point something? truly tragic."`,`"not very aesthetic of you."`,`"don't let it fragment any further."`,`"can we get back to integers please."`,`"fractional panic setting in."`,`"a messy number for a messy situation."`,`"the aesthetic is ruined."`],
+  negative:[`"into the negative zone we go..."`,`"below zero. risky move."`,`"negative energy detected."`,`"oh we're going negative. brave."`,`"minus territory. fun."`,`"sub-zero intellect."`,`"you owe the board numbers now."`,`"we are currently in debt."`,`"digging a mathematical hole."`,`"the temperature is dropping."`,`"less than nothing. deep."`,`"a pessimistic calculation."`,`"going backwards to go forwards?"`,`"negative. just like my attitude."`,`"entering the upside down."`,`"are we aiming for the basement?"`,`"a deficit of logic."`,`"subterranean mathematics."`,`"chasing the minus sign."`,`"this is financially irresponsible."`,`"how low can we go?"`,`"we hit rock bottom and kept digging."`,`"the numbers are freezing."`,`"we're in the red."`,`"a very cynical approach."`,`"embracing the void, i see."`,`"less than zero. very edgy."`,`"now you have to climb back up."`,`"mathematical spelunking."`],
+  wayoff:[`"you are so far away it hurts."`,`"where are you going?"`,`"bold detour."`,`"this is a very scenic route."`,`"target? what target?"`,`"impressive. wrong, but impressive."`,`"are we playing the same game?"`,`"lost in the mathematical wilderness."`,`"you missed the exit a mile back."`,`"astronomically incorrect."`,`"not even in the same zip code."`,`"did you forget the goal entirely?"`,`"exploring the outer limits."`,`"a spectacular departure from logic."`,`"orbiting the wrong planet."`,`"you are writing your own rules now."`,`"way off course. navigation failed."`,`"i'm actually stunned by this gap."`,`"a delightful, completely wrong tangent."`,`"did somebody move the goalposts?"`,`"math is hard, but not this hard."`,`"we are operating in a different dimension."`,`"an absolute country mile away."`,`"this is a masterpiece of inaccuracy."`,`"lost at sea with no compass."`,`"i think you took a wrong turn at algebra."`,`"the destination is receding."`,`"beautifully, catastrophically wrong."`,`"the target misses you."`,`"a very creative interpretation of the goal."`],
+  perfect:[`"bingo bango. you did it."`,`"correct. don't get cocky."`,`"well well well."`,`"i didn't think you had it in you."`,`"nailed it. annoying."`,`"flawless. disgusting."`,`"okay fine. that was good."`,`"perfect. i'm almost proud."`,`"spot on. are you cheating?"`,`"a rare moment of competence."`,`"bullseye. don't let it go to your head."`,`"exactly right. horrifying."`,`"i stand corrected. vaguely."`,`"perfection. how tedious."`,`"a stroke of luck, surely."`,`"you solved it. please clap."`,`"i guess that works. perfectly."`,`"unbelievable. literally. i don't believe it."`,`"mathematical sorcery."`,`"you finally did something right."`,`"a beautiful equation. try it again."`,`"i must have given you an easy one."`,`"chef's kiss. reluctantly."`,`"you matched the target. golf clap."`,`"flawless victory. whatever."`,`"against all odds."`,`"a pristine performance."`,`"got it in one... eventually."`,`"mathematically sound. morally suspect."`,`"you cracked the code. slow blink."`,`"acceptable level of genius."`,`"perfection is your middle name. temporarily."`],
+  partial:[`"wrong. but {n} in the right spot, so i pity u."`,`"not quite. {n} right though, i'll take it."`,`"{n} correct. could be worse."`,`"partial credit. very partial."`,`"almost. but almost doesn't count here."`,`"{n} right, rest wrong. keep it together."`,`"you got {n}. the rest were tragic."`,`"a solid {n} correct. a liquid everything else."`,`"{n} hits. mostly misses."`,`"closeish. {n} right."`,`"{n} bright spots in a dark void."`,`"you successfully found {n} answers."`,`"i'll give you {n} for effort."`,`"{n} correct. the rest is history."`,`"almost had it. only got {n}."`,`"you fumbled {n} into the right place."`,`"managed {n} correct. barely."`,`"you were {n} steps away from greatness."`,`"i see {n} right choices and many regrets."`,`"{n} correct. participation trophy unlocked."`,`"a heroic attempt yielding {n} success."`,`"{n} right. please be better next time."`,`"we celebrate the {n} you got."`,`"a mixed bag containing {n} correct items."`,`"{n} accurate moves. the rest was jazz."`,`"you stumbled into {n} right answers."`,`"{n} right. the math gods are appeased lightly."`,`"just {n}. lower your expectations."`,`"a beautiful disaster with {n} good moments."`,`"only {n} valid coordinates."`,`"you got {n}. it's something, i suppose."`],
+  zero:[`"absolute trash fire of a calculation."`,`"zero correct. zero."`,`"not a single one. wow."`,`"did you even try?"`,`"spectacular failure. truly."`,`"zero. nothing. nada. wow."`,`"this is not math. i don't know what this is."`,`"a masterpiece of wrongness."`,`"an uninterrupted string of errors."`,`"flawlessly incorrect."`,`"you achieved nothing."`,`"that was bad. historically bad."`,`"pure, unadulterated failure."`,`"this physically hurts to look at."`,`"zero. a perfectly round number of fails."`,`"you missed every single one."`,`"i'm actually impressed by how wrong this is."`,`"mathematically offensive."`,`"a void of correct answers."`,`"was your objective to be wrong?"`,`"not even close to almost."`,`"zero matches. blink aggressively."`,`"i have no words. just disappointment."`,`"you left an empty crater of logic."`,`"a masterclass in guessing poorly."`,`"the probability of being this wrong is low."`,`"did the cat walk on the keyboard?"`,`"an absolute goose egg."`,`"zero points. negative respect."`,`"a total system collapse."`,`"nothing right. entirely consistent."`,`"we reset the standard for wrong."`],
+  toPartial:[`"too slow. but {n} right — i'll allow it."`,`"time's up. {n} correct though."`,`"bzzt. time. but {n} weren't bad."`,`"ran out of clock. {n} in the right place though."`,`"slow moving. {n} correct."`,`"the clock beat you. but {n} survived."`,`"time is an illusion, but your {n} correct are real."`,`"out of time. took {n} down with you."`,`"too much pondering. got {n} before the buzz."`,`"time expired. salvaged {n}."`,`"slow poke. {n} matches anyway."`,`"the buzzer sounds. {n} points secured."`,`"timed out. {n} in the bag."`,`"you were overthinking. {n} correct."`,`"goodbye time. hello {n} partial points."`,`"clock ran away. {n} stayed behind."`,`"a leisurely failure resulting in {n} right."`,`"time's up! {n} were somewhat okay."`,`"we ran out of sand. {n} grains correct."`,`"a temporal loss, but a positional {n} win."`,`"the alarm rang. {n} hits registered."`,`"you paused too long. {n} good moves."`,`"time waits for no one. {n} right."`,`"glaciologically slow. {n} right."`,`"the timer has no mercy. {n} right though."`,`"clocked out with {n} on the board."`,`"saved by the bell? no. but got {n}."`,`"you're out of minutes. here are {n} stars."`,`"the stopwatch is angry. {n} correct."`],
+  toZero:[`"bzzzt. time is up."`,`"time's up. and nothing right. rough combo."`,`"zero and out of time. double loss."`,`"the clock killed you AND you were wrong."`,`"time ran out. mercy, really."`,`"too slow and absolutely wrong."`,`"a tragic end to a terrible run."`,`"out of time, out of luck, out of points."`,`"a mathematically vacant timeout."`,`"you took all that time to do nothing."`,`"the clock is laughing at you."`,`"slow and wrong. a classic pair."`,`"timed out with empty hands."`,`"a spectacular waste of time."`,`"at least you were consistently bad and slow."`,`"we waited the whole time for literally nothing."`,`"time's up. a blessing for us both."`,`"nothing on the board. nothing on the clock."`,`"a total chronological and logical failure."`,`"you spent your time wisely. on being wrong."`,`"the buzzer signifies the end of your suffering."`,`"slow motion disaster complete."`,`"you managed to fail on two completely different axes."`,`"a zero-sum game of waiting."`,`"i watched the timer tick down in despair."`,`"zero points, zero seconds left. perfect."`,`"you accomplished literally nothing. slowly."`,`"i want a refund on those seconds."`,`"time expired. dignity also expired."`,`"the definition of anti-climactic."`],
+  dailyGood:[`"elite performance. maybe."`,`"strong work. don't let it go to your head."`,`"top tier. or close enough."`,`"i'm begrudgingly impressed."`,`"a respectable daily effort."`,`"you conquered the day. have a cookie."`,`"high score energy. very rare."`,`"almost a genius. almost."`,`"the math gods smile upon you."`,`"you didn't embarrass yourself today."`,`"a very competent display."`,`"superior intellect detected."`,`"you win the daily internet points."`,`"a solid streak of adequacy."`,`"an above average performance."`,`"i expected less. pleasantly surprised."`,`"you brought your A-minus game."`,`"look at you, doing math well."`,`"a high caliber result."`,`"you made the numbers dance today."`,`"acceptable daily dominance."`,`"you peaked today."`,`"very good. try not to ruin it tomorrow."`,`"flexing those cognitive muscles."`,`"you get a gold star. metaphorically."`,`"a top shelf score."`,`"you crushed it. moving on."`,`"a triumphant mathematical display."`,`"math is your friend today."`],
+  dailyAvg:[`"middle of the road. very you."`,`"decent. not great, not terrible."`,`"respectable. barely."`,`"you did a math. several, actually."`,`"a truly medium performance."`,`"the definition of average."`,`"you showed up. kind of."`,`"not the worst i've seen today."`,`"aggressively mediocre."`,`"a completely unmemorable score."`,`"you fall perfectly in the bell curve."`,`"a bland, satisfactory result."`,`"just enough to pass."`,`"you survived the daily. barely."`,`"a spectacularly average effort."`,`"right down the absolute middle."`,`"neutral vibes only today."`,`"you aimed for the middle and hit it."`,`"a standard issue score."`,`"neither bad nor particularly good."`,`"you played it safe today."`,`"an utterly typical outcome."`,`"very beige of you."`,`"you did exactly okay."`,`"a perfectly fine execution."`,`"nothing to write home about."`,`"an everyday score for an everyday player."`,`"a healthy dose of mediocrity."`,`"you're halfway there."`],
+  dailyBad:[`"you showed up. that's something."`,`"well, you played."`,`"tomorrow is another day."`,`"the important thing is you tried. sort of."`,`"rock bottom has a leaderboard too."`,`"a mathematically depressing result."`,`"a tragically low score."`,`"you struggled. it was hard to watch."`,`"a daily dose of disappointment."`,`"did you do this with your eyes closed?"`,`"a remarkably awful performance."`,`"you missed the mark by a mile."`,`"please try harder tomorrow."`,`"a profoundly bad score."`,`"you let the team down."`,`"i would hide this score if i were you."`,`"a masterclass in low achievement."`,`"you basically dragged yourself across the finish line."`,`"the math fairies are weeping."`,`"an incredibly subpar showing."`,`"you set a new low bar."`,`"a devastating blow to your statistics."`,`"it's all uphill from here. theoretically."`,`"you did your worst. literally."`,`"a thoroughly inadequate job."`,`"please do not share this on social media."`,`"a daily catastrophe."`,`"a remarkably flimsy attempt."`,`"you survived. your dignity did not."`],
+  versusSearching:[`"looking for someone to beat you..."`,`"hunting for a victim..."`,`"searching the globe for your match..."`,`"finding someone to humble you..."`,`"scanning the network for a challenger..."`,`"locating an opponent with more brain cells..."`,`"searching the multiverse for a rival..."`,`"finding someone to embarrass you..."`,`"trawling the depths for a player..."`,`"seeking a worthy adversary. or anyone, really."`,`"scouting for fresh meat..."`,`"hunting down another human..."`,`"looking for a brave soul..."`,`"checking the lobby for victims..."`,`"dialing up a random stranger..."`,`"summoning an antagonist..."`,`"finding someone to test your patience..."`,`"queuing you up for a loss..."`,`"searching the digital abyss..."`,`"looking for someone who also likes pain..."`,`"fetching an opponent..."`,`"tracking down a competitor..."`,`"finding a suitable sparring partner..."`,`"scanning for intelligent life..."`,`"waiting for someone to show up..."`,`"looking for a challenger to ruin your day..."`,`"locating your mathematical nemesis..."`,`"seeking out a duel..."`,`"finding someone to crush your dreams..."`],
+  versusFoundReal:[`"prepare to play…"`,`"hope you've been practising."`,`"let the carnage begin."`,`"may the best mathematician win."`,`"a challenger approaches."`,`"brace yourself."`,`"it is time to duel."`,`"an opponent has entered the chat."`,`"battle stations."`,`"show no mercy."`,`"time to prove yourself."`,`"a real human thinks they can beat you."`,`"gloves off. calculators out."`,`"the showdown commences."`,`"don't embarrass us."`,`"time to mathematically shine."`,`"an actual person is about to judge you."`,`"game on."`,`"the arena awaits."`,`"time to crunch the numbers."`,`"a rival appears."`,`"prepare for mathematical combat."`,`"let's see what you've got."`,`"they look tough. intellectually."`,`"time to step up."`,`"a clash of minds."`,`"the battle of wits begins."`,`"get ready to calculate."`,`"show them who's boss."`],
+  versusFoundGhost:[`"prepare to play…"`,`"hope you've been practising."`,`"let the carnage begin."`,`"a challenger approaches."`,`"brace yourself."`,`"it is time to duel."`,`"an opponent has entered the chat."`,`"battle stations."`,`"show no mercy."`,`"time to prove yourself."`,`"a real human thinks they can beat you. maybe."`,`"gloves off. calculators out."`,`"the showdown commences."`,`"don't embarrass us."`,`"time to mathematically shine."`,`"an actual entity is about to judge you."`,`"game on."`,`"the arena awaits."`,`"time to crunch the numbers."`,`"a rival appears."`,`"prepare for mathematical combat."`,`"let's see what you've got."`,`"they look tough. artificially."`,`"time to step up."`,`"a clash of simulated minds."`,`"the battle of wits begins."`,`"get ready to calculate."`,`"show them who's boss."`],
+  versusWaiting:[`"waiting for them to give up..."`,`"opponent is thinking very hard..."`,`"they'll finish eventually..."`,`"patience is a virtue."`,`"watching the kettle boil..."`,`"they are definitely struggling."`,`"opponent is lost in the sauce."`,`"waiting for mathematical genius to strike them."`,`"they are taking their sweet time."`,`"opponent is doing long division on paper."`,`"twiddling thumbs..."`,`"they must be stuck."`,`"opponent is contemplating their life choices."`,`"waiting for the other shoe to drop."`,`"they're checking their work. twice."`,`"opponent is stalling for time."`,`"waiting for a sign of life..."`,`"they are thoroughly perplexed."`,`"opponent is currently buffering."`,`"waiting for the gears to turn..."`,`"they will get there. probably."`,`"opponent is experiencing a syntax error."`,`"waiting out the clock..."`,`"they are counting on their fingers."`,`"opponent is lost in thought."`,`"waiting for the inevitable."`,`"they are mathematically stranded."`,`"opponent is recalculating..."`,`"waiting patiently for their demise."`],
+  versusWin:[`"you win. shocking."`,`"victory is yours. enjoy it."`,`"winner winner."`,`"you beat them. be gracious."`,`"first place. for now."`,`"you absolutely destroyed them."`,`"a mathematically sound victory."`,`"you claimed the crown."`,`"they never stood a chance."`,`"a completely dominant performance."`,`"you bested them."`,`"a triumph of intellect."`,`"you left them in the dust."`,`"a clinical victory."`,`"you won. try to act like you've been here before."`,`"a masterclass in winning."`,`"they are crying in a corner."`,`"you snatched the victory."`,`"a glorious win."`,`"you wiped the floor with them."`,`"a statistically significant victory."`,`"you are the supreme calculator."`,`"they were mathematically inferior."`,`"a flawless execution."`,`"you schooled them."`,`"a very commanding win."`,`"you took them to task."`,`"a decisive outcome."`,`"you emerged victorious."`],
+  versusLose:[`"you lose. character building."`,`"better luck next time. maybe."`,`"they got you."`,`"defeat builds character. supposedly."`,`"the maths humbled you today."`,`"you were utterly dismantled."`,`"they played you like a cheap calculator."`,`"a truly devastating loss."`,`"you got swept."`,`"they outsmarted you."`,`"a spectacular defeat."`,`"you were statistically inferior."`,`"they handed you an L."`,`"a completely embarrassing loss."`,`"you fell short."`,`"they danced circles around your numbers."`,`"a crushing blow to your ego."`,`"you got absolutely rolled."`,`"they were mathematically superior."`,`"a thorough trouncing."`,`"you never stood a chance."`,`"they made that look easy."`,`"a deeply unfortunate outcome."`,`"you were defeated."`,`"they showed you the door."`,`"a very conclusive loss."`,`"you got taken to school."`,`"a bitter pill to swallow."`,`"you were weighed, measured, and found wanting."`],
+  versusDraw:[`"a tie. deeply unsatisfying."`,`"exactly even. how boring."`,`"nobody wins. everybody loses."`,`"a draw. try harder next time."`,`"a mathematically neutral outcome."`,`"perfectly balanced. annoyingly so."`,`"you both disappointed me equally."`,`"a dead heat."`,`"an absolute stalemate."`,`"you both share the mediocrity."`,`"a perfectly symmetrical fail."`,`"nobody gets bragging rights."`,`"an equal display of competence."`,`"you cancelled each other out."`,`"a tie. universally loathed."`,`"an exact match of intellects."`,`"you both settled for average."`,`"a neck and neck race to nowhere."`,`"an absolute zero sum."`,`"you split the difference."`,`"a completely indecisive result."`,`"you both played identically well. or poorly."`,`"a tie. the coward's way out."`,`"an astonishingly even match."`,`"you mirrored each other perfectly."`,`"a draw. kiss your sister."`,`"an equally matched bout."`,`"you reached a mathematical truce."`,`"a tie. entirely unmemorable."`],
+  soloBetween:[`"another one?"`,`"glutton for punishment."`,`"round {n}. let's go."`,`"still here? good."`,`"onwards."`,`"next puzzle awaits."`,`"keep going."`,`"round {n}. prepare to think."`,`"moving swiftly along."`,`"the puzzles don't stop."`,`"onto the next challenge."`,`"you haven't quit yet?"`,`"round {n}. the fun continues."`,`"steeling yourself for another one."`,`"the brain strain continues."`,`"another math problem to ruin your day."`,`"round {n}. dive back in."`,`"the gauntlet presses on."`,`"ready for more suffering?"`,`"one more for the road."`,`"round {n}. don't slip up now."`,`"advancing to the next stage."`,`"the numbers are multiplying."`,`"round {n}. stay frosty."`,`"keep the momentum going."`,`"a fresh board awaits."`,`"round {n}. let's see what breaks first."`,`"the infinite cycle continues."`,`"stepping up to the plate again."`,`"round {n}. brace yourself."`,`"more calculations incoming."`],
+  soloEnd:[`"that's a wrap."`,`"run complete."`,`"you survived {n} puzzles."`,`"done. finally."`,`"not bad. not great. but not bad."`,`"you successfully ended your suffering."`,`"the math has concluded for now."`,`"a noble effort ending at {n}."`,`"go rest your weary brain."`,`"the numbers will wait for you."`,`"you cashed out at {n}."`,`"a dignified exit."`,`"you retired from the field."`,`"we'll call it a day at {n} puzzles."`,`"the calculations have ceased."`,`"you drew the line at {n}."`,`"a strategic retreat."`,`"giving up, are we?"`,`"you reached your absolute limit."`,`"the solo journey ends."`,`"quitting while you're ahead. or behind."`,`"you laid your calculator down."`,`"the numbers proved too much."`,`"a fair place to stop."`,`"you've had enough math for today."`,`"the session is officially terminated."`,`"you threw in the towel."`,`"a peaceful conclusion to the math."`,`"you tapped out at {n}."`,`"we are signing off."`,`"a mathematically sound conclusion."`],
 };
 const pick = (cat, vars = {}) => {
   let s = LINES[cat][Math.floor(Math.random()*LINES[cat].length)];
   for (const [k,v] of Object.entries(vars)) s = s.replace(`{${k}}`, v);
   return s;
 };
+
+// ─── Sounds (Web Audio API, synthesised) ─────────────────────────────────────
+let _sCtx = null;
+const _gc = () => {
+  if (_sCtx?.state === 'closed') _sCtx = null;
+  if (!_sCtx) _sCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_sCtx.state === 'suspended') _sCtx.resume().catch(()=>{});
+  return _sCtx;
+};
+let sndOn = localStorage.getItem('shift_sound') !== 'false';
+const setSndOn = v => { sndOn = !!v; localStorage.setItem('shift_sound', sndOn ? 'true' : 'false'); };
+const _osc = (freq, type, t0, dur, gain=.35) => {
+  if (!sndOn) return;
+  const c=_gc(), o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq, c.currentTime+t0);
+  g.gain.setValueAtTime(0, c.currentTime+t0);
+  g.gain.linearRampToValueAtTime(gain, c.currentTime+t0+.005);
+  g.gain.exponentialRampToValueAtTime(.001, c.currentTime+t0+dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(c.currentTime+t0); o.stop(c.currentTime+t0+dur);
+};
+const _sweep = (f1, f2, type, t0, dur, gain=.3) => {
+  if (!sndOn) return;
+  const c=_gc(), o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.setValueAtTime(f1, c.currentTime+t0);
+  o.frequency.linearRampToValueAtTime(f2, c.currentTime+t0+dur);
+  g.gain.setValueAtTime(gain, c.currentTime+t0);
+  g.gain.exponentialRampToValueAtTime(.001, c.currentTime+t0+dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(c.currentTime+t0); o.stop(c.currentTime+t0+dur);
+};
+const playClick         = () => { _osc(300,'square',0,.06,.15); };
+const playOpApply       = () => { _osc(440,'square',0,.05,.2); _osc(550,'sine',.04,.08,.12); };
+const playCountdownBeep = () => { _osc(880,'sine',0,.12,.3); };
+const playGo            = () => { _osc(880,'sine',0,.12,.3); _osc(1100,'sine',.1,.12,.2); };
+const playPerfect       = () => { _sweep(500,1000,'sine',0,.2,.35); _osc(1320,'sine',.15,.4,.25); _osc(1760,'sine',.2,.35,.15); };
+const playPartial       = () => { _osc(440,'square',0,.08,.2); _osc(330,'square',.08,.12,.15); };
+const playFail          = () => { _sweep(300,120,'sawtooth',0,.25,.3); _osc(100,'sine',.2,.3,.2); };
 
 // ─── Colours ──────────────────────────────────────────────────────────────────
 const BC  = ['#dcf0e5','#e8e4f2','#f7dfd6'];
@@ -212,18 +265,23 @@ function AnimScore({ target, dur = 1000 }) {
 }
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
+const CD_SHADOWS = ['#e8e4f2','#dcf0e5','#f7dfd6','#f2e9c9'];
 function Countdown({ onDone }) {
   const [n, setN] = useState(3);
   useEffect(() => {
-    if (n <= 0) { onDone(); return; }
-    const t = setTimeout(() => setN(n-1), 800);
+    if (n < 0) { onDone(); return; }
+    if (n > 0) playCountdownBeep(); else playGo();
+    const t = setTimeout(() => setN(n-1), 1000);
     return () => clearTimeout(t);
   }, [n]);
+  const label = n > 0 ? String(n) : n === 0 ? 'go.' : '';
+  const ci = (n < 0 ? 0 : n) % 4;
+  const shadow = `6px 6px 0px ${CD_SHADOWS[ci]}, -4px -4px 0px ${CD_SHADOWS[(ci+2)%4]}`;
   return (
-    <div style={{position:'fixed',inset:0,background:'#000',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Space Mono,monospace',zIndex:100}}>
-      <div className="anim-pop" key={n} style={{fontSize:'8rem',fontWeight:900,color:'#fff',lineHeight:1}}>
-        {n || 'GO!'}
-      </div>
+    <div style={{position:'fixed',inset:0,background:'rgba(245,243,239,0.95)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Space Mono,monospace',zIndex:100}}>
+      <span className="anim-countdown" key={n} style={{fontSize:'7rem',fontWeight:900,color:'#1a1a1a',lineHeight:1,textShadow:shadow}}>
+        {label}
+      </span>
     </div>
   );
 }
@@ -263,14 +321,18 @@ function GameBoard({ puzzle, label, total, onDone }) {
     const fb = res.perfect ? '#dcf0e5' : res.score > 0 ? '#f2e9c9' : '#f7dfd6';
     setFBg(fb); setFTxt(`+${res.score}`); setFKey(k => k+1);
     if (res.timedOut) {
+      playFail();
       setVClr('#cc2255');
       if (res.score > 0) { setMsg(pick('toPartial',{n:res.correct})); setMsgBg('#f2e9c9'); }
       else               { setMsg(pick('toZero'));  setMsgBg('#f7dfd6'); setShake(true); }
     } else if (res.perfect) {
+      playPerfect();
       setMsg(pick('perfect')); setMsgBg('#dcf0e5');
     } else if (res.score > 0) {
+      playPartial();
       setMsg(pick('partial',{n:res.correct})); setMsgBg('#f2e9c9'); setShake(true);
     } else {
+      playFail();
       setVClr('#cc2255'); setMsg(pick('zero')); setMsgBg('#f7dfd6'); setShake(true);
     }
     setTimeout(() => onDone(res), res.perfect ? 1500 : 1800);
@@ -291,6 +353,7 @@ function GameBoard({ puzzle, label, total, onDone }) {
 
   const handleOp = op => {
     if (fin || used.has(op.id)) return;
+    playOpApply();
     const nv = op.fn(curR.current);
     const na = [...appR.current, op];
     const ns = [...slots, op.symbol];
@@ -425,6 +488,45 @@ function LeaderBoard({ onBack }) {
   );
 }
 
+// ─── RoundOverlay ─────────────────────────────────────────────────────────────
+const buildOverlayProps = (res, mode, roundIdx, totalRounds) => {
+  let title, subtitle, btnLabel;
+  if (res.timedOut) {
+    title = 'time out.';
+    subtitle = res.score > 0 ? `too slow, but ${res.correct} right.\n+${res.score} pts.` : 'too slow. zero points.';
+  } else if (res.perfect) {
+    title = 'nice.';
+    subtitle = `target acquired.\n+${res.score} pts.`;
+  } else if (res.score > 0) {
+    title = 'eh.';
+    subtitle = `missed, but ${res.correct} right.\n+${res.score} pts.`;
+  } else {
+    title = 'nope.';
+    subtitle = 'totally whiffed it. zero points.';
+  }
+  if (mode === 'solo') {
+    btnLabel = res.score === 0 ? 'end run' : 'next puzzle';
+  } else {
+    btnLabel = roundIdx >= totalRounds - 1 ? 'see results' : 'next round';
+  }
+  return { title, subtitle, btnLabel };
+};
+
+function RoundOverlay({ title, subtitle, btnLabel, onAction }) {
+  const S = { fontFamily:'Space Mono,monospace' };
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:40,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(245,243,239,0.88)',backdropFilter:'blur(2px)',...S}}>
+      <div style={{background:'#fff',border:'2px solid #000',boxShadow:'6px 6px 0 #000',borderRadius:'.75rem',padding:'2rem 1.5rem',maxWidth:'85%',width:'100%',textAlign:'center',transform:'rotate(-1deg)'}} className="anim-fade">
+        <div style={{fontSize:'1.8rem',fontWeight:900,marginBottom:8,lineHeight:1}}>{title}</div>
+        <div style={{color:'#737373',fontSize:'.875rem',lineHeight:1.5,marginBottom:24,whiteSpace:'pre-line'}}>{subtitle}</div>
+        <button onClick={()=>{playClick();onAction();}} style={{background:'#f2e9c9',border:'2px solid #000',boxShadow:'4px 4px 0 #000',borderRadius:'.375rem',padding:'.75rem 1.5rem',fontSize:'1rem',fontWeight:900,textTransform:'uppercase',cursor:'pointer',...S}}>
+          {btnLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── DailyGame ────────────────────────────────────────────────────────────────
 function DailyGame({ onExit }) {
   const [puzzles]     = useState(dailyPuzzles);
@@ -434,99 +536,54 @@ function DailyGame({ onExit }) {
     const saved = localStorage.getItem(dailyKey());
     return saved ? 'done' : 'countdown';
   });
-  const [settled, setSettled] = useState(false);
+  const [lastRes, setLastRes] = useState(null);
   const [submitted, setSubmitted] = useState(false);
 
-  // Load saved scores if already played
   const savedData = useMemo(() => {
     const s = localStorage.getItem(dailyKey());
     return s ? JSON.parse(s) : null;
   }, []);
 
-  const displayScores = phase === 'done' && savedData ? savedData.rounds : scores;
-
-  useEffect(() => {
-    if (phase !== 'inter') return;
-    setSettled(false);
-    const id = setTimeout(() => setSettled(true), 1300);
-    return () => clearTimeout(id);
-  }, [phase, round]);
-
   const onRoundDone = (res) => {
+    setLastRes(res);
     setScores(prev => [...prev, res]);
-    setPhase('inter');
+    setPhase('overlay');
   };
 
   const totalSoFar = scores.reduce((a,r) => a+r.score, 0);
-  const last = scores[scores.length - 1];
   const isLastRound = round === 2;
 
   const goNext = () => {
     if (isLastRound) {
-      const total = scores.reduce((a,r) => a+r.score, 0);
-      const rounds = scores;
-      localStorage.setItem(dailyKey(), JSON.stringify({ totalScore: total, rounds }));
+      const allScores = [...scores];
+      const total = allScores.reduce((a,r) => a+r.score, 0);
+      localStorage.setItem(dailyKey(), JSON.stringify({ totalScore: total, rounds: allScores }));
       setPhase('done');
-      if (!submitted) {
-        setSubmitted(true);
-        pfSubmit(total / 3).catch(() => {});
-      }
+      if (!submitted) { setSubmitted(true); pfSubmit(total / 3).catch(() => {}); }
     } else {
       setR(r => r + 1);
       setPhase('countdown');
     }
   };
 
-  // Submit if we just reached done without a prior save
-  useEffect(() => {
-    if (phase !== 'done' || submitted || savedData) return;
-  }, [phase]);
-
-  const iWon = last && last.score > 0;
-
   if (phase === 'countdown') return <Countdown onDone={() => setPhase('playing')} />;
 
-  if (phase === 'playing') return (
-    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-      <button onClick={onExit} style={{position:'absolute',top:16,right:16,zIndex:50,background:'#fff',border:'2px solid #000',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs2">✕</button>
-      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',paddingTop:'3.5rem',zIndex:1}}>
-        <GameBoard key={round} puzzle={puzzles[round]} label={`Daily · Round ${round+1}/3`} total={totalSoFar} onDone={onRoundDone} />
-      </div>
-    </div>
-  );
-
-  if (phase === 'inter' && last) {
-    const perfect = last.perfect;
-    const partial = !perfect && last.score > 0;
-    const header = !settled ? `Round ${round+1}`
-      : last.score === 0   ? `Round ${round+1} — Zero`
-      : perfect            ? `Round ${round+1} — Perfect!`
-      : partial            ? `Round ${round+1} — Partial`
-      :                      `Round ${round+1}`;
-
+  if (phase === 'playing' || phase === 'overlay') {
+    const dateShort = new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',month:'short',day:'numeric'}).format(new Date()).toLowerCase();
+    const overlayProps = lastRes ? buildOverlayProps(lastRes, 'daily', round, 3) : null;
     return (
-      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace'}}>
+      <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',alignItems:'center',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
         <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-        <button onClick={onExit} style={{position:'absolute',top:16,right:16,zIndex:50,background:'#fff',border:'2px solid #000',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs2">✕</button>
-        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
-          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',fontSize:'.875rem',background:settled&&perfect?'#000':'#fff',color:settled&&perfect?'#fff':'#1a1a1a',transition:'all .3s'}}>
-            {header}
-          </div>
-          <div style={{padding:'1.5rem',textAlign:'center',borderBottom:'4px solid #000'}}>
-            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',color:'#999',marginBottom:8}}>this round</div>
-            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}><AnimScore target={last.score} /></div>
-          </div>
-          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase'}}>Running Total</span>
-            <span style={{fontSize:'1.25rem',fontWeight:900}}>{totalSoFar}</span>
-          </div>
-          <div style={{padding:'1rem'}}>
-            <button onClick={goNext} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
-              {isLastRound ? 'See Final Result' : `Round ${round+2} →`}
-            </button>
+        <div style={{flex:1,overflowY:'auto',width:'100%',display:'flex',flexDirection:'column',alignItems:'center',padding:'1.5rem',zIndex:1}}>
+          <div style={{width:'100%',maxWidth:400}}>
+            <div style={{background:'#fff',border:'2px solid #000',boxShadow:'6px 6px 0 #000',borderRadius:'.75rem',padding:'1.25rem',position:'relative'}}>
+              <button onClick={()=>{playClick();onExit();}} style={{position:'absolute',top:8,right:8,background:'#fff',border:'2px solid #000',borderRadius:4,padding:'2px 8px',fontWeight:900,fontSize:'.625rem',cursor:'pointer',fontFamily:'Space Mono,monospace',zIndex:10,textTransform:'uppercase',letterSpacing:'.05em'}} className="bs2">menu</button>
+              <GameBoard key={round} puzzle={puzzles[round]} label={`daily (${dateShort}) · r${round+1}/3`} total={totalSoFar} onDone={onRoundDone} />
+            </div>
+            <NavRow />
           </div>
         </div>
+        {phase === 'overlay' && overlayProps && <RoundOverlay {...overlayProps} onAction={goNext} />}
       </div>
     );
   }
@@ -535,8 +592,7 @@ function DailyGame({ onExit }) {
     const ds = savedData || { totalScore: scores.reduce((a,r)=>a+r.score,0), rounds: scores };
     const total = ds.totalScore;
     const avg   = (total / 3).toFixed(4);
-    const quality = total >= 2500 ? 'elite' : total >= 1500 ? 'decent' : 'humble';
-    const tagline = quality === 'elite' ? 'elite work, genuinely.' : quality === 'decent' ? 'not bad. not great. but not bad.' : 'you showed up. that\'s something.';
+    const rankLabel = total === 0 ? 'math potato' : total < 3*500 ? 'average noodle' : total < 3*750 ? 'number wizard' : 'silicon god';
 
     const share = async () => {
       const text = `SHIFT · ${todayLabel()}\nMy score: ${total} (avg ${avg})\nhttps://shift.inefficientcode.com`;
@@ -547,27 +603,27 @@ function DailyGame({ onExit }) {
     return (
       <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
         <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
+        <div style={{background:'#fff',border:'2px solid #000',boxShadow:'8px 8px 0 #000',borderRadius:'.75rem',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="anim-fade">
           <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',textAlign:'center'}}>
-            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',opacity:.5,marginBottom:4}}>Daily Complete · {todayLabel()}</div>
-            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}>{total}</div>
-            <div style={{fontSize:'.75rem',opacity:.5,marginTop:4}}>avg {avg}</div>
+            <div style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',opacity:.5,marginBottom:4}}>daily challenge · {todayLabel()}</div>
+            <div style={{fontSize:'3.5rem',fontWeight:900,lineHeight:1}}>{total}</div>
+            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.08em',opacity:.5,marginTop:4}}>{avg} avg · {rankLabel}</div>
           </div>
-          <div style={{padding:'.75rem 1rem',borderBottom:'2px solid #000',fontSize:'.8rem',fontStyle:'italic',textAlign:'center',color:'#666'}}>
-            {tagline}
+          <div style={{padding:'.75rem 1rem',borderBottom:'2px solid #000',fontSize:'.75rem',fontStyle:'italic',textAlign:'center',color:'#888'}}>
+            {pick(total >= 2500 ? 'dailyGood' : total >= 1200 ? 'dailyAvg' : 'dailyBad')}
           </div>
-          {ds.rounds.map((r,i) => (
-            <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'.625rem 1rem',borderBottom:'2px solid #000'}}>
-              <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase',width:40,color:'#999'}}>R{i+1}</span>
-              <span style={{flex:1,fontSize:'.875rem',fontWeight:900}}>{r.score}</span>
-              <span style={{fontSize:'.75rem',fontWeight:900,color: r.perfect?'#2a7a4b':'#999'}}>{r.perfect?'✓ perfect':r.score>0?'✓ partial':'✗'}</span>
-            </div>
-          ))}
+          <div style={{display:'flex',gap:8,padding:'.75rem 1rem',borderBottom:'4px solid #000'}}>
+            {ds.rounds.map((r,i) => (
+              <div key={i} style={{flex:1,background:'#f2e9c9',border:'2px solid #000',borderRadius:6,textAlign:'center',padding:'.625rem .25rem'}}>
+                <div style={{fontSize:'.5rem',fontWeight:900,textTransform:'uppercase',color:'#999',marginBottom:4}}>R{i+1}</div>
+                <div style={{fontSize:'1.25rem',fontWeight:900,lineHeight:1}}>{r.score}</div>
+              </div>
+            ))}</div>
           <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
-            <button onClick={share} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();share();}} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               ↑ Share Score
             </button>
-            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               ← Menu
             </button>
           </div>
@@ -579,104 +635,160 @@ function DailyGame({ onExit }) {
   return null;
 }
 
+// ─── SoloScoreChart ───────────────────────────────────────────────────────────
+function SoloScoreChart({ history }) {
+  const data = (history || []).slice(-100);
+  if (data.length < 2) return null;
+  const W = 400, H = 52;
+  const maxScore = Math.max(...data, 1);
+  const coords = data.map((s, i) => [
+    (i / (data.length - 1)) * W,
+    H - 2 - Math.round((s / maxScore) * (H - 6)),
+  ]);
+  const polyline = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `0,${H} ${polyline} ${W},${H}`;
+  const [lx, ly] = coords[data.length - 1];
+  return (
+    <div style={{border:'2px solid #000',boxShadow:'2px 2px 0 #000',borderRadius:8,overflow:'hidden',background:'#fff',width:'100%',maxWidth:380,marginTop:0}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 10px',borderBottom:'1px solid rgba(0,0,0,.1)',background:'#f9f7f4'}}>
+        <span style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',color:'#aaa',fontFamily:'Space Mono,monospace'}}>score history</span>
+        <span style={{fontSize:'.5625rem',fontWeight:900,color:'#aaa',fontFamily:'Space Mono,monospace'}}>{data.length} runs</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{width:'100%',display:'block',height:H}}>
+        <polygon points={area} fill="#dcf0e5" fillOpacity="0.8" />
+        <polyline points={polyline} fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={lx} cy={ly} r="4" fill="#1a1a1a" />
+      </svg>
+    </div>
+  );
+}
+
 // ─── SoloGame ─────────────────────────────────────────────────────────────────
+const SOLO_STEPS  = { easy: 3, med: 4, hard: 5 };
+const SOLO_HIST   = 'shift_solo_history';
+const soloRankLabel = s => s === 0 ? 'math potato' : s < 1500 ? 'average noodle' : s < 2500 ? 'number wizard' : 'silicon god';
+
 function SoloGame({ onExit }) {
-  const [puzzleRound, setPR]    = useState(0);
-  const [puzzle, setPuzzle]     = useState(() => genPuzzle(4));
-  const [scores, setScores]     = useState([]);
-  const [phase, setPhase]       = useState('countdown');
-  const [lastRes, setLastRes]   = useState(null);
-  const [settled, setSettled]   = useState(false);
+  const S = { fontFamily:'Space Mono,monospace' };
+  const [diff,     setDiff]    = useState(null);
+  const [steps,    setSteps]   = useState(4);
+  const [puzzle,   setPuzzle]  = useState(null);
+  const [round,    setRound]   = useState(0);
+  const [total,    setTotal]   = useState(0);
+  const [lastRes,  setLastRes] = useState(null);
+  const [phase,    setPhase]   = useState('difficulty');
+  const [history,  setHistory] = useState(() => { try { return JSON.parse(localStorage.getItem(SOLO_HIST)||'[]'); } catch { return []; } });
 
-  useEffect(() => {
-    if (phase !== 'inter') return;
-    setSettled(false);
-    const id = setTimeout(() => setSettled(true), 1300);
-    return () => clearTimeout(id);
-  }, [phase, puzzleRound]);
-
-  const total = scores.reduce((a,r) => a+r.score, 0);
-
-  const onDone = (res) => {
-    setLastRes(res);
-    setScores(prev => [...prev, res]);
-    setPhase('inter');
-  };
-
-  const nextPuzzle = () => {
-    setPuzzle(genPuzzle(4));
-    setPR(n => n + 1);
+  const startDiff = (d) => {
+    playClick();
+    const n = SOLO_STEPS[d];
+    setDiff(d); setSteps(n); setPuzzle(genPuzzle(n));
+    setRound(0); setTotal(0); setLastRes(null);
     setPhase('countdown');
   };
 
-  const endRun = () => setPhase('ended');
+  const onRoundDone = (res) => {
+    setLastRes(res);
+    setTotal(t => t + res.score);
+    setPhase('overlay');
+  };
 
+  const handleOverlay = () => {
+    if (lastRes.score === 0) {
+      const finalTotal = total; // already added in onRoundDone
+      setHistory(prev => {
+        const next = [...prev, finalTotal].slice(-100);
+        localStorage.setItem(SOLO_HIST, JSON.stringify(next));
+        return next;
+      });
+      setPhase('gameover');
+    } else {
+      setRound(r => r + 1);
+      setPuzzle(genPuzzle(steps));
+      setPhase('playing');
+    }
+  };
+
+  // ── Difficulty picker ──
+  if (phase === 'difficulty') {
+    return (
+      <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        <div style={{width:'100%',maxWidth:400,padding:'1.5rem',zIndex:1,display:'flex',flexDirection:'column',gap:12,alignItems:'center',overflowY:'auto'}}>
+          <div style={{background:'#fff',border:'2px solid #000',boxShadow:'8px 8px 0 #000',borderRadius:'.75rem',padding:'1.5rem',display:'flex',flexDirection:'column',gap:12,width:'100%'}}>
+            <div style={{textAlign:'center',marginBottom:4}}>
+              <div style={{fontSize:'1.6rem',fontWeight:900,letterSpacing:'-.04em'}}>Solo Play</div>
+              <div style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#999',marginTop:4}}>Choose difficulty · Endless</div>
+            </div>
+            {[['easy','Easy (3 steps)','#dcf0e5'],['med','Med (4 steps)','#f7dfd6'],['hard','Hard (5 steps)','#e8e4f2']].map(([d,label,bg]) => (
+              <button key={d} onClick={()=>startDiff(d)} style={{width:'100%',background:bg,border:'2px solid #000',boxShadow:'4px 4px 0 #000',borderRadius:8,padding:'1rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',cursor:'pointer',...S}}>
+                {label}
+              </button>
+            ))}
+            <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'2px solid #000',boxShadow:'4px 4px 0 #000',borderRadius:8,padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',marginTop:4,...S}}>
+              ← Back
+            </button>
+          </div>
+          <SoloScoreChart history={history} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Countdown ──
   if (phase === 'countdown') return <Countdown onDone={() => setPhase('playing')} />;
 
-  if (phase === 'playing') return (
-    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-      <button onClick={endRun} style={{position:'absolute',top:16,right:16,zIndex:50,background:'#fff',border:'2px solid #000',width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs2">✕</button>
-      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',paddingTop:'3.5rem',zIndex:1}}>
-        <GameBoard key={puzzleRound} puzzle={puzzle} label={`Solo · Puzzle ${puzzleRound+1}`} total={total} onDone={onDone} />
+  // ── Game over ──
+  if (phase === 'gameover') {
+    return (
+      <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',overflow:'auto',...S}}>
+        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+        <div style={{width:'100%',maxWidth:400,display:'flex',flexDirection:'column',gap:12,zIndex:1,alignItems:'center'}}>
+          <div style={{background:'#fff',border:'2px solid #000',boxShadow:'8px 8px 0 #000',borderRadius:'.75rem',width:'100%',overflow:'hidden'}} className="anim-fade">
+            <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',textAlign:'center'}}>
+              <div style={{fontSize:'1.6rem',fontWeight:900,letterSpacing:'-.03em'}}>run over.</div>
+              <div style={{fontSize:'.75rem',color:'#888',marginTop:4}}>puzzles survived: {round}</div>
+            </div>
+            <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',textAlign:'center'}}>
+              <div style={{fontSize:'3.5rem',fontWeight:900,lineHeight:1}}>{total}</div>
+              <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.08em',color:'#777',marginTop:4}}>{soloRankLabel(total)}</div>
+              <div style={{fontSize:'.75rem',fontStyle:'italic',color:'#aaa',marginTop:8}}>{pick('soloEnd', {n: round})}</div>
+            </div>
+            <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
+              <button onClick={()=>startDiff(diff)} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+                Play Again
+              </button>
+              <button onClick={()=>{playClick();setPhase('difficulty');}} style={{width:'100%',background:'#e8e4f2',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+                Change Difficulty
+              </button>
+              <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+                ← Menu
+              </button>
+            </div>
+          </div>
+          <SoloScoreChart history={history} />
+        </div>
       </div>
+    );
+  }
+
+  // ── Playing + overlay ──
+  const overlayProps = lastRes ? buildOverlayProps(lastRes, 'solo', round, Infinity) : null;
+  return (
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',alignItems:'center',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
+      <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
+      <div style={{flex:1,overflowY:'auto',width:'100%',display:'flex',flexDirection:'column',alignItems:'center',padding:'1.5rem',zIndex:1}}>
+        <div style={{width:'100%',maxWidth:400,display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:'#fff',border:'2px solid #000',boxShadow:'6px 6px 0 #000',borderRadius:'.75rem',padding:'1.25rem',position:'relative'}}>
+            <button onClick={()=>{playClick();setPhase('gameover');}} style={{position:'absolute',top:8,right:8,background:'#fff',border:'2px solid #000',borderRadius:4,padding:'2px 8px',fontWeight:900,fontSize:'.625rem',cursor:'pointer',fontFamily:'Space Mono,monospace',zIndex:10,textTransform:'uppercase',letterSpacing:'.05em'}} className="bs2">menu</button>
+            <GameBoard key={round} puzzle={puzzle} label={`solo run · p${round+1}`} total={total} onDone={onRoundDone} />
+          </div>
+          <SoloScoreChart history={history} />
+        </div>
+      </div>
+      {phase === 'overlay' && overlayProps && <RoundOverlay {...overlayProps} onAction={handleOverlay} />}
     </div>
   );
-
-  if (phase === 'inter' && lastRes) {
-    return (
-      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace'}}>
-        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
-          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center',fontWeight:900,textTransform:'uppercase',fontSize:'.875rem',background:settled&&lastRes.perfect?'#000':'#fff',color:settled&&lastRes.perfect?'#fff':'#1a1a1a',transition:'all .3s',letterSpacing:'.1em'}}>
-            {!settled ? `Puzzle ${puzzleRound+1}` : lastRes.perfect ? 'Perfect!' : lastRes.score > 0 ? 'Partial' : 'Zero score'}
-          </div>
-          <div style={{padding:'1.5rem',textAlign:'center',borderBottom:'4px solid #000'}}>
-            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',color:'#999',marginBottom:8}}>this round</div>
-            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}><AnimScore target={lastRes.score} /></div>
-          </div>
-          <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:'.75rem',fontWeight:900,textTransform:'uppercase'}}>Total</span>
-            <span style={{fontSize:'1.25rem',fontWeight:900}}>{total}</span>
-          </div>
-          <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
-            <button onClick={nextPuzzle} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
-              Next Puzzle →
-            </button>
-            <button onClick={endRun} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
-              End Run
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (phase === 'ended') {
-    const n = scores.length;
-    return (
-      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',fontFamily:'Space Mono,monospace'}}>
-        <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-        <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:400,overflow:'hidden',zIndex:1}} className="bs8 anim-fade">
-          <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',textAlign:'center'}}>
-            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',opacity:.5,marginBottom:4}}>Run Over</div>
-            <div style={{fontSize:'3rem',fontWeight:900,lineHeight:1}}>{total}</div>
-            <div style={{fontSize:'.75rem',opacity:.5,marginTop:4}}>{n} puzzle{n!==1?'s':''}</div>
-          </div>
-          <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
-            <button onClick={() => { setScores([]); setPR(0); setPuzzle(genPuzzle(4)); setPhase('countdown'); }} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
-              Play Again
-            </button>
-            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
-              ← Menu
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
 }
 
 // ─── VersusGame ───────────────────────────────────────────────────────────────
@@ -851,11 +963,16 @@ function VersusGame({ onExit }) {
   if (phase === 'countdown') return <Countdown onDone={() => setPhase('playing')} />;
 
   if (phase === 'playing' && puzzles.length > 0) return (
-    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',alignItems:'center',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
       <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
-      {abortBtn}
-      <div style={{flex:1,overflowY:'auto',padding:'1.5rem',paddingTop:'3.5rem',zIndex:1}}>
-        <GameBoard key={round} puzzle={puzzles[round]} label={`vs ${oppName} · Round ${round+1}/3`} total={roundsR.current.reduce((a,r)=>a+r.my,0)} onDone={onRoundDone} />
+      <div style={{flex:1,overflowY:'auto',width:'100%',display:'flex',flexDirection:'column',alignItems:'center',padding:'1.5rem',zIndex:1}}>
+        <div style={{width:'100%',maxWidth:400}}>
+          <div style={{background:'#fff',border:'8px solid #000',padding:'1.25rem',position:'relative'}} className="bs8">
+            <button onClick={abort} style={{position:'absolute',top:8,right:8,background:'#fff',border:'2px solid #000',width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.75rem',cursor:'pointer',fontFamily:'Space Mono,monospace',zIndex:10}} className="bs2">✕</button>
+            <GameBoard key={round} puzzle={puzzles[round]} label={`vs ${oppName} · Round ${round+1}/3`} total={roundsR.current.reduce((a,r)=>a+r.my,0)} onDone={onRoundDone} />
+          </div>
+          <NavRow />
+        </div>
       </div>
     </div>
   );
@@ -948,10 +1065,10 @@ function VersusGame({ onExit }) {
             </div>
           ))}
           <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
-            <button onClick={reset} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();reset();}} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               Play Again
             </button>
-            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               ← Menu
             </button>
           </div>
@@ -977,7 +1094,7 @@ function VersusGame({ onExit }) {
               </div>
               <div style={{fontSize:'.75rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',textAlign:'center'}}>{status}</div>
             </div>
-            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               Cancel
             </button>
           </>
@@ -987,14 +1104,61 @@ function VersusGame({ onExit }) {
             <p style={{fontSize:'.75rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',textAlign:'center',borderTop:'2px solid #000',borderBottom:'2px solid #000',padding:'1rem 0',width:'100%',margin:0,lineHeight:1.8}}>
               3 rounds · highest total wins
             </p>
-            <button onClick={startMatch} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'1.25rem',fontWeight:900,fontSize:'1.25rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();startMatch();}} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'1.25rem',fontWeight:900,fontSize:'1.25rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               Find Match
             </button>
-            <button onClick={onExit} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
+            <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}} className="bs">
               ← Back
             </button>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── ObjectiveBlock (shared between HowToPlay and TutorialModal) ──────────────
+function ObjectiveBlock() {
+  return (
+    <div style={{padding:'1rem',borderBottom:'4px solid #000',background:'#f5f0e8'}}>
+      <div style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#999',marginBottom:10}}>The Objective</div>
+      <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',justifyContent:'center',marginBottom:10}}>
+        <div style={{background:'#1a1a1a',color:'#f5f0e8',border:'2px solid #000',padding:'6px 12px',fontWeight:900,fontSize:'1.1rem',fontFamily:'Space Mono,monospace'}}>5</div>
+        <div style={{fontWeight:900,color:'#aaa',fontSize:'.875rem'}}>→</div>
+        <div style={{background:'#dcf0e5',border:'2px solid #000',padding:'6px 10px',fontWeight:900,fontSize:'.875rem',fontFamily:'Space Mono,monospace',transform:'rotate(-0.5deg)'}}>× 3</div>
+        <div style={{background:'#e8e4f2',border:'2px solid #000',padding:'6px 10px',fontWeight:900,fontSize:'.875rem',fontFamily:'Space Mono,monospace',transform:'rotate(0.5deg)'}}>+ 2</div>
+        <div style={{background:'#f7dfd6',border:'2px solid #000',padding:'6px 10px',fontWeight:900,fontSize:'.875rem',fontFamily:'Space Mono,monospace',transform:'rotate(-0.5deg)'}}>- 7</div>
+        <div style={{fontWeight:900,color:'#aaa',fontSize:'.875rem'}}>→</div>
+        <div style={{background:'#f7dfd6',border:'2px solid #000',padding:'6px 12px',fontWeight:900,fontSize:'1.1rem',fontFamily:'Space Mono,monospace'}}>10</div>
+      </div>
+      <div style={{fontSize:'.75rem',fontStyle:'italic',color:'#666',textAlign:'center',fontFamily:'Space Mono,monospace',lineHeight:1.5}}>
+        tap all the operators in the correct order<br/>to transform the start number into the target
+      </div>
+    </div>
+  );
+}
+
+// ─── TutorialModal (shown once on first visit) ────────────────────────────────
+function TutorialModal({ onClose }) {
+  const S = { fontFamily:'Space Mono,monospace' };
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:300,padding:'1.5rem',...S}}>
+      <div style={{background:'#fff',border:'8px solid #000',width:'100%',maxWidth:380,overflow:'hidden'}} className="bs8 anim-fade">
+        <div style={{padding:'1rem',borderBottom:'4px solid #000',background:'#000',color:'#fff',textAlign:'center'}}>
+          <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',opacity:.5,marginBottom:2}}>Welcome to</div>
+          <div style={{fontSize:'1.5rem',fontWeight:900,letterSpacing:'-.05em',lineHeight:1}}>SHIFT</div>
+        </div>
+        <ObjectiveBlock />
+        <div style={{padding:'1rem',borderBottom:'4px solid #000'}}>
+          <div style={{fontSize:'.75rem',lineHeight:1.7,color:'#444'}}>
+            The buttons are <strong>shuffled</strong> — figure out which order to tap them so your running total hits the target exactly. Score points for speed and accuracy.
+          </div>
+        </div>
+        <div style={{padding:'1rem'}}>
+          <button onClick={onClose} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+            Let's Play
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1010,12 +1174,13 @@ function HowToPlay({ onClose }) {
           <span style={{fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',fontSize:'.875rem'}}>How to Play</span>
           <button onClick={onClose} style={{background:'none',border:'none',color:'#fff',fontSize:'1.25rem',cursor:'pointer',lineHeight:1,padding:'0 4px'}}>✕</button>
         </div>
+        <ObjectiveBlock />
 
         {[
           { title:'The Goal', body:'Transform the start number into the target number using all the operation buttons.' },
           { title:'The Buttons', body:'You\'re given operation buttons like "+ 7", "× 3", "- 2", "÷ 4" — shuffled each round. Tap them one by one. Each tap applies the operation to your running total.' },
           { title:'Order Matters', body:'Operations must be applied in the correct order. Get them right and your running total will land exactly on the target.' },
-          { title:'Scoring', body:'Perfect solve (correct order, exact target): 100–1000 points — time-based bonus. The faster you solve, the higher the score. Partial: 250 points per operation in the correct position.' },
+          { title:'Scoring', body:'125 points per operation in the correct position. Hit the target (all correct): add 0–500 bonus points based on time remaining.' },
           { title:'The Timer', body:'Each round has a countdown timer. Running out of time ends the round — you still earn points for any correct positions.' },
           { title:'Daily Challenge', body:'Every day there are 3 new rounds, seeded so everyone worldwide gets the same puzzles. Your score goes on the global leaderboard.' },
           { title:'Solo Play', body:'Infinite random rounds. No leaderboard — just you versus the puzzles. Try to build the highest total score.' },
@@ -1037,15 +1202,75 @@ function HowToPlay({ onClose }) {
   );
 }
 
+// ─── Ko-fi modal (shared) ────────────────────────────────────────────────────
+function KofiModal({ onClose }) {
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.55)',fontFamily:'Space Mono,monospace'}} onClick={onClose}>
+      <div style={{background:'#fff',border:'8px solid #000',boxShadow:'8px 8px 0 #000',width:'100%',maxWidth:360,margin:'0 1.5rem',padding:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem'}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:'2rem'}}>♥</div>
+        <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',textAlign:'center',borderBottom:'4px solid #000',paddingBottom:'1rem',width:'100%'}}>Enjoying Shift?</div>
+        <p style={{fontSize:'.625rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',textAlign:'center',lineHeight:1.8,color:'#555',margin:0}}>Support the developer</p>
+        <button onClick={()=>{ window.open('https://ko-fi.com/inefficientcode','_blank','noopener'); onClose(); }} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}}>
+          Take me to Ko-fi ♥
+        </button>
+        <button onClick={onClose} style={{width:'100%',background:'#fff',color:'#000',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}}>
+          Maybe Later
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── NavRow (shared bottom buttons) ──────────────────────────────────────────
+function NavRow({ onSettings }) {
+  const [showDonate, setShowDonate] = useState(false);
+  const [showHow,    setShowHow]    = useState(false);
+  const [toast,      setToast]      = useState('');
+  const B = { fontFamily:'Space Mono,monospace', cursor:'pointer', background:'#fff', border:'2px solid #000', width:40, height:40, display:'flex', alignItems:'center', justifyContent:'center' };
+
+  const share = async () => {
+    let text = 'Check out Shift — a little math game 🧮\nhttps://shift.inefficientcode.com';
+    try {
+      const s = localStorage.getItem(dailyKey());
+      if (s) { const { totalScore } = JSON.parse(s); const avg = (totalScore/3).toFixed(4); text = `SHIFT · ${todayLabel()}\nMy score: ${totalScore} (avg ${avg})\nhttps://shift.inefficientcode.com`; }
+    } catch {}
+    if (navigator.share) { try { await navigator.share({ text }); return; } catch(e) { if(e.name==='AbortError') return; } }
+    try { await navigator.clipboard.writeText(text); setToast('Copied!'); setTimeout(()=>setToast(''),2000); } catch {}
+  };
+
+  return (
+    <>
+      {showDonate && <KofiModal onClose={()=>setShowDonate(false)} />}
+      {showHow    && <HowToPlay onClose={()=>setShowHow(false)} />}
+      <div style={{display:'flex',justifyContent:'space-around',width:'100%',maxWidth:400,padding:'16px 0',position:'relative'}}>
+        <button onClick={()=>{playClick();share();}} title="Share" style={{...B,fontSize:'1.1rem'}} className="bs2">↑</button>
+        {toast && <div style={{position:'absolute',bottom:'calc(100% + 4px)',left:0,fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',background:'#1a1a1a',color:'#f5f0e8',padding:'2px 8px',borderRadius:4}}>{toast}</div>}
+        <button onClick={()=>{playClick();setShowDonate(true);}} title="Support Shift" style={{...B,fontSize:'1.1rem'}} className="bs2">♥</button>
+        <button onClick={()=>{playClick();setShowHow(true);}} title="How to play" style={{...B,fontWeight:900,fontSize:'.9rem'}} className="bs2">i</button>
+        {onSettings && <button onClick={()=>{playClick();onSettings();}} title="Settings" style={{...B,fontSize:'.9rem'}} className="bs2">⚙</button>}
+      </div>
+    </>
+  );
+}
+
 // ─── Settings modal ────────────────────────────────────────────────────────────
 function Settings({ playerName, onShuffle, onClose, onLeaderboard }) {
   const S = { fontFamily:'Space Mono,monospace' };
   const [shuffling, setShuffling] = useState(false);
+  const [soundOnState, setSoundOnState] = useState(sndOn);
 
   const doShuffle = () => {
+    playClick();
     setShuffling(true);
     onShuffle();
     setTimeout(() => setShuffling(false), 600);
+  };
+
+  const toggleSound = () => {
+    const next = !soundOnState;
+    setSndOn(next);
+    setSoundOnState(next);
+    if (next) playClick();
   };
 
   return (
@@ -1068,15 +1293,23 @@ function Settings({ playerName, onShuffle, onClose, onLeaderboard }) {
           <div style={{fontSize:'.625rem',color:'#999',marginTop:6,lineHeight:1.5}}>Name is randomly assigned. Shuffle for a new one.</div>
         </div>
 
+        {/* Sound toggle */}
+        <div style={{padding:'1rem',borderBottom:'4px solid #000',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#999'}}>Sound</div>
+          <button onClick={toggleSound} style={{background:soundOnState?'#dcf0e5':'#f7dfd6',border:'2px solid #000',padding:'4px 12px',fontWeight:900,fontSize:'.75rem',cursor:'pointer',...S}} className="bs2">
+            {soundOnState ? '🔊 On' : '🔇 Off'}
+          </button>
+        </div>
+
         {/* Leaderboard link */}
         <div style={{padding:'1rem',borderBottom:'4px solid #000'}}>
-          <button onClick={() => { onClose(); onLeaderboard(); }} style={{width:'100%',background:'#e8e4f2',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',textAlign:'left',...S}} className="bs">
+          <button onClick={() => { playClick(); onClose(); onLeaderboard(); }} style={{width:'100%',background:'#e8e4f2',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',textAlign:'left',...S}} className="bs">
             📊 Leaderboard
           </button>
         </div>
 
         <div style={{padding:'1rem'}}>
-          <button onClick={onClose} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+          <button onClick={()=>{playClick();onClose();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
             Close
           </button>
         </div>
@@ -1087,114 +1320,90 @@ function Settings({ playerName, onShuffle, onClose, onLeaderboard }) {
 
 // ─── StartScreen ──────────────────────────────────────────────────────────────
 function StartScreen({ onNav, playerName, onShuffle }) {
-  const [showHow,      setShowHow]      = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('shift_seen_intro'));
+  const [shareToast,   setShareToast]   = useState('');
   const [showDonate,   setShowDonate]   = useState(false);
-  const [toast,        setToast]        = useState('');
+  const [showHow,      setShowHow]      = useState(false);
+  const S = { fontFamily:'Space Mono,monospace' };
 
-  const savedDaily = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem(dailyKey())); } catch { return null; }
-  }, []);
-
-  const share = async () => {
-    let text = 'Check out Shift — a little math game 🧮\nhttps://shift.inefficientcode.com';
-    if (savedDaily) {
-      const avg = (savedDaily.totalScore / 3).toFixed(4);
-      text = `SHIFT · ${todayLabel()}\nMy score: ${savedDaily.totalScore} (avg ${avg})\nhttps://shift.inefficientcode.com`;
-    }
-    if (navigator.share) { try { await navigator.share({ text }); return; } catch(e) { if(e.name==='AbortError') return; } }
-    try { await navigator.clipboard.writeText(text); setToast('Copied!'); setTimeout(()=>setToast(''),2000); } catch(e) {}
+  const dismissTutorial = () => {
+    localStorage.setItem('shift_seen_intro', '1');
+    playClick();
+    setShowTutorial(false);
   };
 
-  const BTN = { fontFamily:'Space Mono,monospace', cursor:'pointer' };
+  const dateLabel = new Intl.DateTimeFormat('en-US',{timeZone:'UTC',month:'short',day:'numeric'}).format(new Date());
+
+  const share = async () => {
+    playClick();
+    let text = 'Check out Shift — a little math game 🧮';
+    try {
+      const s = localStorage.getItem(dailyKey());
+      if (s) { const { totalScore } = JSON.parse(s); const avg=(totalScore/3).toFixed(4); text=`SHIFT · ${dateLabel}\nMy score: ${totalScore} (avg ${avg})\nCan you beat it? 🧮`; }
+    } catch {}
+    if (navigator.share) { try { await navigator.share({ text }); return; } catch(e) { if(e.name==='AbortError') return; } }
+    try { await navigator.clipboard.writeText(text); setShareToast('Copied!'); setTimeout(()=>setShareToast(''),2000); } catch {}
+  };
+
+  const BBASE = {cursor:'pointer',border:'2px solid #000',borderRadius:8,padding:'1rem 1.5rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',textAlign:'left',display:'block',width:'100%',boxShadow:'4px 4px 0 #000',...S};
 
   return (
     <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
       <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
 
-      {showHow      && <HowToPlay onClose={()=>setShowHow(false)} />}
+      {showTutorial && <TutorialModal onClose={dismissTutorial} />}
       {showSettings && <Settings playerName={playerName} onShuffle={onShuffle} onClose={()=>setShowSettings(false)} onLeaderboard={()=>onNav('leaderboard')} />}
-      {showDonate && (
-        <div style={{position:'fixed',inset:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.55)',fontFamily:'Space Mono,monospace'}} onClick={()=>setShowDonate(false)}>
-          <div style={{background:'#fff',border:'8px solid #000',boxShadow:'8px 8px 0 #000',width:'100%',maxWidth:360,margin:'0 1.5rem',padding:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem'}} onClick={e=>e.stopPropagation()}>
-            <div style={{fontSize:'2rem'}}>♥</div>
-            <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',textAlign:'center',borderBottom:'4px solid #000',paddingBottom:'1rem',width:'100%'}}>Enjoying Shift?</div>
-            <p style={{fontSize:'.625rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',textAlign:'center',lineHeight:1.8,color:'#555',margin:0}}>Support the developer</p>
-            <button onClick={()=>{ window.open('https://ko-fi.com/inefficientcode','_blank','noopener'); setShowDonate(false); }} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}}>
-              Take me to Ko-fi ♥
-            </button>
-            <button onClick={()=>setShowDonate(false)} style={{width:'100%',background:'#fff',color:'#000',border:'4px solid #000',padding:'.875rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',fontFamily:'Space Mono,monospace'}}>
-              Maybe Later
-            </button>
-          </div>
+      {showDonate   && <KofiModal onClose={()=>setShowDonate(false)} />}
+      {showHow      && <HowToPlay onClose={()=>setShowHow(false)} />}
+
+      {/* ── Share toast ── */}
+      {shareToast && (
+        <div style={{position:'fixed',bottom:80,left:'50%',transform:'translateX(-50%)',background:'#000',color:'#fff',fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',padding:'4px 14px',zIndex:200,...S}}>
+          {shareToast}
         </div>
       )}
 
-      <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',zIndex:1}}>
+      <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',paddingBottom:'5rem',zIndex:1,gap:24}}>
 
-        {/* Main card */}
-        <div style={{background:'#fff',border:'8px solid #000',padding:'2rem',paddingBottom:'5rem',width:'100%',maxWidth:400,display:'flex',flexDirection:'column',gap:20,position:'relative'}} className="bs8 anim-fade">
-
-          {/* Share ↑ — bottom left */}
-          <button onClick={share} title="Share" style={{position:'absolute',bottom:'2rem',left:'2rem',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',...BTN}} className="bs2">↑</button>
-          {toast && <div style={{position:'absolute',bottom:'2.5rem',left:'4rem',fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',background:'#1a1a1a',color:'#f5f0e8',padding:'2px 8px',borderRadius:4}}>{toast}</div>}
-
-          {/* Ko-fi ♥ — bottom centre */}
-          <button onClick={()=>setShowDonate(true)} title="Support Shift" style={{position:'absolute',bottom:'2rem',left:'50%',transform:'translateX(-50%)',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',...BTN}} className="bs2">♥</button>
-
-          {/* How to play ⓘ — bottom right */}
-          <button onClick={()=>setShowHow(true)} title="How to play" style={{position:'absolute',bottom:'2rem',right:'4.5rem',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'.875rem',...BTN}} className="bs2">i</button>
-
-          {/* Settings ⚙ — bottom right */}
-          <button onClick={()=>setShowSettings(true)} title="Settings" style={{position:'absolute',bottom:'2rem',right:'2rem',background:'#fff',border:'2px solid #000',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.875rem',...BTN}} className="bs2">⚙</button>
-
-          {/* Title */}
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:'3.5rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'-.05em',lineHeight:.9}}>SHIFT</div>
-            <div style={{fontSize:'.75rem',fontStyle:'italic',color:'#666',marginTop:8}}>a little math game.</div>
-          </div>
-
-          {/* Game mode buttons */}
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            <button onClick={()=>onNav('daily')} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'1.25rem',fontWeight:900,fontSize:'1.1rem',textTransform:'uppercase',textAlign:'left',position:'relative',...BTN}} className="bs">
-              Daily Challenge
-              {savedDaily && <span style={{position:'absolute',right:'1rem',top:'50%',transform:'translateY(-50%)',fontSize:'.625rem',fontWeight:700,textTransform:'uppercase',opacity:.5}}>{savedDaily.totalScore} pts</span>}
-            </button>
-            <button onClick={()=>onNav('solo')} style={{width:'100%',background:'#f7dfd6',border:'4px solid #000',padding:'1rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',textAlign:'left',...BTN}} className="bs">
-              Solo Play
-            </button>
-            <button onClick={()=>onNav('versus')} style={{width:'100%',background:'#dcf0e5',border:'4px solid #000',padding:'1rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',textAlign:'left',...BTN}} className="bs">
-              VS Mode
-            </button>
+        {/* ── Hero ── */}
+        <div style={{textAlign:'center',transform:'rotate(-1deg)',marginTop:12}}>
+          <h1 style={{fontSize:'5rem',fontWeight:900,lineHeight:1,letterSpacing:'-4px',color:'#fff',textShadow:'3px 3px 0px #1a1a1a, 8px 8px 0px #e8e4f2, 12px 12px 0px #f7dfd6',margin:0,...S}}>
+            SHIFT
+          </h1>
+          <div style={{display:'inline-block',marginTop:12,padding:'4px 10px',background:'#f2e9c9',border:'2px solid #000',boxShadow:'2px 2px 0 #000',fontSize:'.875rem',fontWeight:900,transform:'rotate(2deg)',...S}}>
+            a little math game.
           </div>
         </div>
 
-        {/* App store badges — equal-sized, coming soon */}
-        <div style={{display:'flex',gap:12,marginTop:20,alignItems:'stretch',justifyContent:'center'}}>
-          {[
-            { label:'App Store',   icon:'🍎', title:'iOS App — Coming Soon',     imgSrc:'https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' },
-            { label:'Google Play', icon:'▶',  title:'Android App — Coming Soon', imgSrc:null },
-          ].map(({ label, icon, title, imgSrc }) => (
-            <div key={label} title={title} style={{position:'relative',cursor:'default',width:148,height:48,borderRadius:8,overflow:'hidden',opacity:.55,filter:'grayscale(25%)',border:'2px solid rgba(0,0,0,.2)',background:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8,color:'#fff',flexShrink:0}}>
-              {imgSrc ? (
-                <img src={imgSrc} alt={label} style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0}}
-                  onError={e=>{e.target.style.display='none';}} />
-              ) : (
-                <>
-                  <span style={{fontSize:'1.1rem'}}>{icon}</span>
-                  <div style={{textAlign:'left'}}>
-                    <div style={{fontSize:'.45rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.08em',opacity:.6,fontFamily:'Space Mono,monospace'}}>Get it on</div>
-                    <div style={{fontSize:'.75rem',fontWeight:900,fontFamily:'Space Mono,monospace'}}>{label}</div>
-                  </div>
-                </>
-              )}
-              <div style={{position:'absolute',inset:0,background:'rgba(245,240,232,.5)',display:'flex',alignItems:'flex-end',justifyContent:'center',paddingBottom:5}}>
-                <span style={{background:'#1a1a1a',color:'#f5f0e8',fontSize:'.45rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',padding:'1px 6px',borderRadius:3,fontFamily:'Space Mono,monospace'}}>Coming Soon</span>
-              </div>
-            </div>
-          ))}
+        {/* ── Menu card ── */}
+        <div style={{background:'#fff',border:'2px solid #000',boxShadow:'8px 8px 0 #000',borderRadius:'.75rem',padding:'1.5rem 1.5rem',width:'100%',maxWidth:380,display:'flex',flexDirection:'column',gap:12,transform:'rotate(.5deg)'}} className="anim-fade">
+          <button onClick={()=>{playClick();onNav('solo');}} style={{...BBASE,background:'#dcf0e5'}}>
+            Solo Play
+            <span style={{display:'block',fontSize:'.75rem',fontWeight:400,marginTop:6,opacity:.7,textTransform:'none'}}>go your own way</span>
+          </button>
+          <button onClick={()=>{playClick();onNav('daily');}} style={{...BBASE,background:'#e8e4f2'}}>
+            Daily Challenge
+            <span style={{display:'block',fontSize:'.75rem',fontWeight:400,marginTop:6,opacity:.7,textTransform:'none'}}>reign supreme · {dateLabel}</span>
+          </button>
+          <button onClick={()=>{playClick();onNav('versus');}} style={{...BBASE,background:'#f7dfd6'}}>
+            VS Mode
+            <span style={{display:'block',fontSize:'.75rem',fontWeight:400,marginTop:6,opacity:.7,textTransform:'none'}}>take on the world</span>
+          </button>
         </div>
 
+      </div>
+
+      {/* ── Bottom nav buttons (absolute, matching native) ── */}
+      <div style={{position:'absolute',bottom:16,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1.25rem',zIndex:10}}>
+        {/* Share — left */}
+        <button onClick={share} title="Share" style={{background:'#fff',border:'2px solid #000',width:40,height:40,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'2px 2px 0 #000',fontWeight:900,fontSize:'1.1rem',cursor:'pointer',...S}}>↑</button>
+        {/* Ko-fi + How-to-play + Settings — right cluster */}
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>{playClick();setShowDonate(true);}} title="Support" style={{background:'#fff',border:'2px solid #000',width:40,height:40,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'2px 2px 0 #000',fontSize:'1.1rem',cursor:'pointer',...S}}>♥</button>
+          <button onClick={()=>{playClick();setShowHow(true);}} title="How to play" style={{background:'#fff',border:'2px solid #000',width:40,height:40,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'2px 2px 0 #000',fontWeight:900,fontSize:'.9rem',cursor:'pointer',...S}}>i</button>
+          <button onClick={()=>{playClick();setShowSettings(true);}} title="Settings" style={{background:'#fff',border:'2px solid #000',width:40,height:40,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'2px 2px 0 #000',fontSize:'.9rem',cursor:'pointer',...S}}>⚙</button>
+        </div>
       </div>
     </div>
   );
