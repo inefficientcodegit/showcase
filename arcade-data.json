@@ -91,10 +91,10 @@
  },
 {
   "id": "blossom",
-  "title": "Blossom",
-  "status": "in-dev",
+  "title": "Senescence",
+  "status": "final",
   "url": "https://inefficientcodegit.github.io/showcase/Blossom/index.html",
-  "description": "sonic game of timing and calm",
+  "description": "A sonic game of timing and calm, don't worry about winning or losing",
   "iosLink": null,
   "androidLink": "https://play.google.com/store/apps/details?id=com.inefficientcode.senescence"
  },
@@ -119,7 +119,7 @@
 {
   "id": "hex-recall",
   "title": "Hex Recall",
-  "status": "in-dev",
+  "status": "final",
   "url": "https://inefficientcodegit.github.io/showcase/Hex%20Recall/index.html",
   "description": "Memorize the colour and match it best you can",
   "iosLink": "https://apps.apple.com/us/app/hexercise/id6762805462",
