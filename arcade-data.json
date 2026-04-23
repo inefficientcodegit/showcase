@@ -117,6 +117,15 @@
   "androidLink": null
  },
 {
+  "id": "hex-recall",
+  "title": "Hex Recall",
+  "status": "in-dev",
+  "url": "https://inefficientcodegit.github.io/showcase/Hex%20Recall/index.html",
+  "description": "Memorize the colour and match it best you can",
+  "iosLink": "https://apps.apple.com/us/app/hexercise/id6762805462",
+  "androidLink": null
+ },
+{
   "id": "shift",
   "title": "Shift",
   "status": "in-dev",
