@@ -175,6 +175,30 @@ const dailyPuzzles = () => { const rng=mulberry32(dailySeed()); return [0,1,2].m
 const dailyKey     = () => `shift_daily_${dailySeed()}`;
 const todayLabel   = () => new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
+// ─── Challenge Codes ──────────────────────────────────────────────────────────
+const CC_ALPHA   = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // Crockford base32
+const CC_STEPS   = { E: 3, M: 4, H: 5 };
+const CC_DIFF    = { easy: 'E', med: 'M', hard: 'H' };
+const isValidCode = s => s && s.length===6 && !!CC_STEPS[s[0]] && [...s.slice(1)].every(c=>CC_ALPHA.includes(c));
+const genCode = diff => {
+  const pre = CC_DIFF[diff]||'E';
+  let suf = '';
+  for (let i=0;i<5;i++) suf += CC_ALPHA[Math.floor(Math.random()*32)];
+  return pre+suf;
+};
+const codeToSeed = code => {
+  let h=0;
+  for (const c of code.slice(1)) h=(Math.imul(31,h)+c.charCodeAt(0))|0;
+  return h>>>0;
+};
+const challengePuzzles = code => {
+  const rng=mulberry32(codeToSeed(code));
+  const n=CC_STEPS[code[0]]||3;
+  return [genPuzzle(n,rng),genPuzzle(n,rng),genPuzzle(n,rng)];
+};
+const codeToDiff = code => code[0]==='M'?'med':code[0]==='H'?'hard':'easy';
+const SHARE_URL  = 'https://shift.inefficientcode.com';
+
 // ─── Names / Ghost ────────────────────────────────────────────────────────────
 const ADJS  = ['Swift','Clever','Bold','Keen','Sharp','Bright','Quick','Smart','Nimble','Savvy'];
 const NOUNS = ['Fox','Eagle','Wolf','Bear','Hawk','Owl','Lynx','Puma','Viper','Tiger'];
@@ -641,7 +665,7 @@ function DailyGame({ onExit, onLeaderboard }) {
             {pick(total >= 2500 ? 'dailyGood' : total >= 1200 ? 'dailyAvg' : 'dailyBad')}
           </div>
           <div style={{display:'flex',gap:8,padding:'.75rem 1rem',borderBottom:'4px solid #000'}}>
-            {ds.rounds.map((r,i) => (
+            {ds.rounds.slice(0,3).map((r,i) => (
               <div key={i} style={{flex:1,background:'#f2e9c9',border:'2px solid #000',borderRadius:6,textAlign:'center',padding:'.625rem .25rem'}}>
                 <div style={{fontSize:'.5rem',fontWeight:900,textTransform:'uppercase',color:'#999',marginBottom:4}}>R{i+1}</div>
                 <div style={{fontSize:'1.25rem',fontWeight:900,lineHeight:1}}>{r.score}</div>
@@ -695,49 +719,68 @@ function SoloScoreChart({ history }) {
 }
 
 // ─── SoloGame ─────────────────────────────────────────────────────────────────
-const SOLO_STEPS  = { easy: 3, med: 4, hard: 5 };
-const SOLO_HIST   = 'shift_solo_history';
-const soloRankLabel = s => s === 0 ? 'math potato' : s < 1500 ? 'average noodle' : s < 2500 ? 'number wizard' : 'silicon god';
+const SOLO_HIST     = 'shift_solo_history';
+const SOLO_ROUNDS   = 3;
+const soloRankLabel = s => s===0?'math potato':s<1500?'average noodle':s<2500?'number wizard':'silicon god';
 
-function SoloGame({ onExit }) {
+function SoloGame({ onExit, challengeCode=null }) {
   const S = { fontFamily:'Space Mono,monospace' };
-  const [diff,     setDiff]    = useState(null);
-  const [steps,    setSteps]   = useState(4);
-  const [puzzle,   setPuzzle]  = useState(null);
-  const [round,    setRound]   = useState(0);
-  const [total,    setTotal]   = useState(0);
-  const [lastRes,  setLastRes] = useState(null);
-  const [phase,    setPhase]   = useState('difficulty');
-  const [history,  setHistory] = useState(() => { try { return JSON.parse(localStorage.getItem(SOLO_HIST)||'[]'); } catch { return []; } });
+  const initCode    = challengeCode;
+  const [diff,      setDiff]      = useState(initCode ? codeToDiff(initCode) : null);
+  const [code,      setCode]      = useState(initCode);
+  const [puzzles,   setPuzzles]   = useState(() => initCode ? challengePuzzles(initCode) : null);
+  const [round,     setRound]     = useState(0);
+  const [roundScs,  setRoundScs]  = useState([]);
+  const [total,     setTotal]     = useState(0);
+  const [lastRes,   setLastRes]   = useState(null);
+  const [phase,     setPhase]     = useState(initCode ? 'countdown' : 'difficulty');
+  const [shareToast,setShareToast]= useState('');
+  const [history,   setHistory]   = useState(() => { try { return JSON.parse(localStorage.getItem(SOLO_HIST)||'[]'); } catch { return []; } });
 
   const startDiff = (d) => {
     playClick();
-    const n = SOLO_STEPS[d];
-    setDiff(d); setSteps(n); setPuzzle(genPuzzle(n));
-    setRound(0); setTotal(0); setLastRes(null);
+    const c = genCode(d);
+    const ps = challengePuzzles(c);
+    setDiff(d); setCode(c); setPuzzles(ps);
+    setRound(0); setRoundScs([]); setTotal(0); setLastRes(null);
+    setPhase('countdown');
+  };
+
+  const startWithCode = (c) => {
+    setDiff(codeToDiff(c)); setCode(c); setPuzzles(challengePuzzles(c));
+    setRound(0); setRoundScs([]); setTotal(0); setLastRes(null);
     setPhase('countdown');
   };
 
   const onRoundDone = (res) => {
     setLastRes(res);
     setTotal(t => t + res.score);
+    setRoundScs(prev => [...prev, res.score]);
     setPhase('overlay');
   };
 
   const handleOverlay = () => {
-    if (lastRes.score === 0) {
-      const finalTotal = total; // already added in onRoundDone
+    const next = round + 1;
+    if (next >= SOLO_ROUNDS) {
+      const finalTotal = total;
       setHistory(prev => {
-        const next = [...prev, finalTotal].slice(-100);
-        localStorage.setItem(SOLO_HIST, JSON.stringify(next));
-        return next;
+        const nx = [...prev, finalTotal].slice(-100);
+        localStorage.setItem(SOLO_HIST, JSON.stringify(nx));
+        return nx;
       });
-      setPhase('gameover');
+      setPhase('summary');
     } else {
-      setRound(r => r + 1);
-      setPuzzle(genPuzzle(steps));
+      setRound(next);
       setPhase('playing');
     }
+  };
+
+  const handleShare = async () => {
+    playClick();
+    const url  = `${SHARE_URL}?c=${code}`;
+    const text = `SHIFT challenge · ${code}\nMy score: ${total}\nCan you beat it?\n${url}`;
+    if (navigator.share) { try { await navigator.share({text,url}); return; } catch(e) { if(e.name==='AbortError') return; } }
+    try { await navigator.clipboard.writeText(text); setShareToast('Copied!'); setTimeout(()=>setShareToast(''),2000); } catch {}
   };
 
   // ── Difficulty picker ──
@@ -749,7 +792,7 @@ function SoloGame({ onExit }) {
           <div style={{background:'#fff',border:'2px solid #000',boxShadow:'8px 8px 0 #000',borderRadius:'.75rem',padding:'1.5rem',display:'flex',flexDirection:'column',gap:12,width:'100%'}}>
             <div style={{textAlign:'center',marginBottom:4}}>
               <div style={{fontSize:'1.6rem',fontWeight:900,letterSpacing:'-.04em'}}>Solo Play</div>
-              <div style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#999',marginTop:4}}>Choose difficulty · Endless</div>
+              <div style={{fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#999',marginTop:4}}>Choose difficulty · {SOLO_ROUNDS} rounds</div>
             </div>
             {[['easy','Easy (3 steps)','#dcf0e5'],['med','Med (4 steps)','#f7dfd6'],['hard','Hard (5 steps)','#e8e4f2']].map(([d,label,bg]) => (
               <button key={d} onClick={()=>startDiff(d)} style={{width:'100%',background:bg,border:'2px solid #000',boxShadow:'4px 4px 0 #000',borderRadius:8,padding:'1rem',fontWeight:900,fontSize:'1rem',textTransform:'uppercase',cursor:'pointer',...S}}>
@@ -769,50 +812,66 @@ function SoloGame({ onExit }) {
   // ── Countdown ──
   if (phase === 'countdown') return <Countdown onDone={() => setPhase('playing')} />;
 
-  // ── Game over ──
-  if (phase === 'gameover') {
+  // ── Summary ──
+  if (phase === 'summary') {
+    const diffLabel = diff==='hard'?'Hard':diff==='med'?'Med':'Easy';
     return (
       <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'1.5rem',overflow:'auto',...S}}>
         <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
         <div style={{width:'100%',maxWidth:400,display:'flex',flexDirection:'column',gap:12,zIndex:1,alignItems:'center'}}>
           <div style={{background:'#fff',border:'2px solid #000',boxShadow:'8px 8px 0 #000',borderRadius:'.75rem',width:'100%',overflow:'hidden'}} className="anim-fade">
-            <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',textAlign:'center'}}>
-              <div style={{fontSize:'1.6rem',fontWeight:900,letterSpacing:'-.03em'}}>run over.</div>
-              <div style={{fontSize:'.75rem',color:'#888',marginTop:4}}>puzzles survived: {round}</div>
+            <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center',fontSize:'.5625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em'}}>
+              solo play · {diffLabel}
             </div>
             <div style={{padding:'1.25rem 1rem',borderBottom:'4px solid #000',textAlign:'center'}}>
               <div style={{fontSize:'3.5rem',fontWeight:900,lineHeight:1}}>{total}</div>
               <div style={{fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.08em',color:'#777',marginTop:4}}>{soloRankLabel(total)}</div>
-              <div style={{fontSize:'.75rem',fontStyle:'italic',color:'#aaa',marginTop:8}}>{pick('soloEnd', {n: round})}</div>
+              <div style={{fontSize:'.75rem',fontStyle:'italic',color:'#aaa',marginTop:8}}>{pick('soloEnd',{n:SOLO_ROUNDS})}</div>
+            </div>
+            {/* Per-round pills */}
+            <div style={{display:'flex',gap:8,padding:'.75rem 1rem',borderBottom:'4px solid #000'}}>
+              {roundScs.map((s,i) => (
+                <div key={i} style={{flex:1,background:'#f2e9c9',border:'2px solid #000',borderRadius:6,textAlign:'center',padding:'.625rem .25rem'}}>
+                  <div style={{fontSize:'.5rem',fontWeight:900,textTransform:'uppercase',color:'#999',marginBottom:4}}>R{i+1}</div>
+                  <div style={{fontSize:'1.25rem',fontWeight:900,lineHeight:1}}>{s}</div>
+                </div>
+              ))}
+            </div>
+            {/* Challenge code */}
+            <div style={{padding:'.75rem 1rem',borderBottom:'4px solid #000',textAlign:'center'}}>
+              <div style={{fontSize:'.5rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',color:'#999',marginBottom:6}}>challenge code</div>
+              <div style={{fontSize:'1.5rem',fontWeight:900,letterSpacing:'.2em',background:'#f5f0e8',border:'2px solid #000',padding:'6px 16px',display:'inline-block'}}>{code}</div>
+              <div style={{fontSize:'.5rem',color:'#aaa',marginTop:6}}>share this code so friends can play the same puzzles</div>
             </div>
             <div style={{padding:'1rem',display:'flex',gap:'.75rem',flexDirection:'column'}}>
-              <button onClick={()=>startDiff(diff)} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
-                Play Again
+              <button onClick={handleShare} style={{width:'100%',background:'#000',color:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+                Challenge a Friend
               </button>
-              <button onClick={()=>{playClick();setPhase('difficulty');}} style={{width:'100%',background:'#e8e4f2',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
-                Change Difficulty
+              <button onClick={()=>{playClick();setPhase('difficulty');}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+                New Game
               </button>
-              <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'4px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}} className="bs">
+              <button onClick={()=>{playClick();onExit();}} style={{width:'100%',background:'#fff',border:'2px solid #000',padding:'.75rem',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}}>
                 ← Menu
               </button>
             </div>
           </div>
           <SoloScoreChart history={history} />
         </div>
+        {shareToast && <div style={{position:'fixed',bottom:80,left:'50%',transform:'translateX(-50%)',background:'#000',color:'#fff',fontSize:'.625rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',padding:'4px 14px',zIndex:200,...S}}>{shareToast}</div>}
       </div>
     );
   }
 
   // ── Playing + overlay ──
-  const overlayProps = lastRes ? buildOverlayProps(lastRes, 'solo', round, Infinity) : null;
+  const overlayProps = lastRes ? buildOverlayProps(lastRes, 'solo', round, SOLO_ROUNDS) : null;
   return (
     <div style={{position:'fixed',inset:0,background:'#f5f0e8',display:'flex',flexDirection:'column',alignItems:'center',fontFamily:'Space Mono,monospace',overflow:'hidden'}}>
       <div style={{position:'absolute',inset:0,zIndex:0}} className="dot-grid" />
       <div style={{flex:1,overflowY:'auto',width:'100%',display:'flex',flexDirection:'column',alignItems:'center',padding:'1.5rem',zIndex:1}}>
         <div style={{width:'100%',maxWidth:400,display:'flex',flexDirection:'column',gap:12}}>
           <div style={{background:'#fff',border:'2px solid #000',boxShadow:'6px 6px 0 #000',borderRadius:'.75rem',padding:'1.25rem',position:'relative'}}>
-            <button onClick={()=>{playClick();setPhase('gameover');}} style={{position:'absolute',top:8,right:8,background:'#fff',border:'2px solid #000',borderRadius:4,padding:'2px 8px',fontWeight:900,fontSize:'.625rem',cursor:'pointer',fontFamily:'Space Mono,monospace',zIndex:10,textTransform:'uppercase',letterSpacing:'.05em'}} className="bs2">menu</button>
-            <GameBoard key={round} puzzle={puzzle} label={`solo run · p${round+1}`} total={total} onDone={onRoundDone} />
+            <button onClick={()=>{playClick();onExit();}} style={{position:'absolute',top:8,right:8,background:'#fff',border:'2px solid #000',borderRadius:4,padding:'2px 8px',fontWeight:900,fontSize:'.625rem',cursor:'pointer',fontFamily:'Space Mono,monospace',zIndex:10,textTransform:'uppercase',letterSpacing:'.05em'}} className="bs2">menu</button>
+            {puzzles && <GameBoard key={round} puzzle={puzzles[round]} label={`solo · r${round+1}/${SOLO_ROUNDS}`} total={total} onDone={onRoundDone} />}
           </div>
           <SoloScoreChart history={history} />
         </div>
@@ -1230,7 +1289,7 @@ function HowToPlay({ onClose }) {
           { title:'Scoring', body:'125 points per operation in the correct position. Hit the target (all correct): add 0–500 bonus points based on time remaining.' },
           { title:'The Timer', body:'Each round has a countdown timer. Running out of time ends the round — you still earn points for any correct positions.' },
           { title:'Daily Challenge', body:'Every day there are 3 new rounds, seeded so everyone worldwide gets the same puzzles. Your score goes on the global leaderboard.' },
-          { title:'Solo Play', body:'Infinite random rounds. No leaderboard — just you versus the puzzles. Try to build the highest total score.' },
+          { title:'Solo Play', body:'3 rounds per run. Pick a difficulty, play, then share your challenge code so friends can attempt the exact same puzzles.' },
           { title:'VS Mode', body:'Matched against another player in real-time (or an AI opponent if no one\'s found). 3 rounds, same puzzle for both players. Highest total score wins.' },
         ].map(({ title, body }) => (
           <div key={title} style={{padding:'.875rem 1rem',borderBottom:'2px solid #000'}}>
@@ -1366,13 +1425,21 @@ function Settings({ playerName, onShuffle, onClose, onLeaderboard }) {
 }
 
 // ─── StartScreen ──────────────────────────────────────────────────────────────
-function StartScreen({ onNav, playerName, onShuffle }) {
+function StartScreen({ onNav, playerName, onShuffle, onChallenge }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('shift_seen_intro'));
   const [shareToast,   setShareToast]   = useState('');
   const [showDonate,   setShowDonate]   = useState(false);
   const [showHow,      setShowHow]      = useState(false);
+  const [codeInput,    setCodeInput]    = useState('');
+  const [codeError,    setCodeError]    = useState('');
   const S = { fontFamily:'Space Mono,monospace' };
+
+  const handleCodeSubmit = () => {
+    const c = codeInput.trim().toUpperCase();
+    if (!isValidCode(c)) { setCodeError('Invalid code'); return; }
+    playClick(); setCodeError(''); setCodeInput(''); onChallenge(c);
+  };
 
   const dismissTutorial = () => {
     localStorage.setItem('shift_seen_intro', '1');
@@ -1437,6 +1504,22 @@ function StartScreen({ onNav, playerName, onShuffle }) {
             VS Mode
             <span style={{display:'block',fontSize:'.75rem',fontWeight:400,marginTop:6,opacity:.7,textTransform:'none'}}>take on the world</span>
           </button>
+
+          <div style={{borderTop:'2px solid rgba(0,0,0,.1)',paddingTop:12,marginTop:4,display:'flex',flexDirection:'column',gap:6}}>
+            <div style={{fontSize:'.5rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.12em',color:'#999',textAlign:'center'}}>have a challenge code?</div>
+            <div style={{display:'flex',gap:8}}>
+              <input
+                type="text" value={codeInput} maxLength={6} placeholder="E4K7P2"
+                onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeError('');}}
+                onKeyDown={e=>e.key==='Enter'&&handleCodeSubmit()}
+                style={{flex:1,border:'2px solid #000',padding:'8px 10px',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',letterSpacing:'.2em',background:'#f5f0e8',outline:'none',...S}}
+              />
+              <button onClick={handleCodeSubmit} style={{background:'#000',color:'#fff',border:'2px solid #000',padding:'8px 14px',fontWeight:900,fontSize:'.875rem',textTransform:'uppercase',cursor:'pointer',...S}}>
+                Go
+              </button>
+            </div>
+            {codeError && <div style={{fontSize:'.5rem',fontWeight:900,textTransform:'uppercase',letterSpacing:'.1em',color:'#c00',textAlign:'center'}}>{codeError}</div>}
+          </div>
         </div>
 
       </div>
@@ -1458,9 +1541,14 @@ function StartScreen({ onNav, playerName, onShuffle }) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
-  const [screen, setScreen]     = useState('start');
-  const [ready,  setReady]      = useState(false);
-  const [name,   setName]       = useState(() => localStorage.getItem('shift_display_name') || '');
+  const [screen,        setScreen]        = useState('start');
+  const [ready,         setReady]         = useState(false);
+  const [name,          setName]          = useState(() => localStorage.getItem('shift_display_name') || '');
+  const [challengeCode, setChallengeCode] = useState(() => {
+    try { const p=new URLSearchParams(window.location.search).get('c')?.toUpperCase(); return isValidCode(p)?p:null; } catch { return null; }
+  });
+
+  useEffect(() => { if (challengeCode) setScreen('solo'); }, []); // eslint-disable-line
 
   useEffect(() => {
     (async () => {
@@ -1491,11 +1579,11 @@ function App() {
   );
 
   if (screen === 'daily')       return <DailyGame   onExit={() => setScreen('start')} onLeaderboard={() => setScreen('leaderboard')} />;
-  if (screen === 'solo')        return <SoloGame    onExit={() => setScreen('start')} />;
+  if (screen === 'solo')        return <SoloGame    onExit={() => { setScreen('start'); setChallengeCode(null); }} challengeCode={challengeCode} />;
   if (screen === 'versus')      return <VersusGame  onExit={() => setScreen('start')} />;
   if (screen === 'leaderboard') return <LeaderBoard onBack={() => setScreen('start')} />;
 
-  return <StartScreen onNav={setScreen} playerName={name} onShuffle={handleShuffle} />;
+  return <StartScreen onNav={setScreen} playerName={name} onShuffle={handleShuffle} onChallenge={c => { setChallengeCode(c); setScreen('solo'); }} />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
