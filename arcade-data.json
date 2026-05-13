@@ -128,7 +128,7 @@
 {
   "id": "shift",
   "title": "Shift",
-  "status": "in-dev",
+  "status": "final",
   "url": "https://inefficientcodegit.github.io/showcase/Shift/index.html",
   "description": "Quick little math game",
   "iosLink": "https://apps.apple.com/us/app/shift-go/id6762990205",
