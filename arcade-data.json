@@ -131,8 +131,8 @@
   "status": "in-dev",
   "url": "https://inefficientcodegit.github.io/showcase/Shift/index.html",
   "description": "Quick little math game",
-  "iosLink": null,
-  "androidLink": null
+  "iosLink": "https://apps.apple.com/us/app/shift-go/id6762990205",
+  "androidLink": "https://play.google.com/store/apps/details?id=com.inefficientcode.shift"
  }
 
 ]
